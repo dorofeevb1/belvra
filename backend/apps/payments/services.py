@@ -29,8 +29,10 @@ class YooKassaService:
 
     def __init__(self):
         """Initialize YooKassa configuration."""
-        Configuration.account_id = settings.YOOKASSA_SHOP_ID
-        Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+        self.test_mode = not settings.YOOKASSA_SHOP_ID or not settings.YOOKASSA_SECRET_KEY
+        if not self.test_mode:
+            Configuration.account_id = settings.YOOKASSA_SHOP_ID
+            Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
     def create_payment(
         self,
@@ -55,6 +57,29 @@ class YooKassaService:
         """
         try:
             idempotency_key = str(payment.id)
+
+            # Test mode - return mock response
+            if self.test_mode:
+                mock_payment_id = f"test_{uuid.uuid4().hex[:16]}"
+                mock_confirmation_url = f"{return_url}?test_payment={mock_payment_id}"
+
+                payment.external_payment_id = mock_payment_id
+                payment.confirmation_url = mock_confirmation_url
+                payment.status = Payment.PaymentStatus.PENDING
+                payment.payment_metadata = {
+                    "test_mode": True,
+                    "created_at": str(timezone.now()),
+                }
+                payment.save()
+
+                logger.info(f"Created TEST payment {mock_payment_id} for payment {payment.id}")
+
+                return {
+                    "payment_id": mock_payment_id,
+                    "confirmation_url": mock_confirmation_url,
+                    "status": "pending",
+                    "test_mode": True,
+                }
 
             payment_data = {
                 "amount": Amount(
@@ -119,7 +144,13 @@ class YooKassaService:
         items = []
 
         if payment.appointment:
-            service_name = payment.appointment.service.name
+            # Get service name from master_service or service
+            if payment.appointment.master_service:
+                service_name = payment.appointment.master_service.name
+            elif payment.appointment.service:
+                service_name = payment.appointment.service.name
+            else:
+                service_name = "Услуга салона красоты"
         else:
             service_name = "Услуга салона красоты"
 
