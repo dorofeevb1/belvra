@@ -165,7 +165,13 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         # Send email notification to master
         master = appointment.master
         client = appointment.client
-        service = appointment.service
+        # Get service name from master_service (for custom) or service (for catalog)
+        if appointment.master_service:
+            service_name = appointment.master_service.name
+        elif appointment.service:
+            service_name = appointment.service.name
+        else:
+            service_name = "Услуга"
         date_str = appointment.date.strftime("%d.%m.%Y")
         time_str = appointment.start_time.strftime("%H:%M")
 
@@ -173,7 +179,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             master_email=master.user.email,
             master_name=master.user.full_name or master.user.email,
             client_name=client.full_name or client.email,
-            service_name=service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str,
             price=str(appointment.price)
@@ -183,7 +189,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         NotificationService.notify_new_appointment(
             master_user=master.user,
             client_name=client.full_name or client.email,
-            service_name=service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str
         )

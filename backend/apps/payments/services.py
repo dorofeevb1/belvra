@@ -271,6 +271,14 @@ class PaymentService:
             else:
                 amount = appointment.price
 
+        # Get service name from master_service or service
+        if appointment.master_service:
+            service_name = appointment.master_service.name
+        elif appointment.service:
+            service_name = appointment.service.name
+        else:
+            service_name = "Услуга"
+
         # Create payment record
         payment = Payment.objects.create(
             appointment=appointment,
@@ -279,7 +287,7 @@ class PaymentService:
             payment_type=payment_type,
             amount=amount,
             payment_provider=Payment.PaymentProvider.YOOKASSA,
-            description=f"Оплата услуги: {appointment.service.name}"
+            description=f"Оплата услуги: {service_name}"
         )
 
         # Create payment in YooKassa
@@ -289,7 +297,7 @@ class PaymentService:
         result = self.yookassa.create_payment(
             payment=payment,
             return_url=return_url,
-            description=f"Оплата услуги: {appointment.service.name}",
+            description=f"Оплата услуги: {service_name}",
             payment_method=payment_method,
         )
 
