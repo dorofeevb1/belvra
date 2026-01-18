@@ -1,0 +1,35 @@
+{% extends "emails/base.html" %}
+{% block title %}Напоминание о записи - BeautyBook{% endblock %}
+
+{% block content %}
+<h2>Напоминание о записи</h2>
+
+<p>Здравствуйте, {{ client_name }}!</p>
+
+<p>Напоминаем, что через {{ hours_before }} {% if hours_before == 1 %}час{% elif hours_before < 5 %}часа{% else %}часов{% endif %} у вас запланирован визит:</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Услуга:</span>
+        <span class="info-value">{{ service_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Мастер:</span>
+        <span class="info-value">{{ master_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Дата:</span>
+        <span class="info-value">{{ date }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Время:</span>
+        <span class="info-value">{{ time }}</span>
+    </div>
+</div>
+
+<p>Ждём вас!</p>
+
+<div style="text-align: center;">
+    <a href="{{ frontend_url }}/client/my-appointments" class="btn">Мои записи</a>
+</div>
+{% endblock %}

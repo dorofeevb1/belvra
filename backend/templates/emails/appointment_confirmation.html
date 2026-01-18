@@ -1,0 +1,45 @@
+{% extends "emails/base.html" %}
+{% block title %}Запись подтверждена - BeautyBook{% endblock %}
+
+{% block content %}
+<h2>Запись подтверждена!</h2>
+
+<p>Здравствуйте, {{ client_name }}!</p>
+
+<p>Ваша запись успешно подтверждена. Детали:</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Услуга:</span>
+        <span class="info-value">{{ service_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Мастер:</span>
+        <span class="info-value">{{ master_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Дата:</span>
+        <span class="info-value">{{ date }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Время:</span>
+        <span class="info-value">{{ time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Стоимость:</span>
+        <span class="info-value">{{ price }} руб.</span>
+    </div>
+    {% if address %}
+    <div class="info-row">
+        <span class="info-label">Адрес:</span>
+        <span class="info-value">{{ address }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ frontend_url }}/client/my-appointments" class="btn">Мои записи</a>
+</div>
+
+<p style="font-size: 14px; color: #6b7280;">Пожалуйста, приходите вовремя. Если вам нужно отменить или перенести запись, сделайте это минимум за 2 часа.</p>
+{% endblock %}

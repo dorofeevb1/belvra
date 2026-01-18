@@ -1,0 +1,37 @@
+{% extends "emails/base.html" %}
+{% block title %}Новая запись - BeautyBook{% endblock %}
+
+{% block content %}
+<h2>Новая запись!</h2>
+
+<p>Здравствуйте, {{ master_name }}!</p>
+
+<p>У вас новая запись от клиента:</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Клиент:</span>
+        <span class="info-value">{{ client_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Услуга:</span>
+        <span class="info-value">{{ service_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Дата:</span>
+        <span class="info-value">{{ date }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Время:</span>
+        <span class="info-value">{{ time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Стоимость:</span>
+        <span class="info-value">{{ price }} руб.</span>
+    </div>
+</div>
+
+<div style="text-align: center;">
+    <a href="{{ frontend_url }}/master/appointments" class="btn">Посмотреть записи</a>
+</div>
+{% endblock %}

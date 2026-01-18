@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BeautyBook{% endblock %}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+        }
+        .email-header {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            padding: 30px;
+            text-align: center;
+        }
+        .email-header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .email-body {
+            padding: 40px 30px;
+        }
+        .email-footer {
+            background-color: #f9fafb;
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #6b7280;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+        .btn:hover {
+            opacity: 0.9;
+        }
+        .info-box {
+            background-color: #fdf2f8;
+            border-left: 4px solid #ec4899;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #6b7280;
+        }
+        .info-value {
+            font-weight: 600;
+            color: #111827;
+        }
+        .rating-stars {
+            color: #fbbf24;
+            font-size: 20px;
+        }
+        h2 {
+            color: #111827;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        p {
+            margin: 0 0 15px;
+            color: #4b5563;
+        }
+        a {
+            color: #ec4899;
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="email-header">
+            <h1>BeautyBook</h1>
+        </div>
+        <div class="email-body">
+            {% block content %}{% endblock %}
+        </div>
+        <div class="email-footer">
+            <p>Это автоматическое сообщение от сервиса BeautyBook.</p>
+            <p>Если у вас есть вопросы, напишите нам: <a href="mailto:{{ support_email }}">{{ support_email }}</a></p>
+            <p>&copy; 2025 BeautyBook. Все права защищены.</p>
+        </div>
+    </div>
+</body>
+</html>

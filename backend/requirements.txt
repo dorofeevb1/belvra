@@ -1,0 +1,50 @@
+# Django
+Django==5.0.1
+djangorestframework==3.14.0
+django-cors-headers==4.3.1
+django-filter==23.5
+django-extensions==3.2.3
+django-unfold==0.40.0
+
+# Database
+psycopg2-binary==2.9.9
+
+# Celery & Redis
+celery==5.3.6
+redis==5.0.1
+django-redis==5.4.0
+flower==2.0.1
+
+# Authentication
+djangorestframework-simplejwt==5.3.1
+PyJWT==2.8.0
+
+# API Documentation
+drf-spectacular==0.27.0
+
+# Environment
+python-dotenv==1.0.0
+environs==11.0.0
+
+# Utils
+Pillow==10.2.0
+python-dateutil==2.8.2
+
+# Payment Processing
+yookassa==3.3.0
+
+# Production
+gunicorn==21.2.0
+whitenoise==6.6.0
+
+# Development & Testing
+pytest==7.4.4
+pytest-django==4.7.0
+pytest-cov==4.1.0
+factory-boy==3.3.0
+Faker==22.2.0
+
+# Code Quality
+flake8==7.0.0
+black==23.12.1
+isort==5.13.2

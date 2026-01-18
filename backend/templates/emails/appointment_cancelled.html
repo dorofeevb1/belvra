@@ -1,0 +1,41 @@
+{% extends "emails/base.html" %}
+{% block title %}Запись отменена - BeautyBook{% endblock %}
+
+{% block content %}
+<h2>Запись отменена</h2>
+
+<p>Здравствуйте, {{ recipient_name }}!</p>
+
+<p>К сожалению, следующая запись была отменена:</p>
+
+<div class="info-box">
+    <div class="info-row">
+        <span class="info-label">Услуга:</span>
+        <span class="info-value">{{ service_name }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Дата:</span>
+        <span class="info-value">{{ date }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Время:</span>
+        <span class="info-value">{{ time }}</span>
+    </div>
+    <div class="info-row">
+        <span class="info-label">Отменено:</span>
+        <span class="info-value">{{ cancelled_by }}</span>
+    </div>
+    {% if reason %}
+    <div class="info-row">
+        <span class="info-label">Причина:</span>
+        <span class="info-value">{{ reason }}</span>
+    </div>
+    {% endif %}
+</div>
+
+<p>Если у вас была произведена оплата, средства будут возвращены в течение 3-5 рабочих дней.</p>
+
+<div style="text-align: center;">
+    <a href="{{ frontend_url }}" class="btn">Записаться снова</a>
+</div>
+{% endblock %}

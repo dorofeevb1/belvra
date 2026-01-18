@@ -1,0 +1,249 @@
+import { Component, inject, OnInit, signal, computed } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { AuthService, DataService, NotificationService, WalletService } from '../../../core/services';
+import { Appointment, APPOINTMENT_STATUS_LABELS, PaymentType } from '../../../core/models';
+import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
+import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
+import { environment } from '../../../../environments/environment';
+
+@Component({
+  selector: 'app-my-appointments',
+  standalone: true,
+  imports: [CommonModule, FormsModule, CurrencyRubPipe, DateFormatPipe],
+  templateUrl: './my-appointments.component.html',
+  styleUrl: './my-appointments.component.scss'
+})
+export class MyAppointmentsComponent implements OnInit {
+  private authService = inject(AuthService);
+  private dataService = inject(DataService);
+  private notificationService = inject(NotificationService);
+  private walletService = inject(WalletService);
+
+  isLoading = signal(true);
+  activeTab = signal<'upcoming' | 'past'>('upcoming');
+  appointments = signal<Appointment[]>([]);
+  reviewedAppointments = signal<Set<string>>(new Set());
+
+  // Review modal
+  showReviewModal = signal(false);
+  selectedAppointment = signal<Appointment | null>(null);
+  reviewRating = signal(0);
+  reviewComment = '';
+
+  // Payment modal
+  showPaymentModal = signal(false);
+  paymentAppointment = signal<Appointment | null>(null);
+  paymentType = signal<PaymentType>('full_payment');
+  paymentMethod = signal<'bank_card' | 'sbp'>('bank_card');
+  paymentAmount = signal(0);
+  isProcessingPayment = signal(false);
+  paymentUrl = signal<string | null>(null);
+
+  upcomingAppointments = computed(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return this.appointments()
+      .filter(a => a.date >= today && a.status !== 'cancelled' && a.status !== 'completed')
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  });
+
+  pastAppointments = computed(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return this.appointments()
+      .filter(a => a.date < today || a.status === 'completed' || a.status === 'cancelled')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  });
+
+  ngOnInit(): void {
+    this.loadData();
+  }
+
+  private loadData(): void {
+    const clientId = this.authService.clientData()?.id;
+    if (!clientId) return;
+
+    this.dataService.getClientAppointments(clientId).subscribe(data => {
+      this.appointments.set(data);
+      this.isLoading.set(false);
+    });
+  }
+
+  getStatusLabel(status: string): string {
+    return APPOINTMENT_STATUS_LABELS[status as keyof typeof APPOINTMENT_STATUS_LABELS] || status;
+  }
+
+  getStatusClass(status: string): string {
+    const classes: Record<string, string> = {
+      pending: 'badge-warning',
+      confirmed: 'badge-info',
+      completed: 'badge-success',
+      cancelled: 'badge-error'
+    };
+    return classes[status] || 'badge-info';
+  }
+
+  getPaymentStatusLabel(apt: Appointment): string {
+    if (apt.paymentStatus === 'paid') return 'Оплачено';
+    if (apt.paymentStatus === 'refunded') return 'Возврат';
+    if (apt.prepaid && apt.prepaid > 0) return `Предоплата ${apt.prepaid} ₽`;
+    return 'Не оплачено';
+  }
+
+  getPaymentStatusClass(apt: Appointment): string {
+    if (apt.paymentStatus === 'paid') return 'payment-paid';
+    if (apt.paymentStatus === 'refunded') return 'payment-refunded';
+    if (apt.prepaid && apt.prepaid > 0) return 'payment-partial';
+    return 'payment-pending';
+  }
+
+  canPay(apt: Appointment): boolean {
+    return (
+      (apt.status === 'pending' || apt.status === 'confirmed') &&
+      apt.paymentStatus !== 'paid'
+    );
+  }
+
+  getRemainingAmount(apt: Appointment): number {
+    const prepaid = apt.prepaid || 0;
+    return apt.price - prepaid;
+  }
+
+  hasReview(appointmentId: string): boolean {
+    return this.reviewedAppointments().has(appointmentId);
+  }
+
+  cancelAppointment(apt: Appointment): void {
+    if (!confirm('Отменить запись?')) return;
+
+    this.dataService.updateAppointmentStatus(apt.id, 'cancelled').subscribe(() => {
+      this.appointments.update(list =>
+        list.map(a => a.id === apt.id ? { ...a, status: 'cancelled' } : a)
+      );
+      this.notificationService.info('Запись отменена');
+    });
+  }
+
+  // ========== Review Modal ==========
+
+  openReviewModal(apt: Appointment): void {
+    this.selectedAppointment.set(apt);
+    this.reviewRating.set(0);
+    this.reviewComment = '';
+    this.showReviewModal.set(true);
+  }
+
+  submitReview(): void {
+    const apt = this.selectedAppointment();
+    const client = this.authService.clientData();
+    if (!apt || !client || this.reviewRating() === 0) return;
+
+    this.dataService.addReview({
+      masterId: apt.masterId,
+      clientId: client.id,
+      clientName: client.name,
+      clientAvatar: client.avatar,
+      appointmentId: apt.id,
+      rating: this.reviewRating(),
+      comment: this.reviewComment.trim()
+    }).subscribe(() => {
+      this.reviewedAppointments.update(set => new Set([...set, apt.id]));
+      this.showReviewModal.set(false);
+      this.notificationService.success('Отзыв отправлен!');
+    });
+  }
+
+  // ========== Payment Modal ==========
+
+  openPaymentModal(apt: Appointment): void {
+    this.paymentAppointment.set(apt);
+    this.paymentUrl.set(null);
+    this.paymentMethod.set('bank_card');
+
+    const remaining = this.getRemainingAmount(apt);
+
+    // Если уже была предоплата, показываем доплату
+    if (apt.prepaid && apt.prepaid > 0) {
+      this.paymentType.set('remaining');
+      this.paymentAmount.set(remaining);
+    } else {
+      // Иначе предлагаем полную оплату по умолчанию
+      this.paymentType.set('full_payment');
+      this.paymentAmount.set(apt.price);
+    }
+
+    this.showPaymentModal.set(true);
+  }
+
+  closePaymentModal(): void {
+    this.showPaymentModal.set(false);
+    this.paymentAppointment.set(null);
+    this.paymentUrl.set(null);
+  }
+
+  onPaymentTypeChange(): void {
+    const apt = this.paymentAppointment();
+    if (!apt) return;
+
+    const type = this.paymentType();
+    const remaining = this.getRemainingAmount(apt);
+
+    if (type === 'full_payment') {
+      this.paymentAmount.set(remaining);
+    } else if (type === 'prepayment') {
+      // 20% предоплата
+      this.paymentAmount.set(Math.round(remaining * 0.2));
+    } else if (type === 'remaining') {
+      this.paymentAmount.set(remaining);
+    }
+  }
+
+  processPayment(): void {
+    const apt = this.paymentAppointment();
+    if (!apt || this.paymentAmount() <= 0) return;
+
+    this.isProcessingPayment.set(true);
+
+    const returnUrl = `${window.location.origin}/client/appointments?payment=success&appointment=${apt.id}`;
+
+    this.walletService.createPayment(
+      apt.id,
+      this.paymentType(),
+      this.paymentAmount(),
+      returnUrl,
+      this.paymentMethod()
+    ).subscribe({
+      next: (payment) => {
+        this.isProcessingPayment.set(false);
+
+        if (payment.confirmationUrl) {
+          this.paymentUrl.set(payment.confirmationUrl);
+          this.notificationService.success('Платёж создан! Перейдите по ссылке для оплаты.');
+        } else {
+          this.notificationService.info('Платёж создан, ожидает обработки');
+          this.closePaymentModal();
+        }
+      },
+      error: (err) => {
+        this.isProcessingPayment.set(false);
+        this.notificationService.error(err.error?.detail || 'Ошибка создания платежа');
+      }
+    });
+  }
+
+  goToPayment(): void {
+    const url = this.paymentUrl();
+    if (url) {
+      window.open(url, '_blank');
+      this.closePaymentModal();
+    }
+  }
+
+  formatMoney(amount: number): string {
+    return new Intl.NumberFormat('ru-RU', {
+      style: 'currency',
+      currency: 'RUB',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(amount);
+  }
+}

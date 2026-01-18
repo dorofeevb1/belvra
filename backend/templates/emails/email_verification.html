@@ -1,0 +1,21 @@
+{% extends "emails/base.html" %}
+{% block title %}Подтвердите email - BeautyBook{% endblock %}
+
+{% block content %}
+<h2>Подтвердите ваш email</h2>
+
+<p>Здравствуйте, {{ name }}!</p>
+
+<p>Для завершения регистрации в BeautyBook, пожалуйста, подтвердите ваш email адрес, нажав на кнопку ниже:</p>
+
+<div style="text-align: center;">
+    <a href="{{ verification_url }}" class="btn">Подтвердить email</a>
+</div>
+
+<p style="font-size: 14px; color: #6b7280;">Ссылка действительна в течение 24 часов.</p>
+
+<p style="font-size: 14px; color: #6b7280;">Если кнопка не работает, скопируйте эту ссылку в браузер:<br>
+<a href="{{ verification_url }}" style="word-break: break-all;">{{ verification_url }}</a></p>
+
+<p>Если вы не регистрировались в BeautyBook, просто проигнорируйте это письмо.</p>
+{% endblock %}
