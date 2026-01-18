@@ -9,7 +9,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import BaseModel
-from apps.services.models import Service
+from apps.services.models import MasterService, Service
 from apps.users.models import MasterProfile, User
 
 
@@ -68,7 +68,16 @@ class Appointment(BaseModel):
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
-        related_name="appointments"
+        related_name="appointments",
+        null=True,
+        blank=True
+    )
+    master_service = models.ForeignKey(
+        MasterService,
+        on_delete=models.SET_NULL,
+        related_name="appointments",
+        null=True,
+        blank=True
     )
     date = models.DateField(db_index=True)
     start_time = models.TimeField()

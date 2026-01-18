@@ -27,14 +27,23 @@ class AppointmentSerializer(serializers.ModelSerializer):
     service = ServiceSerializer(read_only=True)
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     can_cancel = serializers.BooleanField(read_only=True)
+    service_name = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
         fields = [
-            "id", "client", "master", "service", "date", "start_time",
+            "id", "client", "master", "service", "service_name", "date", "start_time",
             "end_time", "status", "status_display", "price", "notes",
             "can_cancel", "created_at"
         ]
+
+    def get_service_name(self, obj):
+        """Get service name from master_service or service."""
+        if obj.master_service:
+            return obj.master_service.name
+        if obj.service:
+            return obj.service.name
+        return None
 
 
 class AppointmentCreateSerializer(serializers.ModelSerializer):
@@ -63,13 +72,21 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         except MasterProfile.DoesNotExist:
             raise serializers.ValidationError({"master_id": "Мастер не найден"})
 
-        try:
-            service = Service.objects.get(id=attrs["service_id"])
-        except Service.DoesNotExist:
-            raise serializers.ValidationError({"service_id": "Услуга не найдена"})
+        service_id = attrs["service_id"]
+        master_service = None
+        service = None
 
-        if not MasterService.objects.filter(master=master, service=service).exists():
-            raise serializers.ValidationError("Мастер не оказывает данную услугу")
+        # Try to find MasterService by ID first (for custom services)
+        try:
+            master_service = MasterService.objects.get(id=service_id, master=master)
+            service = master_service.service  # May be None for custom services
+        except MasterService.DoesNotExist:
+            # Fallback: try to find by catalog Service ID
+            try:
+                service = Service.objects.get(id=service_id)
+                master_service = MasterService.objects.get(master=master, service=service)
+            except (Service.DoesNotExist, MasterService.DoesNotExist):
+                raise serializers.ValidationError({"service_id": "Услуга не найдена"})
 
         schedule = WorkSchedule.objects.filter(
             master=master,
@@ -83,8 +100,6 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         start_time = attrs["start_time"]
         if start_time < schedule.start_time or start_time >= schedule.end_time:
             raise serializers.ValidationError("Выбранное время вне рабочих часов")
-
-        master_service = MasterService.objects.get(master=master, service=service)
         duration = master_service.actual_duration
         end_time = (datetime.combine(attrs["date"], start_time) + timedelta(minutes=duration)).time()
 
@@ -102,7 +117,8 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Это время уже занято")
 
         attrs["master"] = master
-        attrs["service"] = service
+        attrs["service"] = service  # May be None for custom services
+        attrs["master_service"] = master_service
         attrs["end_time"] = end_time
         attrs["price"] = master_service.actual_price
 

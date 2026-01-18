@@ -471,7 +471,12 @@ class AvailableSlotsView(generics.GenericAPIView):
 
         try:
             master = MasterProfile.objects.get(id=master_id)
-            master_service = MasterService.objects.get(master_id=master_id, service_id=service_id)
+            # Try to find MasterService by its ID first (for custom services)
+            # then fallback to finding by catalog service_id
+            try:
+                master_service = MasterService.objects.get(id=service_id, master=master)
+            except MasterService.DoesNotExist:
+                master_service = MasterService.objects.get(master=master, service_id=service_id)
         except (MasterProfile.DoesNotExist, MasterService.DoesNotExist):
             return Response({"slots": []})
 

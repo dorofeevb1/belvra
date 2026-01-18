@@ -18,6 +18,13 @@ export class DataService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private readonly DELAY = 300;
+  private readonly MEDIA_BASE_URL = 'http://localhost:8000';
+
+  private getFullMediaUrl(url: string | null): string {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${this.MEDIA_BASE_URL}${url}`;
+  }
 
   // ==================== MAPPERS ====================
 
@@ -137,10 +144,10 @@ export class DataService {
           id: ms.id, // MasterService ID (for update/delete operations)
           masterId: ms.master?.id || masterId,
           serviceId: ms.service?.id, // Global catalog service ID
-          name: ms.service?.name || ms.name,
-          description: ms.service?.description || '',
-          duration: ms.custom_duration || ms.service?.duration || 60,
-          price: parseFloat(ms.custom_price || ms.service?.price || 0),
+          name: ms.name || ms.service?.name,
+          description: ms.description || ms.service?.description || '',
+          duration: ms.actual_duration || ms.duration || ms.service?.duration || 60,
+          price: parseFloat(ms.actual_price || ms.price || ms.service?.price || 0),
           defaultMaterialsCost: 0,
           category: 'other' as ServiceCategory,
           isActive: ms.is_active !== false
@@ -554,7 +561,7 @@ export class DataService {
     return {
       id: item.id,
       masterId: item.master,
-      imageUrl: item.image,
+      imageUrl: this.getFullMediaUrl(item.image),
       title: item.title,
       description: item.description || '',
       hashtags: item.hashtags || [],

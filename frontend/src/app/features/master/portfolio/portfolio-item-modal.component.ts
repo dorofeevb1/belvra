@@ -115,7 +115,7 @@ import { PortfolioItem, BeautyService } from '../../../core/models';
           <select [(ngModel)]="selectedServiceId" class="input select">
             <option value="">Не выбрана</option>
             @for (service of services(); track service.id) {
-              <option [value]="service.id">{{ service.name }}</option>
+              <option [value]="service.serviceId || ''">{{ service.name }}</option>
             }
           </select>
         </div>

@@ -31,7 +31,7 @@ export class PortfolioComponent implements OnInit {
   }
 
   private loadData(): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.getPortfolio(masterId).subscribe(data => {
@@ -56,7 +56,7 @@ export class PortfolioComponent implements OnInit {
   }
 
   onSave(data: { title: string; description: string; hashtags: string[]; serviceId?: string; imageUrl: string; imageFile?: File }): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     if (this.editingItem()) {

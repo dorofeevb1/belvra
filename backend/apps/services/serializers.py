@@ -172,6 +172,13 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
 class PortfolioItemCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating PortfolioItem."""
 
+    service = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all(),
+        required=False,
+        allow_null=True
+    )
+    is_published = serializers.BooleanField(default=True)
+
     class Meta:
         model = PortfolioItem
         fields = ["id", "title", "description", "image", "service", "hashtags", "is_published"]
