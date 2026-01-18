@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, DataService, NotificationService, WalletService } from '../../../core/services';
 import { Appointment, APPOINTMENT_STATUS_LABELS, PaymentType } from '../../../core/models';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
@@ -19,6 +20,8 @@ export class MyAppointmentsComponent implements OnInit {
   private dataService = inject(DataService);
   private notificationService = inject(NotificationService);
   private walletService = inject(WalletService);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   isLoading = signal(true);
   activeTab = signal<'upcoming' | 'past'>('upcoming');
@@ -56,6 +59,48 @@ export class MyAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
+    this.handlePaymentReturn();
+  }
+
+  private handlePaymentReturn(): void {
+    this.route.queryParams.subscribe(params => {
+      const paymentStatus = params['payment'];
+      const testPayment = params['test_payment'];
+      const paymentId = params['payment_id'];
+
+      if (paymentStatus === 'success' && testPayment && paymentId) {
+        // Confirm test payment
+        this.walletService.confirmTestPayment(paymentId).subscribe({
+          next: () => {
+            this.notificationService.success('Платёж подтверждён!');
+            this.loadData();
+            // Clear query params
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: {},
+              replaceUrl: true
+            });
+          },
+          error: () => {
+            this.notificationService.error('Ошибка подтверждения платежа');
+            this.router.navigate([], {
+              relativeTo: this.route,
+              queryParams: {},
+              replaceUrl: true
+            });
+          }
+        });
+      } else if (paymentStatus === 'success') {
+        this.notificationService.success('Платёж обрабатывается');
+        this.loadData();
+        // Clear query params
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: {},
+          replaceUrl: true
+        });
+      }
+    });
   }
 
   private loadData(): void {
@@ -203,7 +248,7 @@ export class MyAppointmentsComponent implements OnInit {
 
     this.isProcessingPayment.set(true);
 
-    const returnUrl = `${window.location.origin}/client/appointments?payment=success&appointment=${apt.id}`;
+    const returnUrl = `${window.location.origin}/client/my-appointments?payment=success&appointment=${apt.id}`;
 
     this.walletService.createPayment(
       apt.id,

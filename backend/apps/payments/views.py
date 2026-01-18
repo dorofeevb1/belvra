@@ -205,6 +205,30 @@ class PaymentViewSet(ModelViewSet):
 
         return Response(payment_status)
 
+    @action(detail=True, methods=["post"], url_path="confirm-test")
+    def confirm_test(self, request, pk=None):
+        """Confirm a test payment (only works for test mode payments)."""
+        payment = self.get_object()
+
+        # Check if this is a test payment
+        if not payment.payment_metadata.get("test_mode"):
+            return Response(
+                {"error": "Это не тестовый платёж"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if payment.status != Payment.PaymentStatus.PENDING:
+            return Response(
+                {"error": "Платёж уже обработан"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Process as successful payment
+        payment_service = PaymentService()
+        payment_service.process_successful_payment(payment, payment_method="bank_card")
+
+        return Response(PaymentSerializer(payment).data)
+
 
 class ClientPaymentListView(generics.ListAPIView):
     """List payments for current client."""

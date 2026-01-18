@@ -466,6 +466,21 @@ export class WalletService {
     );
   }
 
+  confirmTestPayment(paymentId: string): Observable<PaymentTransaction> {
+    return this.api.confirmTestPayment(paymentId).pipe(
+      map((response: PaymentResponse) => this.mapPaymentResponse(response)),
+      tap(payment => {
+        this.transactionsData.update(list =>
+          list.map(p => p.id === paymentId ? payment : p)
+        );
+      }),
+      catchError(err => {
+        this.error.set(err.error?.detail || 'Ошибка подтверждения платежа');
+        return throwError(() => err);
+      })
+    );
+  }
+
   // ============ Statistics Methods ============
 
   getWalletStats(): Observable<WalletStatsResponse[]> {

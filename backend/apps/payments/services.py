@@ -61,7 +61,9 @@ class YooKassaService:
             # Test mode - return mock response
             if self.test_mode:
                 mock_payment_id = f"test_{uuid.uuid4().hex[:16]}"
-                mock_confirmation_url = f"{return_url}?test_payment={mock_payment_id}"
+                # Add payment_id to URL so frontend can confirm the test payment
+                separator = "&" if "?" in return_url else "?"
+                mock_confirmation_url = f"{return_url}{separator}test_payment={mock_payment_id}&payment_id={payment.id}"
 
                 payment.external_payment_id = mock_payment_id
                 payment.confirmation_url = mock_confirmation_url

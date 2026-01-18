@@ -317,6 +317,10 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/payments/payments/${id}/refund/`, data || {});
   }
 
+  confirmTestPayment(id: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/payments/payments/${id}/confirm-test/`, {});
+  }
+
   // Client payments (history)
   getClientPayments(params?: any): Observable<any> {
     let httpParams = new HttpParams();
