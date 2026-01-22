@@ -183,14 +183,17 @@ export interface NavItem {
       top: 0;
       left: 0;
       z-index: 50;
-      width: 256px;
+      width: 280px;
       height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       background: var(--color-bg-primary);
       border-right: 1px solid var(--color-border-secondary);
       transform: translateX(-100%);
       transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      padding-top: var(--ion-safe-area-top, env(safe-area-inset-top));
+      padding-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom));
     }
 
     .sidebar-open {
@@ -200,6 +203,7 @@ export interface NavItem {
     @media (min-width: 1024px) {
       .sidebar {
         transform: translateX(0);
+        width: 260px;
       }
     }
 

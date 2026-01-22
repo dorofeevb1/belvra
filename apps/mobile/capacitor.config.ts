@@ -46,10 +46,11 @@ const config: CapacitorConfig = {
       splashImmersive: true
     },
 
-    // Status Bar
+    // Status Bar - defaults for light theme, updated dynamically by ThemeService
     StatusBar: {
-      style: 'LIGHT',
-      backgroundColor: '#ec4899'
+      style: 'DARK',
+      backgroundColor: '#f9f7f5',
+      overlaysWebView: false
     },
 
     // Keyboard

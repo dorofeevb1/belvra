@@ -41,9 +41,11 @@ export class PlatformService {
     if (!this.isNative()) return;
 
     try {
-      // Setup status bar
-      await StatusBar.setStyle({ style: Style.Light });
-      await StatusBar.setBackgroundColor({ color: '#ec4899' });
+      // Setup status bar based on saved theme
+      const savedTheme = localStorage.getItem('beautybook_theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
+      await this.updateStatusBarForTheme(isDark);
 
       // Hide splash screen after app is ready
       await SplashScreen.hide();
@@ -118,6 +120,24 @@ export class PlatformService {
   async showKeyboard(): Promise<void> {
     if (this.isNative()) {
       await Keyboard.show();
+    }
+  }
+
+  async updateStatusBarForTheme(isDark: boolean): Promise<void> {
+    if (!this.isNative()) return;
+
+    try {
+      if (isDark) {
+        // Dark theme: light icons on dark background
+        await StatusBar.setStyle({ style: Style.Light });
+        await StatusBar.setBackgroundColor({ color: '#09090b' });
+      } else {
+        // Light theme: dark icons on light background
+        await StatusBar.setStyle({ style: Style.Dark });
+        await StatusBar.setBackgroundColor({ color: '#f9f7f5' });
+      }
+    } catch (error) {
+      console.error('Status bar update error:', error);
     }
   }
 }

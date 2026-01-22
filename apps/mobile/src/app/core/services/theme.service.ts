@@ -1,4 +1,5 @@
-import { Injectable, signal, effect } from '@angular/core';
+import { Injectable, signal, effect, inject } from '@angular/core';
+import { PlatformService } from './platform.service';
 
 export type Theme = 'light' | 'dark';
 
@@ -6,6 +7,7 @@ export type Theme = 'light' | 'dark';
   providedIn: 'root'
 })
 export class ThemeService {
+  private platformService = inject(PlatformService);
   private themeSignal = signal<Theme>(this.getInitialTheme());
 
   readonly theme = this.themeSignal.asReadonly();
@@ -15,6 +17,7 @@ export class ThemeService {
     effect(() => {
       const theme = this.themeSignal();
       this.applyTheme(theme);
+      this.platformService.updateStatusBarForTheme(theme === 'dark');
       localStorage.setItem('beautybook_theme', theme);
     });
   }
