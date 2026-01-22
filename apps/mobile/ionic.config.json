@@ -1,6 +1,8 @@
 {
   "name": "BeautyBook",
-  "integrations": {},
+  "integrations": {
+    "capacitor": {}
+  },
   "type": "angular",
   "id": "5f843242"
 }

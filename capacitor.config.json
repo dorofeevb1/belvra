@@ -1,0 +1,9 @@
+{
+  "appId": "com.beautybook.app",
+  "appName": "BeautyBook",
+  "webDir": "apps/mobile/dist/mobile/browser",
+  "server": {
+    "cleartext": true,
+    "androidScheme": "https"
+  }
+}

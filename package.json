@@ -13,7 +13,10 @@
     "mobile:dev": "npm run dev -w @beautystyle/mobile",
     "mobile:build": "npm run build -w @beautystyle/mobile",
     "mobile:sync": "npm run sync -w @beautystyle/mobile",
-    "shared:build": "npm run build -w @beautystyle/shared"
+    "shared:build": "npm run build -w @beautystyle/shared",
+    "build": "npm run build:prod -w @beautystyle/mobile",
+    "ionic:build": "npm run build:prod -w @beautystyle/mobile",
+    "ionic:capacitor:build": "npm run build:prod -w @beautystyle/mobile"
   },
   "engines": {
     "node": ">=20.0.0"
