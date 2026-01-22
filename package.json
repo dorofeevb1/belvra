@@ -1,0 +1,21 @@
+{
+  "name": "beautystyle-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BeautyStyle Service - Web and Mobile Applications",
+  "workspaces": [
+    "apps/*",
+    "libs/*"
+  ],
+  "scripts": {
+    "web:dev": "npm run dev -w @beautystyle/web",
+    "web:build": "npm run build -w @beautystyle/web",
+    "mobile:dev": "npm run dev -w @beautystyle/mobile",
+    "mobile:build": "npm run build -w @beautystyle/mobile",
+    "mobile:sync": "npm run sync -w @beautystyle/mobile",
+    "shared:build": "npm run build -w @beautystyle/shared"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

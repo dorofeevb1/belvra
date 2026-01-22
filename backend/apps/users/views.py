@@ -1,11 +1,14 @@
+import math
 import secrets
 from datetime import timedelta
 
 from django.conf import settings
 from django.contrib.auth import logout
 from django.core.cache import cache
+from django.db.models import F, FloatField, Value
+from django.db.models.functions import ACos, Cos, Radians, Sin
 from django.utils import timezone
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -26,6 +29,7 @@ from .serializers import (
     FavoriteMasterSerializer,
     LoginSerializer,
     MasterProfileSerializer,
+    MasterWithDistanceSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     TokenSerializer,
@@ -239,6 +243,63 @@ class MasterDetailView(generics.RetrieveAPIView):
     queryset = MasterProfile.objects.select_related("user")
     serializer_class = MasterProfileSerializer
     permission_classes = [AllowAny]
+
+
+@extend_schema(
+    tags=["Мастера"],
+    summary="Поиск мастеров поблизости",
+    description="Поиск мастеров в заданном радиусе от указанной точки (формула Haversine)",
+    parameters=[
+        OpenApiParameter(name="lat", description="Широта пользователя", required=True, type=float),
+        OpenApiParameter(name="lng", description="Долгота пользователя", required=True, type=float),
+        OpenApiParameter(name="radius_km", description="Радиус поиска в километрах (по умолчанию 10)", required=False, type=float),
+    ]
+)
+class MasterGeoSearchView(generics.ListAPIView):
+    """Search for masters within a given radius using Haversine formula."""
+
+    serializer_class = MasterWithDistanceSerializer
+    permission_classes = [AllowAny]
+
+    # Earth radius in kilometers
+    EARTH_RADIUS_KM = 6371.0
+
+    def get_queryset(self):
+        try:
+            lat = float(self.request.query_params.get("lat", 0))
+            lng = float(self.request.query_params.get("lng", 0))
+            radius_km = float(self.request.query_params.get("radius_km", 10))
+        except (ValueError, TypeError):
+            return MasterProfile.objects.none()
+
+        if not lat or not lng:
+            return MasterProfile.objects.none()
+
+        # Filter masters with coordinates
+        queryset = MasterProfile.objects.filter(
+            is_available=True,
+            user__is_active=True,
+            latitude__isnull=False,
+            longitude__isnull=False
+        ).select_related("user")
+
+        # Haversine formula using Django ORM
+        # distance = R * acos(sin(lat1) * sin(lat2) + cos(lat1) * cos(lat2) * cos(lng2 - lng1))
+        lat_rad = math.radians(lat)
+        lng_rad = math.radians(lng)
+
+        queryset = queryset.annotate(
+            distance_km=Value(self.EARTH_RADIUS_KM) * ACos(
+                Sin(Value(lat_rad)) * Sin(Radians(F("latitude"))) +
+                Cos(Value(lat_rad)) * Cos(Radians(F("latitude"))) *
+                Cos(Radians(F("longitude")) - Value(lng_rad)),
+                output_field=FloatField()
+            )
+        ).filter(
+            distance_km__lte=radius_km
+        ).order_by("distance_km")
+
+        return queryset
 
 
 @extend_schema(

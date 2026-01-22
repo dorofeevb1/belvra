@@ -20,7 +20,7 @@ class AIService:
         self.perplexity_model = "sonar"
         self.perplexity_url = "https://api.perplexity.ai/chat/completions"
         self.ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
-        self.ollama_vision_model = "llava:7b"
+        self.ollama_vision_model = "moondream:1.8b-v2-q4_K_M"
 
     def _make_perplexity_request(self, messages: list[dict], max_tokens: int = 1024) -> dict | None:
         """Make a request to the Perplexity API."""
@@ -71,7 +71,7 @@ class AIService:
                 url,
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                timeout=120
+                timeout=300
             )
             response.raise_for_status()
             return response.json()
@@ -108,6 +108,114 @@ class AIService:
             pass
         return None
 
+    def analyze_photo(self, image_base64: str, analysis_type: str = "general") -> dict[str, Any]:
+        """
+        Perform comprehensive photo analysis using Ollama LLaVA.
+
+        Args:
+            image_base64: Base64 encoded image data
+            analysis_type: Type of analysis - "general", "style", "quality", "recommendation"
+
+        Returns:
+            Dict with analysis results
+        """
+        prompts = {
+            "general": """Проанализируй это изображение, связанное с бьюти-индустрией.
+
+Определи и опиши:
+1. Что изображено на фото (тип услуги, работа мастера, лицо клиента и т.д.)
+2. Детальное описание того, что ты видишь
+3. Ключевые особенности и детали
+4. Качество фотографии
+
+Ответь СТРОГО в JSON формате:
+{
+  "type": "тип изображения (маникюр/макияж/прическа/лицо/другое)",
+  "description": "Подробное описание на русском языке (3-5 предложений)",
+  "details": ["деталь1", "деталь2", "деталь3"],
+  "colors": ["цвет1", "цвет2"],
+  "photo_quality": "отличное/хорошее/среднее/плохое",
+  "confidence": 0.0-1.0
+}""",
+            "style": """Проанализируй стиль и тренды на этом бьюти-изображении.
+
+Определи:
+1. Текущий стиль (классика, модерн, авангард и т.д.)
+2. Актуальные тренды, которые использованы
+3. Целевую аудиторию
+4. Подходящие случаи для такого образа
+
+Ответь СТРОГО в JSON формате:
+{
+  "style": "название стиля",
+  "trends": ["тренд1", "тренд2"],
+  "target_audience": "описание целевой аудитории",
+  "occasions": ["повседневный", "вечерний", "свадебный", "деловой"],
+  "season": "весна/лето/осень/зима/универсальный",
+  "similar_styles": ["похожий стиль 1", "похожий стиль 2"]
+}""",
+            "quality": """Оцени качество работы бьюти-мастера на этом изображении.
+
+Проанализируй:
+1. Техническое исполнение
+2. Аккуратность работы
+3. Соответствие трендам
+4. Общее впечатление
+
+Ответь СТРОГО в JSON формате:
+{
+  "overall_score": 1-10,
+  "technical_score": 1-10,
+  "creativity_score": 1-10,
+  "cleanliness_score": 1-10,
+  "strengths": ["сильная сторона 1", "сильная сторона 2"],
+  "improvements": ["что можно улучшить 1", "что можно улучшить 2"],
+  "professional_level": "начинающий/средний/профессионал/эксперт",
+  "feedback": "Общий отзыв о работе на русском языке"
+}""",
+            "recommendation": """На основе этого изображения (лицо/внешность клиента или текущий образ), предложи рекомендации по бьюти-услугам.
+
+Определи:
+1. Тип внешности/лица
+2. Подходящие услуги и стили
+3. Цветовую палитру
+4. Рекомендации по уходу
+
+Ответь СТРОГО в JSON формате:
+{
+  "face_shape": "форма лица если видно (овал/круг/квадрат/сердце/прямоугольник)",
+  "skin_tone": "тон кожи если видно",
+  "recommended_services": [
+    {"service": "название услуги", "reason": "почему подходит"}
+  ],
+  "color_palette": ["подходящий цвет 1", "подходящий цвет 2"],
+  "style_recommendations": ["рекомендация 1", "рекомендация 2"],
+  "care_tips": ["совет по уходу 1", "совет по уходу 2"]
+}"""
+        }
+
+        prompt = prompts.get(analysis_type, prompts["general"])
+        response = self._make_ollama_vision_request(image_base64, prompt)
+
+        if not response:
+            return {"error": "Не удалось проанализировать изображение", "analysis_type": analysis_type}
+
+        try:
+            text = self._extract_ollama_text(response)
+            parsed = self._extract_json(text)
+            if parsed:
+                parsed["analysis_type"] = analysis_type
+                parsed["raw_response"] = text[:500] if len(text) > 500 else text
+                return parsed
+        except Exception as e:
+            logger.error(f"Error parsing photo analysis: {e}")
+
+        return {
+            "error": "Не удалось распарсить ответ",
+            "analysis_type": analysis_type,
+            "raw_response": self._extract_ollama_text(response) if response else ""
+        }
+
     def generate_portfolio_content(self, image_base64: str) -> dict[str, Any]:
         """
         Generate description and hashtags for a portfolio image using Ollama LLaVA.
@@ -118,22 +226,10 @@ class AIService:
         Returns:
             Dict with 'description' and 'hashtags' keys
         """
-        prompt = """Проанализируй это изображение работы бьюти-мастера (маникюр, макияж, прическа, брови и т.д.).
+        prompt = """Describe this beauty work image (manicure, makeup, hairstyle, etc).
 
-Определи:
-1. Какой тип работы изображён (маникюр, педикюр, макияж, причёска, брови, ресницы и т.д.)
-2. Особенности работы (цвет, техника, стиль)
-3. Качество исполнения
-
-Сгенерируй профессиональное описание для портфолио мастера и релевантные хештеги.
-
-Ответь СТРОГО в JSON формате без дополнительного текста:
-{
-  "description": "Профессиональное описание работы на русском языке (2-3 предложения, описывающие конкретно ЭТУ работу)",
-  "hashtags": ["хештег1", "хештег2", "хештег3", "хештег4", "хештег5"]
-}
-
-Хештеги должны быть на русском языке, без символа #, релевантные именно этой работе."""
+Return JSON only:
+{"description": "2-3 sentences about this work in Russian", "hashtags": ["tag1", "tag2", "tag3"]}"""
 
         response = self._make_ollama_vision_request(image_base64, prompt)
 

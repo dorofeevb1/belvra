@@ -84,3 +84,44 @@ class Notification(BaseModel):
             self.is_read = True
             self.read_at = timezone.now()
             self.save(update_fields=["is_read", "read_at", "updated_at"])
+
+
+class DeviceToken(BaseModel):
+    """Push notification device token model for mobile apps."""
+
+    class Platform(models.TextChoices):
+        IOS = "ios", "iOS"
+        ANDROID = "android", "Android"
+        WEB = "web", "Web"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="device_tokens"
+    )
+    token = models.CharField(max_length=512, unique=True, db_index=True)
+    platform = models.CharField(
+        max_length=10,
+        choices=Platform.choices,
+        default=Platform.ANDROID
+    )
+    device_name = models.CharField(max_length=255, blank=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    last_used_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Токен устройства"
+        verbose_name_plural = "Токены устройств"
+        ordering = ["-last_used_at"]
+        indexes = [
+            models.Index(fields=["user", "is_active"]),
+            models.Index(fields=["platform", "is_active"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.email} - {self.platform} - {self.token[:20]}..."
+
+    def deactivate(self):
+        """Deactivate this device token."""
+        self.is_active = False
+        self.save(update_fields=["is_active", "updated_at"])

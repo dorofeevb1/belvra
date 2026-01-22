@@ -43,6 +43,8 @@ services:
       dockerfile: Dockerfile.dev
     container_name: beautystyle_backend
     command: python manage.py runserver 0.0.0.0:8000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend:/app:z
       - backend_static:/app/staticfiles
@@ -62,25 +64,23 @@ services:
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
       - CORS_ALLOWED_ORIGINS=http://localhost:4200,http://localhost:80,http://localhost
-      - OLLAMA_URL=http://ollama:11434
+      - OLLAMA_URL=http://host.docker.internal:11434
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      ollama:
-        condition: service_started
     networks:
       - beautystyle_network
 
-  # Angular Frontend
-  frontend:
+  # Angular Frontend (Web)
+  web:
     build:
-      context: ./frontend
+      context: ./apps/web
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_frontend
+    container_name: beautystyle_web
     volumes:
-      - ./frontend:/app:z
+      - ./apps/web:/app:z
       - /app/node_modules
     ports:
       - "4200:4200"
@@ -154,7 +154,7 @@ services:
       - backend_media:/var/www/media:ro
     depends_on:
       - backend
-      - frontend
+      - web
     networks:
       - beautystyle_network
 

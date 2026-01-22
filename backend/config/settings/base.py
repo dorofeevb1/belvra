@@ -48,6 +48,7 @@ LOCAL_APPS = [
     "apps.services",
     "apps.appointments",
     "apps.payments",
+    "apps.subscriptions",
     "apps.chat",
     "apps.todo",
     "apps.ai",
@@ -211,6 +212,54 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
+
+# Celery Beat Schedule
+from celery.schedules import crontab
+
+CELERY_BEAT_SCHEDULE = {
+    # Appointment tasks
+    "send-appointment-reminders": {
+        "task": "apps.appointments.tasks.send_appointment_reminders",
+        "schedule": crontab(hour=9, minute=0),  # Every day at 9:00
+    },
+    "mark-no-show-appointments": {
+        "task": "apps.appointments.tasks.mark_no_show_appointments",
+        "schedule": crontab(hour=0, minute=30),  # Every day at 00:30
+    },
+    "cleanup-old-appointments": {
+        "task": "apps.appointments.tasks.cleanup_old_appointments",
+        "schedule": crontab(hour=3, minute=0, day_of_week=0),  # Every Sunday at 3:00
+    },
+    "send-completion-reminder": {
+        "task": "apps.appointments.tasks.send_completion_reminder",
+        "schedule": crontab(minute="*/15"),  # Every 15 minutes
+    },
+    # Subscription tasks
+    "check-expiring-subscriptions": {
+        "task": "apps.subscriptions.tasks.check_expiring_subscriptions",
+        "schedule": crontab(hour=10, minute=0),  # Every day at 10:00
+    },
+    "renew-subscriptions": {
+        "task": "apps.subscriptions.tasks.renew_subscriptions",
+        "schedule": crontab(hour=6, minute=0),  # Every day at 6:00
+    },
+    "expire-subscriptions": {
+        "task": "apps.subscriptions.tasks.expire_subscriptions",
+        "schedule": crontab(hour=1, minute=0),  # Every day at 1:00
+    },
+    "downgrade-to-free": {
+        "task": "apps.subscriptions.tasks.downgrade_to_free",
+        "schedule": crontab(hour=2, minute=0),  # Every day at 2:00
+    },
+    "reset-monthly-usage": {
+        "task": "apps.subscriptions.tasks.reset_monthly_usage",
+        "schedule": crontab(hour=0, minute=5, day_of_month=1),  # 1st of each month at 00:05
+    },
+    "notify-past-due-subscriptions": {
+        "task": "apps.subscriptions.tasks.notify_past_due_subscriptions",
+        "schedule": crontab(hour=11, minute=0),  # Every day at 11:00
+    },
+}
 
 # API Documentation
 SPECTACULAR_SETTINGS = {
@@ -419,6 +468,27 @@ UNFOLD = {
                         "title": "Реквизиты выплат",
                         "icon": "credit_card",
                         "link": "/admin/payments/payoutdestination/",
+                    },
+                ],
+            },
+            {
+                "title": "Подписки",
+                "separator": True,
+                "items": [
+                    {
+                        "title": "Планы подписок",
+                        "icon": "card_membership",
+                        "link": "/admin/subscriptions/subscriptionplan/",
+                    },
+                    {
+                        "title": "Подписки",
+                        "icon": "subscriptions",
+                        "link": "/admin/subscriptions/subscription/",
+                    },
+                    {
+                        "title": "Платежи за подписки",
+                        "icon": "receipt_long",
+                        "link": "/admin/subscriptions/subscriptionpayment/",
                     },
                 ],
             },

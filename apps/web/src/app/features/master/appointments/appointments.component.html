@@ -1,0 +1,196 @@
+<div class="appointments-page animate-fadeInUp">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Записи</h1>
+      <p class="page-subtitle">Управление заявками и историей записей</p>
+    </div>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button
+      type="button"
+      (click)="activeTab.set('pending')"
+      class="tab"
+      [class.active]="activeTab() === 'pending'"
+    >
+      Новые заявки
+      @if (pendingCount() > 0) {
+        <span class="badge badge-primary">{{ pendingCount() }}</span>
+      }
+    </button>
+    <button
+      type="button"
+      (click)="activeTab.set('history')"
+      class="tab"
+      [class.active]="activeTab() === 'history'"
+    >
+      История
+    </button>
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner spinner-lg"></div>
+    </div>
+  } @else if (activeTab() === 'pending') {
+    <!-- Pending Appointments -->
+    @if (pendingAppointments().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">Нет новых заявок</h3>
+        <p class="empty-state-desc">Когда клиенты запишутся к вам, заявки появятся здесь</p>
+      </div>
+    } @else {
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Клиент</th>
+                <th>Услуга</th>
+                <th>Дата и время</th>
+                <th class="text-right">Цена</th>
+                <th class="text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (apt of pendingAppointments(); track apt.id) {
+                <tr>
+                  <td>
+                    <div class="client-info">
+                      <span class="client-name">{{ apt.clientName }}</span>
+                      <span class="client-phone">{{ apt.clientPhone }}</span>
+                    </div>
+                  </td>
+                  <td>{{ apt.serviceName }}</td>
+                  <td>
+                    <div class="date-time">
+                      <span class="date">{{ apt.date | dateFormat:'full' }}</span>
+                      <span class="time">{{ apt.startTime }} - {{ apt.endTime }}</span>
+                    </div>
+                  </td>
+                  <td class="text-right font-medium">{{ apt.price | currencyRub }}</td>
+                  <td>
+                    <div class="actions">
+                      <button type="button" (click)="confirmAppointment(apt)" class="btn btn-success btn-sm">
+                        Подтвердить
+                      </button>
+                      <button type="button" (click)="openReschedule(apt)" class="btn btn-secondary btn-sm">
+                        Перенести
+                      </button>
+                      <button type="button" (click)="cancelAppointment(apt)" class="btn btn-danger btn-sm">
+                        Отклонить
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  } @else {
+    <!-- History -->
+    <!-- Filters -->
+    <div class="card filters-card">
+      <div class="filters">
+        <div class="filter-group">
+          <label class="label">Месяц</label>
+          <select [(ngModel)]="filterMonth" class="select">
+            <option value="">Все</option>
+            @for (month of months; track month.value) {
+              <option [value]="month.value">{{ month.label }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group">
+          <label class="label">Год</label>
+          <select [(ngModel)]="filterYear" class="select">
+            <option value="">Все</option>
+            @for (year of years; track year) {
+              <option [value]="year">{{ year }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    @if (filteredHistory().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">
+          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <h3 class="empty-state-title">Нет записей</h3>
+        <p class="empty-state-desc">История записей пуста</p>
+      </div>
+    } @else {
+      <div class="card table-card">
+        <div class="table-scroll">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Клиент</th>
+                <th>Услуга</th>
+                <th>Дата</th>
+                <th>Статус</th>
+                <th class="text-right">Цена</th>
+                <th class="text-right">Действия</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (apt of filteredHistory(); track apt.id) {
+                <tr>
+                  <td class="font-medium">{{ apt.clientName }}</td>
+                  <td>{{ apt.serviceName }}</td>
+                  <td>{{ apt.date | dateFormat:'full' }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusColor(apt.status)">
+                      {{ getStatusLabel(apt.status) }}
+                    </span>
+                  </td>
+                  <td class="text-right font-medium">{{ apt.price | currencyRub }}</td>
+                  <td class="text-right">
+                    @if (apt.status === 'confirmed') {
+                      <button type="button" (click)="completeAppointment(apt)" class="btn btn-success btn-sm">
+                        Завершить
+                      </button>
+                    }
+                    @if (apt.status === 'completed') {
+                      <button type="button" (click)="openMaterials(apt)" class="btn btn-secondary btn-sm">
+                        Материалы
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Reschedule Modal -->
+  <app-reschedule-modal
+    [isOpen]="showRescheduleModal()"
+    [appointment]="selectedAppointment()"
+    (close)="showRescheduleModal.set(false)"
+    (reschedule)="onReschedule($event)"
+  />
+
+  <!-- Materials Modal -->
+  <app-materials-modal
+    [isOpen]="showMaterialsModal()"
+    [appointment]="selectedAppointment()"
+    (close)="showMaterialsModal.set(false)"
+    (save)="onSaveMaterials($event)"
+  />
+</div>

@@ -1,0 +1,822 @@
+<div class="calendar-page animate-fadeInUp">
+  <!-- Header -->
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Календарь</h1>
+      <p class="page-subtitle">Управление расписанием и задачами</p>
+    </div>
+
+    <div class="tabs tabs-pills">
+      <button
+        type="button"
+        (click)="viewMode.set('calendar')"
+        class="tab"
+        [class.active]="viewMode() === 'calendar'"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        Календарь
+      </button>
+      <button
+        type="button"
+        (click)="viewMode.set('kanban')"
+        class="tab"
+        [class.active]="viewMode() === 'kanban'"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"></path>
+        </svg>
+        Kanban
+      </button>
+    </div>
+  </header>
+
+  @if (viewMode() === 'calendar') {
+    <!-- Desktop Calendar View -->
+    <div class="card desktop-calendar">
+      <div class="calendar-nav">
+        <div class="calendar-nav-left">
+          <button type="button" (click)="navigateWeek(-1)" class="btn btn-ghost btn-icon">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+            </svg>
+          </button>
+
+          <h2 class="calendar-title">{{ weekRangeText() }}</h2>
+
+          <button type="button" (click)="navigateWeek(1)" class="btn btn-ghost btn-icon">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+        </div>
+
+        @if (!isCurrentWeek()) {
+          <button type="button" (click)="goToToday()" class="btn btn-outline btn-sm">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            Сегодня
+          </button>
+        }
+      </div>
+
+      <!-- Week Grid -->
+      <div class="week-calendar-scroll">
+        <div class="week-calendar-grid">
+          <!-- Header Row -->
+          <div class="week-calendar-header">
+            <div class="week-time-header"></div>
+            @for (day of weekDays(); track day.date; let i = $index) {
+              <div class="week-day-header" [class.today]="day.isToday">
+                <span class="weekday">{{ day.weekDay }}</span>
+                <span class="day-num" [class.today]="day.isToday">{{ day.dayNum }}</span>
+              </div>
+            }
+          </div>
+
+          <!-- Time Grid -->
+          <div class="week-calendar-body">
+            <!-- Current Time Indicator -->
+            @if (isCurrentWeek() && currentTimePosition() !== null && todayColumnIndex() >= 0) {
+              <div
+                class="current-time-indicator"
+                [style.top.px]="currentTimePosition()"
+                [style.left]="'calc(60px + ' + todayColumnIndex() + ' * (100% - 60px) / 7)'"
+                [style.width]="'calc((100% - 60px) / 7)'"
+              >
+                <div class="current-time-dot"></div>
+                <div class="current-time-line"></div>
+              </div>
+            }
+
+            @for (hour of timeSlots; track hour) {
+              <div class="week-calendar-row">
+                <div class="week-time-cell">
+                  <span>{{ hour }}:00</span>
+                </div>
+                @for (day of weekDays(); track day.date) {
+                  <div
+                    class="week-day-cell"
+                    [class.today]="day.isToday"
+                    (click)="onCellClick(day.date, hour)"
+                  >
+                    @for (apt of getAppointmentsForSlot(day.date, hour); track apt.id) {
+                      <div
+                        class="appointment-block"
+                        [ngClass]="getAppointmentColor(apt.status)"
+                        [ngStyle]="getAppointmentStyle(apt, day.date, hour)"
+                        [title]="apt.clientName + ' - ' + apt.serviceName"
+                        (click)="onAppointmentClick(apt, $event)"
+                      >
+                        <div class="appointment-time">{{ apt.startTime }}</div>
+                        <div class="appointment-client">{{ apt.clientName }}</div>
+                        <div class="appointment-service">{{ apt.serviceName }}</div>
+                      </div>
+                    }
+                    @for (reminder of getRemindersForSlot(day.date, hour); track reminder.id) {
+                      @if (getReminderStyle(reminder, day.date, hour); as style) {
+                        <div
+                          class="reminder-block"
+                          [class.done]="reminder.status === 'done'"
+                          [class.priority-low]="reminder.priority === 'low'"
+                          [class.priority-medium]="reminder.priority === 'medium'"
+                          [class.priority-high]="reminder.priority === 'high'"
+                          [ngStyle]="style"
+                          [title]="reminder.title"
+                          (click)="onReminderClick(reminder, $event)"
+                        >
+                          <div class="reminder-time">{{ reminder.time }}</div>
+                          <div class="reminder-title">{{ reminder.title }}</div>
+                          <button type="button" class="reminder-check" (click)="toggleTodo(reminder); $event.stopPropagation()">
+                            @if (reminder.status === 'done') {
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                              </svg>
+                            }
+                          </button>
+                        </div>
+                      }
+                    }
+                    @if (getHiddenRemindersCount(day.date, hour) > 0) {
+                      <button
+                        type="button"
+                        class="hidden-reminders-badge"
+                        (click)="showAllSlotReminders(day.date, hour, $event)"
+                      >
+                        +{{ getHiddenRemindersCount(day.date, hour) }}
+                      </button>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Calendar View -->
+    <div class="card mobile-calendar">
+      <!-- Day Selector -->
+      <div class="mobile-day-selector">
+        <button type="button" (click)="navigateDay(-1)" class="btn btn-ghost btn-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+
+        <div class="mobile-day-tabs">
+          @for (day of weekDays(); track day.date; let i = $index) {
+            <button
+              type="button"
+              class="mobile-day-tab"
+              [class.active]="selectedDayIndex() === i"
+              [class.today]="day.isToday"
+              (click)="selectDay(i)"
+            >
+              <span class="day-name">{{ day.weekDay }}</span>
+              <span class="day-number" [class.today]="day.isToday">{{ day.dayNum }}</span>
+            </button>
+          }
+        </div>
+
+        <button type="button" (click)="navigateDay(1)" class="btn btn-ghost btn-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Week range info -->
+      <div class="mobile-week-info">
+        <span>{{ weekRangeText() }}</span>
+        @if (!isCurrentWeek()) {
+          <button type="button" (click)="goToToday()" class="btn btn-ghost btn-xs">
+            Сегодня
+          </button>
+        }
+      </div>
+
+      <!-- Day Schedule -->
+      <div class="mobile-day-schedule">
+        @for (apt of getAppointmentsForDay(selectedDay().date); track apt.id) {
+          <div
+            class="mobile-appointment"
+            [ngClass]="getAppointmentColor(apt.status)"
+            (click)="onAppointmentClick(apt, $event)"
+          >
+            <div class="mobile-apt-time">
+              <span class="time-start">{{ apt.startTime }}</span>
+              <span class="time-divider">-</span>
+              <span class="time-end">{{ formatEndTime(apt.startTime, apt.duration) }}</span>
+            </div>
+            <div class="mobile-apt-info">
+              <div class="mobile-apt-client">{{ apt.clientName }}</div>
+              <div class="mobile-apt-service">{{ apt.serviceName }}</div>
+            </div>
+            <svg class="mobile-apt-arrow w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+          </div>
+        }
+        @for (reminder of getRemindersForDay(selectedDay().date); track reminder.id) {
+          <div
+            class="mobile-reminder"
+            [class.done]="reminder.status === 'done'"
+            [class.priority-low]="reminder.priority === 'low'"
+            [class.priority-medium]="reminder.priority === 'medium'"
+            [class.priority-high]="reminder.priority === 'high'"
+            (click)="onReminderClick(reminder, $event)"
+          >
+            <div class="mobile-reminder-time">
+              <span>{{ reminder.time }}</span>
+            </div>
+            <div class="mobile-reminder-info">
+              <div class="mobile-reminder-title">{{ reminder.title }}</div>
+            </div>
+            <button type="button" class="mobile-reminder-check" (click)="toggleTodo(reminder); $event.stopPropagation()">
+              @if (reminder.status === 'done') {
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              } @else {
+                <div class="check-circle"></div>
+              }
+            </button>
+          </div>
+        }
+        @if (getAppointmentsForDay(selectedDay().date).length === 0 && getRemindersForDay(selectedDay().date).length === 0) {
+          <div class="mobile-empty">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+            <p>Нет записей на этот день</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Today's Tasks -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-header-left">
+          <h3 class="card-title">Задачи на сегодня</h3>
+          @if (todayTodos().length > 0) {
+            <span class="todo-counter">{{ completedTodosCount() }}/{{ todayTodos().length }}</span>
+          }
+        </div>
+        <button type="button" (click)="addQuickTodo()" class="btn btn-ghost btn-sm">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Добавить
+        </button>
+      </div>
+
+      <div class="card-body">
+        <!-- Quick Add Input -->
+        @if (showQuickAdd()) {
+          <div class="todo-add animate-fadeIn">
+            <input
+              type="text"
+              [(ngModel)]="newTodoTitle"
+              (keyup.enter)="saveQuickTodo()"
+              (keyup.escape)="showQuickAdd.set(false)"
+              placeholder="Введите задачу..."
+              class="input"
+              #todoInput
+            />
+            <button type="button" (click)="saveQuickTodo()" class="btn btn-primary">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </button>
+            <button type="button" (click)="showQuickAdd.set(false)" class="btn btn-ghost">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+              </svg>
+            </button>
+          </div>
+        }
+
+        <div class="todo-list">
+          @for (todo of todayTodos(); track todo.id) {
+            <div class="todo-item" [class.completed]="todo.status === 'done'">
+              <button
+                type="button"
+                (click)="toggleTodo(todo)"
+                class="todo-checkbox"
+                [class.checked]="todo.status === 'done'"
+              >
+                @if (todo.status === 'done') {
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                }
+              </button>
+              <span class="todo-text" [class.done]="todo.status === 'done'">{{ todo.title }}</span>
+              <button type="button" (click)="deleteTodo(todo.id)" class="todo-delete btn btn-ghost btn-icon-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          } @empty {
+            <div class="empty-state-sm">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+              </svg>
+              <p>Нет задач на сегодня</p>
+              <button type="button" (click)="addQuickTodo()" class="btn btn-ghost btn-sm">
+                Добавить задачу
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  } @else {
+    <app-kanban-board
+      [todos]="allTodos()"
+      (todoUpdated)="onTodoUpdated($event)"
+      (todoAdded)="onTodoAdded($event)"
+      (todoDeleted)="deleteTodo($event)"
+    />
+  }
+</div>
+
+<!-- Appointment Detail Modal -->
+<app-modal
+  [isOpen]="showAppointmentModal()"
+  [title]="'Детали записи'"
+  size="md"
+  (closeModal)="closeAppointmentModal()"
+>
+  @if (selectedAppointment(); as apt) {
+    <div class="appointment-detail">
+      <div class="detail-status" [ngClass]="getAppointmentColor(apt.status)">
+        {{ getStatusLabel(apt.status) }}
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Клиент</div>
+          <div class="detail-value">{{ apt.clientName }}</div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Услуга</div>
+          <div class="detail-value">{{ apt.serviceName }}</div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Дата</div>
+          <div class="detail-value">{{ formatDate(apt.date) }}</div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Время</div>
+          <div class="detail-value">{{ apt.startTime }} - {{ formatEndTime(apt.startTime, apt.duration) }} ({{ apt.duration }} мин)</div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <div class="detail-icon">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <div class="detail-content">
+          <div class="detail-label">Стоимость</div>
+          <div class="detail-value detail-price">{{ apt.price | number }} ₽</div>
+        </div>
+      </div>
+
+      @if (apt.notes) {
+        <div class="detail-section">
+          <div class="detail-icon">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path>
+            </svg>
+          </div>
+          <div class="detail-content">
+            <div class="detail-label">Заметки</div>
+            <div class="detail-value detail-comment">{{ apt.notes }}</div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="closeAppointmentModal()" class="btn btn-ghost">
+      Закрыть
+    </button>
+    <button type="button" (click)="openRescheduleModal()" class="btn btn-outline">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+      </svg>
+      Перенести
+    </button>
+    @if (selectedAppointment()?.clientPhone) {
+      <a [href]="'https://t.me/' + selectedAppointment()?.clientPhone" target="_blank" class="btn btn-primary">
+        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+        </svg>
+        Написать в ЛС
+      </a>
+    }
+  </div>
+</app-modal>
+
+<!-- Create Reminder Modal -->
+<app-modal
+  [isOpen]="showCreateModal()"
+  [title]="'Добавить напоминание'"
+  size="sm"
+  (closeModal)="closeCreateModal()"
+>
+  @if (createSlot(); as slot) {
+    <div class="reminder-form">
+      <div class="reminder-date-info">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+        <span>{{ formatDate(slot.date) }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Напоминание</label>
+        <input
+          type="text"
+          class="input"
+          [value]="reminderTitle()"
+          (input)="reminderTitle.set($any($event.target).value)"
+          placeholder="Написать клиенту в ЛС, Подготовить материалы..."
+          autofocus
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Время</label>
+        <div class="time-slots-grid">
+          @for (timeOption of availableTimeSlots; track timeOption) {
+            <button
+              type="button"
+              class="time-slot-btn"
+              [class.active]="reminderTime() === timeOption"
+              (click)="reminderTime.set(timeOption)"
+            >
+              {{ timeOption }}
+            </button>
+          }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Приоритет</label>
+        <div class="priority-selector">
+          <button
+            type="button"
+            class="priority-btn low"
+            [class.active]="reminderPriority() === 'low'"
+            (click)="reminderPriority.set('low')"
+          >
+            Низкий
+          </button>
+          <button
+            type="button"
+            class="priority-btn medium"
+            [class.active]="reminderPriority() === 'medium'"
+            (click)="reminderPriority.set('medium')"
+          >
+            Средний
+          </button>
+          <button
+            type="button"
+            class="priority-btn high"
+            [class.active]="reminderPriority() === 'high'"
+            (click)="reminderPriority.set('high')"
+          >
+            Высокий
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="closeCreateModal()" class="btn btn-ghost" [disabled]="isSavingReminder()">
+      Отмена
+    </button>
+    <button
+      type="button"
+      (click)="saveReminder()"
+      class="btn btn-primary"
+      [disabled]="!reminderTitle() || isSavingReminder()"
+    >
+      @if (isSavingReminder()) {
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Сохранение...
+      } @else {
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        Добавить
+      }
+    </button>
+  </div>
+</app-modal>
+
+<!-- Reschedule Appointment Modal -->
+<app-modal
+  [isOpen]="showRescheduleModal()"
+  [title]="'Перенести запись'"
+  size="sm"
+  (closeModal)="closeRescheduleModal()"
+>
+  @if (selectedAppointment(); as apt) {
+    <div class="reschedule-form">
+      <div class="reschedule-info">
+        <div class="reschedule-client">{{ apt.clientName }}</div>
+        <div class="reschedule-service">{{ apt.serviceName }} ({{ apt.duration }} мин)</div>
+      </div>
+
+      <div class="reschedule-current">
+        <span class="current-label">Текущая дата:</span>
+        <span class="current-value">{{ formatDate(apt.date) }}, {{ apt.startTime }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Новая дата</label>
+        <input
+          type="date"
+          class="input"
+          [value]="rescheduleDate()"
+          (input)="rescheduleDate.set($any($event.target).value)"
+          [min]="getMinDate()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Новое время</label>
+        <div class="time-slots-grid">
+          @for (slot of availableTimeSlots; track slot) {
+            <button
+              type="button"
+              class="time-slot-btn"
+              [class.active]="rescheduleTime() === slot"
+              (click)="rescheduleTime.set(slot)"
+            >
+              {{ slot }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="closeRescheduleModal()" class="btn btn-ghost" [disabled]="isRescheduling()">
+      Отмена
+    </button>
+    <button
+      type="button"
+      (click)="confirmReschedule()"
+      class="btn btn-primary"
+      [disabled]="!rescheduleDate() || !rescheduleTime() || isRescheduling()"
+    >
+      @if (isRescheduling()) {
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Сохранение...
+      } @else {
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Подтвердить
+      }
+    </button>
+  </div>
+</app-modal>
+
+<!-- Reminder Detail Modal -->
+<app-modal
+  [isOpen]="showReminderModal()"
+  [title]="'Напоминание'"
+  size="sm"
+  (closeModal)="closeReminderModal()"
+>
+  @if (selectedReminder(); as reminder) {
+    <div class="reminder-detail">
+      <div class="reminder-detail-header">
+        <div class="reminder-detail-icon" [class.done]="reminder.status === 'done'">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+          </svg>
+        </div>
+        <div class="reminder-detail-title">{{ reminder.title }}</div>
+      </div>
+
+      <div class="reminder-detail-info">
+        <div class="detail-row">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+          <span>{{ formatDate(reminder.date) }}</span>
+        </div>
+        @if (reminder.time) {
+          <div class="detail-row">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>{{ reminder.time }}</span>
+          </div>
+        }
+        <div class="detail-row">
+          <span class="status-badge" [class.done]="reminder.status === 'done'">
+            {{ reminder.status === 'done' ? 'Выполнено' : 'Активно' }}
+          </span>
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="deleteReminder()" class="btn btn-ghost text-error">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+      </svg>
+      Удалить
+    </button>
+    <button type="button" (click)="openRescheduleReminderModal()" class="btn btn-outline">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+      </svg>
+      Перенести
+    </button>
+    <button type="button" (click)="closeReminderModal()" class="btn btn-primary">
+      Закрыть
+    </button>
+  </div>
+</app-modal>
+
+<!-- Reschedule Reminder Modal -->
+<app-modal
+  [isOpen]="showRescheduleReminderModal()"
+  [title]="'Перенести напоминание'"
+  size="sm"
+  (closeModal)="closeRescheduleReminderModal()"
+>
+  @if (selectedReminder(); as reminder) {
+    <div class="reschedule-form">
+      <div class="reschedule-info">
+        <div class="reschedule-client">{{ reminder.title }}</div>
+      </div>
+
+      <div class="reschedule-current">
+        <span class="current-label">Текущее время:</span>
+        <span class="current-value">{{ formatDate(reminder.date) }}, {{ reminder.time }}</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Новая дата</label>
+        <input
+          type="date"
+          class="input"
+          [value]="reminderNewDate()"
+          (input)="reminderNewDate.set($any($event.target).value)"
+          [min]="getMinDate()"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Новое время</label>
+        <div class="time-slots-grid">
+          @for (timeOption of availableTimeSlots; track timeOption) {
+            <button
+              type="button"
+              class="time-slot-btn"
+              [class.active]="reminderNewTime() === timeOption"
+              (click)="reminderNewTime.set(timeOption)"
+            >
+              {{ timeOption }}
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="closeRescheduleReminderModal()" class="btn btn-ghost" [disabled]="isReschedulingReminder()">
+      Отмена
+    </button>
+    <button
+      type="button"
+      (click)="confirmRescheduleReminder()"
+      class="btn btn-primary"
+      [disabled]="!reminderNewDate() || !reminderNewTime() || isReschedulingReminder()"
+    >
+      @if (isReschedulingReminder()) {
+        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Сохранение...
+      } @else {
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        Подтвердить
+      }
+    </button>
+  </div>
+</app-modal>
+
+<!-- Slot Reminders Modal -->
+<app-modal
+  [isOpen]="showSlotRemindersModal()"
+  [title]="'Напоминания'"
+  size="sm"
+  (closeModal)="closeSlotRemindersModal()"
+>
+  @if (selectedSlot(); as slot) {
+    <div class="slot-reminders-header">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>{{ formatDate(slot.date) }}, {{ slot.hour }}:00</span>
+    </div>
+
+    <div class="slot-reminders-list">
+      @for (reminder of getSelectedSlotReminders(); track reminder.id) {
+        <div
+          class="slot-reminder-item"
+          [class.done]="reminder.status === 'done'"
+          [class.priority-low]="reminder.priority === 'low'"
+          [class.priority-medium]="reminder.priority === 'medium'"
+          [class.priority-high]="reminder.priority === 'high'"
+        >
+          <button type="button" class="slot-reminder-check" (click)="toggleTodo(reminder)">
+            @if (reminder.status === 'done') {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            }
+          </button>
+          <div class="slot-reminder-content" (click)="closeSlotRemindersModal(); onReminderClick(reminder, $event)">
+            <div class="slot-reminder-time">{{ reminder.time }}</div>
+            <div class="slot-reminder-title">{{ reminder.title }}</div>
+          </div>
+          <button type="button" class="slot-reminder-delete" (click)="deleteTodo(reminder.id)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+            </svg>
+          </button>
+        </div>
+      } @empty {
+        <div class="slot-reminders-empty">Нет напоминаний</div>
+      }
+    </div>
+  }
+
+  <div modal-footer class="modal-footer">
+    <button type="button" (click)="closeSlotRemindersModal()" class="btn btn-primary">
+      Закрыть
+    </button>
+  </div>
+</app-modal>

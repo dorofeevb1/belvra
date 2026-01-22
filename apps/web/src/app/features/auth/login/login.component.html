@@ -1,0 +1,185 @@
+<div class="login-page">
+  <!-- Theme Toggle -->
+  <button
+    (click)="themeService.toggleTheme()"
+    class="theme-toggle btn btn-ghost btn-icon"
+    type="button"
+  >
+    @if (themeService.isDark()) {
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+      </svg>
+    } @else {
+      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+      </svg>
+    }
+  </button>
+
+  <div class="login-container animate-fadeInUp">
+    <!-- Logo -->
+    <div class="login-logo">
+      <div class="logo-icon">
+        <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+      </div>
+      <h1 class="logo-text">BeautyBook</h1>
+      <p class="logo-subtitle">Платформа для бьюти-мастеров</p>
+    </div>
+
+    <!-- Login Card -->
+    <div class="login-card card">
+      <!-- Role Tabs -->
+      <div class="tabs">
+        <button
+          type="button"
+          (click)="selectedRole.set('master')"
+          class="tab"
+          [class.active]="selectedRole() === 'master'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <span>Мастер</span>
+        </button>
+        <button
+          type="button"
+          (click)="selectedRole.set('client')"
+          class="tab"
+          [class.active]="selectedRole() === 'client'"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          <span>Клиент</span>
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form (ngSubmit)="onSubmit()" class="login-form">
+        <!-- Email Field -->
+        <div class="form-group">
+          <label class="label" for="email">Email</label>
+          <div class="input-group">
+            <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"></path>
+            </svg>
+            <input
+              id="email"
+              type="email"
+              [(ngModel)]="email"
+              name="email"
+              class="input"
+              placeholder="your@email.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+        </div>
+
+        <!-- Password Field -->
+        <div class="form-group">
+          <label class="label" for="password">Пароль</label>
+          <div class="input-group">
+            <svg class="input-icon w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            <input
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              [(ngModel)]="password"
+              name="password"
+              class="input"
+              placeholder="Введите пароль"
+              autocomplete="current-password"
+              required
+            />
+            <button
+              type="button"
+              (click)="showPassword.set(!showPassword())"
+              class="input-action btn btn-ghost btn-icon-sm"
+            >
+              @if (showPassword()) {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                </svg>
+              } @else {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+              }
+            </button>
+          </div>
+
+          <!-- Forgot Password Link -->
+          <div class="forgot-password-link">
+            <a routerLink="/forgot-password">Забыли пароль?</a>
+          </div>
+        </div>
+
+        <!-- Error Message -->
+        @if (errorMessage()) {
+          <div class="error-message">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span>{{ errorMessage() }}</span>
+          </div>
+        }
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          [disabled]="isLoading()"
+          class="btn btn-primary btn-lg w-full"
+        >
+          @if (isLoading()) {
+            <div class="spinner spinner-sm"></div>
+            <span>Вход...</span>
+          } @else {
+            <span>Войти</span>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+            </svg>
+          }
+        </button>
+      </form>
+
+      <!-- Divider -->
+      <div class="divider-text">
+        <span>Быстрый вход</span>
+      </div>
+
+      <!-- Demo Button -->
+      <button
+        type="button"
+        (click)="fillDemoCredentials()"
+        class="btn btn-secondary w-full"
+      >
+        <svg class="w-4 h-4 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        <span>Демо-режим ({{ selectedRole() === 'master' ? 'Мастер' : 'Клиент' }})</span>
+      </button>
+
+      <!-- Register Link -->
+      <div class="divider-text">
+        <span>Нет аккаунта?</span>
+      </div>
+
+      <a routerLink="/register" class="btn btn-ghost w-full">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+        </svg>
+        <span>Зарегистрироваться</span>
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div class="login-footer">
+      <p>BeautyBook © 2025</p>
+    </div>
+  </div>
+</div>

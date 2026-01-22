@@ -1,0 +1,17 @@
+<div class="app-layout">
+  <app-header (menuToggle)="sidebarOpen.set(!sidebarOpen())" />
+
+  <div class="app-body">
+    <app-sidebar
+      [items]="navItems"
+      [isOpen]="sidebarOpen()"
+      (close)="sidebarOpen.set(false)"
+    />
+
+    <main class="main-content">
+      <router-outlet />
+    </main>
+  </div>
+
+  <app-notification-toast />
+</div>

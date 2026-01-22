@@ -1,0 +1,319 @@
+<div class="dashboard animate-fadeInUp">
+  <!-- Page Header -->
+  <header class="page-header">
+    <div class="header-bg">
+      <div class="header-circle header-circle-1"></div>
+      <div class="header-circle header-circle-2"></div>
+    </div>
+    <div class="header-content">
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1 class="page-title">
+          {{ greeting }}, {{ getMasterFirstName() }}
+        </h1>
+        <p class="page-subtitle">Вот что происходит в вашем бизнесе сегодня</p>
+      </div>
+    </div>
+    <span class="status-badge">
+      <span class="status-dot"></span>
+      Онлайн
+    </span>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner spinner-xl"></div>
+    </div>
+  } @else {
+    <!-- Stats Grid -->
+    <section class="stats-grid">
+      <!-- Total Profit -->
+      <button class="stat-card" (click)="router.navigate(['/master/finances'])">
+        <div class="stat-icon stat-icon-success">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Общая прибыль</span>
+          <span class="stat-value">{{ stats().totalProfit | currencyRub }}</span>
+          <span class="stat-change stat-change-up">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+            +12%
+          </span>
+        </div>
+      </button>
+
+      <!-- Upcoming Appointments -->
+      <button class="stat-card" (click)="router.navigate(['/master/appointments'])">
+        <div class="stat-icon stat-icon-info">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Предстоящие записи</span>
+          <span class="stat-value">{{ stats().upcomingAppointments }}</span>
+          <span class="stat-meta">Ближайшая сегодня</span>
+        </div>
+      </button>
+
+      <!-- Clients -->
+      <button class="stat-card" (click)="router.navigate(['/master/appointments'])">
+        <div class="stat-icon stat-icon-primary">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Клиенты</span>
+          <span class="stat-value">{{ stats().newClients }}</span>
+          <span class="stat-meta">Постоянные: {{ stats().newClients - 2 }}</span>
+        </div>
+      </button>
+
+      <!-- Average Rating -->
+      <div class="stat-card stat-card-static">
+        <div class="stat-icon stat-icon-warning">
+          <svg fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Рейтинг</span>
+          <span class="stat-value">{{ stats().averageRating }}</span>
+          <div class="star-rating">
+            @for (star of [1,2,3,4,5]; track star) {
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+              </svg>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PRO Upgrade Banner (for FREE users) -->
+    @if (!subscriptionService.isPro()) {
+      <section class="subscription-banner">
+        <div class="card subscription-card">
+          <div class="subscription-header">
+            <div class="subscription-icon">
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="subscription-info">
+              <h3 class="subscription-title">Перейдите на PRO</h3>
+              <p class="subscription-desc">Снимите ограничения и получите больше клиентов</p>
+            </div>
+            <a routerLink="/master/subscription" class="btn btn-pro">
+              Подробнее
+            </a>
+          </div>
+
+          <!-- Usage Limits -->
+          <div class="usage-limits">
+            <!-- Appointments -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Записи в месяц</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().appointmentsThisMonth }}/{{ subscriptionService.limits().maxAppointmentsPerMonth || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth)"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Services -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Услуги</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().servicesCount }}/{{ subscriptionService.limits().maxServicesCount || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount)"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Portfolio -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Портфолио</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().portfolioItemsCount }}/{{ subscriptionService.limits().maxPortfolioItems || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems)"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- PRO Status Badge (for PRO users) -->
+    @if (subscriptionService.isPro()) {
+      <section class="pro-status-section">
+        <div class="card pro-status-card-inline">
+          <div class="pro-status-content">
+            <app-pro-badge [size]="'md'" [showIcon]="true" />
+            <span class="pro-status-text">
+              @if (subscriptionService.daysUntilExpiry() !== null) {
+                Подписка активна • {{ subscriptionService.daysUntilExpiry() }} дн. до продления
+              } @else {
+                Подписка активна
+              }
+            </span>
+          </div>
+          <a routerLink="/master/subscription" class="btn btn-ghost btn-sm">Управление</a>
+        </div>
+      </section>
+    }
+
+    <!-- Charts Row -->
+    <section class="charts-grid">
+      <div class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Тренд записей</h3>
+            <p class="card-subtitle">За последние 7 дней</p>
+          </div>
+          <span class="trend-badge trend-up">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+            </svg>
+            +8%
+          </span>
+        </div>
+        <div class="card-body">
+          <app-bar-chart [data]="weeklyTrend()" />
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Популярность услуг</h3>
+            <p class="card-subtitle">Распределение записей</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <app-donut-chart [data]="servicesPopularity()" />
+        </div>
+      </div>
+    </section>
+
+    <!-- Activity & Map -->
+    <section class="activity-grid">
+      <!-- Activity Feed -->
+      <div class="card activity-card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Активность</h3>
+            <p class="card-subtitle">Последние события</p>
+          </div>
+          <button class="btn btn-ghost btn-sm">Все</button>
+        </div>
+        <div class="card-body activity-list">
+          @for (activity of activityFeed(); track activity.id) {
+            <button
+              class="activity-item"
+              (click)="onActivityClick(activity)"
+            >
+              <div class="activity-icon" [attr.data-type]="activity.iconType">
+                @switch (activity.iconType) {
+                  @case ('appointment') {
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                  }
+                  @case ('review') {
+                    <svg fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                  }
+                  @case ('message') {
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                    </svg>
+                  }
+                }
+              </div>
+              <div class="activity-content">
+                <span class="activity-title">{{ activity.title }}</span>
+                <span class="activity-desc">{{ activity.description }}</span>
+              </div>
+              <span class="activity-time">{{ getRelativeTime(activity.time) }}</span>
+            </button>
+          } @empty {
+            <div class="empty-state">
+              <div class="empty-state-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                </svg>
+              </div>
+              <span class="empty-state-title">Нет новых событий</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Map -->
+      <div class="card map-card">
+        <div class="card-header">
+          <div>
+            <h3 class="card-title">Местоположение</h3>
+            <p class="card-subtitle">Ваш салон на карте</p>
+          </div>
+        </div>
+        <div class="card-body">
+          <div id="yandex-map" class="map-container">
+            @if (!mapLoaded()) {
+              <div class="map-placeholder">
+                <div class="map-icon">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                  </svg>
+                </div>
+                <span class="map-address">{{ authService.masterData()?.address }}</span>
+                @if (mapError()) {
+                  <span class="map-error-text">{{ mapError() }}</span>
+                } @else {
+                  <span class="map-loading-text">Загрузка карты...</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
+  }
+</div>

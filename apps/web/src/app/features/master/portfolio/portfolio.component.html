@@ -1,0 +1,88 @@
+<div class="portfolio-page animate-fadeInUp">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Портфолио</h1>
+      <p class="page-subtitle">Галерея ваших работ</p>
+    </div>
+    <button type="button" (click)="openAddModal()" class="btn btn-primary">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+      </svg>
+      Добавить работу
+    </button>
+  </header>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <div class="spinner spinner-lg"></div>
+    </div>
+  } @else if (portfolio().length === 0) {
+    <div class="empty-state">
+      <div class="empty-state-icon">
+        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <h3 class="empty-state-title">Портфолио пусто</h3>
+      <p class="empty-state-desc">Добавьте свои лучшие работы, чтобы привлечь новых клиентов</p>
+      <button type="button" (click)="openAddModal()" class="btn btn-primary mt-4">
+        Добавить первую работу
+      </button>
+    </div>
+  } @else {
+    <div class="portfolio-grid">
+      @for (item of portfolio(); track item.id) {
+        <div class="portfolio-card card">
+          <!-- Image -->
+          <div class="portfolio-image">
+            <img [src]="item.imageUrl" [alt]="item.title" />
+            <div class="portfolio-overlay">
+              <button type="button" (click)="openEditModal(item)" class="overlay-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+              </button>
+              <button type="button" (click)="deleteItem(item.id)" class="overlay-btn overlay-btn-danger">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Content -->
+          <div class="portfolio-content">
+            <h3 class="portfolio-title">{{ item.title }}</h3>
+            <p class="portfolio-desc">{{ item.description }}</p>
+
+            <!-- Hashtags -->
+            <div class="portfolio-tags">
+              @for (tag of item.hashtags.slice(0, 4); track tag) {
+                <span class="tag">#{{ tag }}</span>
+              }
+            </div>
+
+            <!-- Footer -->
+            <div class="portfolio-footer">
+              <span class="portfolio-date">{{ item.createdAt | dateFormat:'short' }}</span>
+              <div class="portfolio-likes">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
+                </svg>
+                {{ item.likes }}
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Add/Edit Modal -->
+  <app-portfolio-item-modal
+    [isOpen]="showModal()"
+    [editItem]="editingItem()"
+    (close)="closeModal()"
+    (save)="onSave($event)"
+  />
+</div>

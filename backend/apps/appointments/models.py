@@ -92,6 +92,7 @@ class Appointment(BaseModel):
     notes = models.TextField(blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(blank=True)
+    is_archived = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         verbose_name = "Запись"

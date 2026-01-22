@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <title>BeautyBook - Платформа для бьюти-мастеров</title>
+  <base href="/">
+
+  <!-- Mobile optimizations -->
+  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="description" content="BeautyBook - комплексное приложение для бьюти-мастеров и клиентов">
+  <meta name="theme-color" content="#ec4899">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BeautyBook">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <!-- Favicon and app icons -->
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="assets/icons/icon-180x180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- Google Fonts - Nunito Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&display=swap" rel="stylesheet">
+
+  <!-- Capacitor safe area CSS variables -->
+  <style>
+    :root {
+      --ion-safe-area-top: env(safe-area-inset-top);
+      --ion-safe-area-bottom: env(safe-area-inset-bottom);
+      --ion-safe-area-left: env(safe-area-inset-left);
+      --ion-safe-area-right: env(safe-area-inset-right);
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <app-root></app-root>
+
+  <!-- Yandex Maps API - loaded at the end for better performance -->
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=56a82b8a-570f-4c39-91c7-db9eeed30977&lang=ru_RU" type="text/javascript"></script>
+</body>
+</html>

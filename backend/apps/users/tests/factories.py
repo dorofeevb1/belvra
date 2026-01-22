@@ -52,6 +52,9 @@ class MasterProfileFactory(factory.django.DjangoModelFactory):
     rating = 0
     reviews_count = 0
     is_available = True
+    address = factory.LazyAttribute(lambda _: fake.address())
+    latitude = None
+    longitude = None
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):

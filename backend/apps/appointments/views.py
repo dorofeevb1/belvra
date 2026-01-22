@@ -141,7 +141,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Appointment.objects.select_related(
             "client", "master__user", "service"
-        )
+        ).filter(is_archived=False)
 
         if user.is_staff:
             return queryset
@@ -525,7 +525,8 @@ class AvailableSlotsView(generics.GenericAPIView):
         existing_appointments = Appointment.objects.filter(
             master=master,
             date=date,
-            status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED]
+            status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED],
+            is_archived=False
         )
 
         slots = []

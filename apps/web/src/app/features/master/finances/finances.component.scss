@@ -1,0 +1,260 @@
+.finances-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.page-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.page-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25rem;
+}
+
+.loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 0;
+}
+
+// Stats Grid
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 1rem;
+
+  @media (min-width: 640px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  background: var(--color-surface-primary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-xl);
+}
+
+.stat-icon {
+  width: 3rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-xl);
+  flex-shrink: 0;
+
+  &-success {
+    background: var(--color-success-bg);
+    color: var(--color-success);
+  }
+
+  &-warning {
+    background: var(--color-warning-bg);
+    color: var(--color-warning);
+  }
+
+  &-info {
+    background: var(--color-info-bg);
+    color: var(--color-info);
+  }
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--color-text-tertiary);
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+// Info Banner
+.info-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-info-bg);
+  border: 1px solid var(--color-info);
+  border-radius: var(--radius-lg);
+
+  :host-context(.dark) & {
+    background: rgba(59, 130, 246, 0.1);
+    border-color: rgba(59, 130, 246, 0.3);
+  }
+}
+
+.info-icon {
+  flex-shrink: 0;
+  color: var(--color-info);
+  margin-top: 0.125rem;
+}
+
+.info-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-info);
+  margin-bottom: 0.25rem;
+}
+
+.info-text {
+  font-size: 0.875rem;
+  color: var(--color-info);
+  opacity: 0.9;
+}
+
+// Table
+.table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--color-border-secondary);
+}
+
+.card-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th {
+    padding: 0.875rem 1rem;
+    text-align: left;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    color: var(--color-text-tertiary);
+    background: var(--color-surface-secondary);
+  }
+
+  td {
+    padding: 1rem;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    border-bottom: 1px solid var(--color-border-primary);
+  }
+
+  tbody tr:hover {
+    background: var(--color-surface-hover);
+  }
+
+  tfoot td {
+    background: var(--color-surface-secondary);
+    border-top: 1px solid var(--color-border-secondary);
+    border-bottom: none;
+  }
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.font-medium {
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.font-semibold {
+  font-weight: 600;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-success {
+  color: var(--color-success);
+}
+
+.text-warning {
+  color: var(--color-warning);
+}
+
+.text-error {
+  color: var(--color-error);
+}
+
+.badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+// Empty state
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem 2rem;
+  text-align: center;
+
+  &-icon {
+    width: 5rem;
+    height: 5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    background: var(--color-surface-secondary);
+    border-radius: var(--radius-2xl);
+    color: var(--color-text-tertiary);
+  }
+
+  &-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  &-desc {
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
+  }
+}

@@ -8,6 +8,7 @@ from .views import (
     LoginView,
     LogoutView,
     MasterDetailView,
+    MasterGeoSearchView,
     MasterListView,
     PasswordResetConfirmView,
     PasswordResetRequestView,
@@ -36,6 +37,7 @@ urlpatterns = [
     path("email/verify/", VerifyEmailView.as_view(), name="email-verify"),
     path("email/resend-verification/", ResendVerificationEmailView.as_view(), name="email-resend-verification"),
     path("masters/", MasterListView.as_view(), name="master-list"),
+    path("masters/nearby/", MasterGeoSearchView.as_view(), name="master-nearby"),
     path("masters/<uuid:pk>/", MasterDetailView.as_view(), name="master-detail"),
     path("", include(router.urls)),
 ]

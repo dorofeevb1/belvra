@@ -58,18 +58,21 @@ def send_appointment_reminders():
 
 @shared_task
 def cleanup_old_appointments():
-    """Archive old completed appointments."""
+    """Archive old completed appointments (soft delete)."""
     from .models import Appointment
 
     cutoff_date = timezone.now().date() - timedelta(days=365)
     old_appointments = Appointment.objects.filter(
         date__lt=cutoff_date,
-        status__in=[Appointment.Status.COMPLETED, Appointment.Status.CANCELLED]
+        status__in=[
+            Appointment.Status.COMPLETED,
+            Appointment.Status.CANCELLED,
+            Appointment.Status.NO_SHOW
+        ],
+        is_archived=False
     )
-    count = old_appointments.count()
-    # Instead of deleting, you might want to archive
-    # old_appointments.delete()
-    return f"Found {count} old appointments for archiving"
+    count = old_appointments.update(is_archived=True)
+    return f"Archived {count} old appointments"
 
 
 @shared_task
@@ -78,12 +81,78 @@ def mark_no_show_appointments():
     from .models import Appointment
 
     now = timezone.now()
-    yesterday = now.date() - timedelta(days=1)
+    today = now.date()
+    current_time = now.time()
 
+    # Past days - any CONFIRMED appointments
+    past_days_count = Appointment.objects.filter(
+        date__lt=today,
+        status=Appointment.Status.CONFIRMED,
+        is_archived=False
+    ).update(status=Appointment.Status.NO_SHOW)
+
+    # Today - only if end_time has passed
+    today_count = Appointment.objects.filter(
+        date=today,
+        end_time__lt=current_time,
+        status=Appointment.Status.CONFIRMED,
+        is_archived=False
+    ).update(status=Appointment.Status.NO_SHOW)
+
+    total_count = past_days_count + today_count
+    return f"Marked {total_count} appointments as no-show (past days: {past_days_count}, today: {today_count})"
+
+
+@shared_task
+def send_completion_reminder():
+    """Send reminder to master to mark appointment as completed 1 hour after end time."""
+    from apps.core.notifications import NotificationService
+
+    from .models import Appointment
+
+    now = timezone.now()
+    today = now.date()
+
+    # Calculate the time window: appointments that ended 1 hour ago (within 5 min window)
+    one_hour_ago = (now - timedelta(hours=1)).time()
+    window_start = (now - timedelta(hours=1, minutes=5)).time()
+
+    # Find CONFIRMED appointments that ended about 1 hour ago
     appointments = Appointment.objects.filter(
-        date=yesterday,
-        status=Appointment.Status.CONFIRMED
-    )
+        date=today,
+        end_time__gte=window_start,
+        end_time__lt=one_hour_ago,
+        status=Appointment.Status.CONFIRMED,
+        is_archived=False
+    ).select_related("master__user", "client", "service", "master_service")
 
-    count = appointments.update(status=Appointment.Status.NO_SHOW)
-    return f"Marked {count} appointments as no-show"
+    sent_count = 0
+    for appointment in appointments:
+        try:
+            # Get service name
+            if appointment.master_service:
+                service_name = appointment.master_service.name
+            elif appointment.service:
+                service_name = appointment.service.name
+            else:
+                service_name = "Услуга"
+
+            client_name = appointment.client.full_name or appointment.client.email
+
+            # Create in-app notification for master
+            NotificationService.create_notification(
+                user=appointment.master.user,
+                notification_type="completion_reminder",
+                title="Не забудьте отметить запись",
+                message=f"Пожалуйста, отметьте запись с {client_name} ({service_name}) как завершённую",
+                data={
+                    "appointment_id": str(appointment.id),
+                    "client_name": client_name,
+                    "service_name": service_name
+                }
+            )
+            sent_count += 1
+        except Exception as e:
+            print(f"Error sending completion reminder for appointment {appointment.id}: {e}")
+
+    return f"Sent {sent_count} completion reminders"

@@ -11,6 +11,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     full_name = serializers.ReadOnlyField()
     master_profile_id = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
     # Master profile read fields
     address = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
@@ -27,7 +28,8 @@ class UserSerializer(serializers.ModelSerializer):
             "id", "email", "phone", "first_name", "last_name",
             "full_name", "avatar", "role", "is_verified", "created_at",
             "master_profile_id", "specialization", "bio",
-            "address", "latitude", "longitude", "rating", "reviews_count"
+            "address", "latitude", "longitude", "rating", "reviews_count",
+            "subscription"
         ]
         read_only_fields = ["id", "is_verified", "created_at"]
 
@@ -60,6 +62,20 @@ class UserSerializer(serializers.ModelSerializer):
     def get_reviews_count(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
             return obj.master_profile.reviews_count
+        return None
+
+    def get_subscription(self, obj):
+        """Return subscription info if user has one."""
+        if hasattr(obj, 'subscription'):
+            subscription = obj.subscription
+            return {
+                "id": str(subscription.id),
+                "plan_name": subscription.plan.name,
+                "plan_tier": subscription.plan.tier,
+                "status": subscription.status,
+                "is_active": subscription.is_active,
+                "current_period_end": subscription.current_period_end.isoformat() if subscription.current_period_end else None,
+            }
         return None
 
     def update(self, instance, validated_data):
@@ -164,6 +180,22 @@ class MasterProfileSerializer(serializers.ModelSerializer):
             "address", "latitude", "longitude"
         ]
         read_only_fields = ["id", "rating", "reviews_count"]
+
+
+class MasterWithDistanceSerializer(serializers.ModelSerializer):
+    """Serializer for MasterProfile with distance field for geo-search."""
+
+    user = UserSerializer(read_only=True)
+    distance_km = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = MasterProfile
+        fields = [
+            "id", "user", "bio", "experience_years",
+            "specialization", "rating", "reviews_count", "is_available",
+            "address", "latitude", "longitude", "distance_km"
+        ]
+        read_only_fields = ["id", "rating", "reviews_count", "distance_km"]
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):

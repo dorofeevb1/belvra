@@ -1,0 +1,135 @@
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background-color: var(--color-bg-secondary);
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-logo {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 4rem;
+  height: 4rem;
+  margin: 0 auto 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
+  border-radius: 1rem;
+  box-shadow: 0 8px 24px -4px rgba(236, 72, 153, 0.35);
+}
+
+.logo-text {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  letter-spacing: -0.025em;
+}
+
+.logo-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25rem;
+}
+
+.login-card {
+  padding: 1.75rem;
+}
+
+.tabs {
+  margin-bottom: 1.5rem;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group .input {
+  padding-right: 2.75rem;
+}
+
+.forgot-password-link {
+  text-align: right;
+  margin-top: 0.5rem;
+
+  a {
+    font-size: 0.875rem;
+    color: var(--color-brand-500);
+    text-decoration: none;
+    transition: color 0.2s;
+
+    &:hover {
+      color: var(--color-brand-600);
+      text-decoration: underline;
+    }
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-error-bg);
+  color: var(--color-error);
+  border-radius: var(--radius-lg);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.divider-text {
+  margin: 1.5rem 0;
+}
+
+.text-brand {
+  color: var(--color-brand-500);
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 2rem;
+
+  p {
+    font-size: 0.75rem;
+    color: var(--color-text-tertiary);
+  }
+}
+
+.w-full {
+  width: 100%;
+}
+
+:host {
+  display: block;
+}

@@ -4,7 +4,7 @@ Serializers for core models.
 
 from rest_framework import serializers
 
-from .models import Notification
+from .models import Notification, DeviceToken
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -39,3 +39,37 @@ class NotificationMarkReadSerializer(serializers.Serializer):
         required=False,
         help_text="List of notification IDs to mark as read. If empty, marks all as read."
     )
+
+
+class DeviceTokenSerializer(serializers.ModelSerializer):
+    """Serializer for DeviceToken model."""
+
+    class Meta:
+        model = DeviceToken
+        fields = [
+            "id",
+            "token",
+            "platform",
+            "device_name",
+            "is_active",
+            "last_used_at",
+            "created_at"
+        ]
+        read_only_fields = ["id", "last_used_at", "created_at"]
+
+    def create(self, validated_data):
+        """Create or update device token."""
+        user = self.context["request"].user
+        token = validated_data.get("token")
+
+        # Update existing token or create new one
+        device_token, created = DeviceToken.objects.update_or_create(
+            token=token,
+            defaults={
+                "user": user,
+                "platform": validated_data.get("platform", "android"),
+                "device_name": validated_data.get("device_name", ""),
+                "is_active": validated_data.get("is_active", True),
+            }
+        )
+        return device_token

@@ -1,0 +1,429 @@
+@if (isLoading()) {
+  <div class="loading-container">
+    <div class="spinner spinner-lg"></div>
+  </div>
+} @else {
+  <div class="booking-page animate-fadeInUp">
+    <!-- Back Button -->
+    <button type="button" (click)="goBack()" class="back-btn">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+      </svg>
+      Назад к профилю
+    </button>
+
+    <!-- Progress Steps -->
+    <div class="steps">
+      @for (stepNum of [1, 2, 3, 4]; track stepNum) {
+        @if (stepNum <= totalSteps()) {
+          <div class="step-item">
+            <div
+              class="step-circle"
+              [class.active]="step() >= stepNum"
+              [class.completed]="step() > stepNum"
+            >
+              @if (step() > stepNum) {
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              } @else {
+                {{ stepNum }}
+              }
+            </div>
+            @if (stepNum < totalSteps()) {
+              <div class="step-line" [class.active]="step() > stepNum"></div>
+            }
+          </div>
+        }
+      }
+    </div>
+
+    @if (step() === 1) {
+      <!-- Step 1: Select Service -->
+      <div class="step-card card">
+        <h2 class="step-title">Выберите услугу</h2>
+        <div class="services-list">
+          @for (service of services(); track service.id) {
+            <button
+              type="button"
+              (click)="selectService(service)"
+              class="service-option"
+              [class.selected]="selectedService()?.id === service.id"
+            >
+              <div class="service-info">
+                <h3 class="service-name">{{ service.name }}</h3>
+                <p class="service-duration">{{ service.duration }} мин</p>
+              </div>
+              <p class="service-price">{{ service.price | currencyRub }}</p>
+            </button>
+          }
+        </div>
+        <button
+          type="button"
+          (click)="nextStep()"
+          [disabled]="!selectedService()"
+          class="btn btn-primary btn-full"
+        >
+          Далее
+        </button>
+      </div>
+    } @else if (step() === 2) {
+      <!-- Step 2: Select Date & Time -->
+      <div class="step-card card">
+        <h2 class="step-title">Выберите дату и время</h2>
+
+        <!-- Calendar -->
+        <div class="calendar">
+          <div class="calendar-header">
+            @for (day of weekDays; track day) {
+              <span class="calendar-weekday">{{ day }}</span>
+            }
+          </div>
+          <div class="calendar-grid">
+            @for (day of calendarDays(); track day.date) {
+              <button
+                type="button"
+                (click)="selectDate(day.date)"
+                [disabled]="day.isPast"
+                class="calendar-day"
+                [class.selected]="selectedDate() === day.date"
+                [class.today]="day.isToday"
+                [class.disabled]="day.isPast"
+                [class.other-month]="!day.isCurrentMonth && !day.isPast"
+              >
+                {{ day.dayNum }}
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Time Slots -->
+        @if (selectedDate()) {
+          <div class="time-section">
+            <p class="time-label">Доступное время:</p>
+            @if (isLoadingSlots()) {
+              <div class="time-loading">
+                <div class="spinner spinner-md"></div>
+              </div>
+            } @else if (availableSlots().length === 0) {
+              <p class="time-empty">Нет свободных слотов на эту дату</p>
+            } @else {
+              <div class="time-grid">
+                @for (slot of availableSlots(); track slot) {
+                  <button
+                    type="button"
+                    (click)="selectedTime.set(slot)"
+                    class="time-slot"
+                    [class.selected]="selectedTime() === slot"
+                  >
+                    {{ slot }}
+                  </button>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <div class="step-actions">
+          <button type="button" (click)="prevStep()" class="btn btn-secondary">Назад</button>
+          <button
+            type="button"
+            (click)="nextStep()"
+            [disabled]="!selectedDate() || !selectedTime()"
+            class="btn btn-primary"
+          >
+            Далее
+          </button>
+        </div>
+      </div>
+    } @else if (step() === 3 && requiresPayment()) {
+      <!-- Step 3: Payment (if required) -->
+      <div class="step-card card">
+        <h2 class="step-title">Оплата</h2>
+
+        <!-- Payment Amount -->
+        <div class="payment-amount-card">
+          <div class="payment-info">
+            <span class="payment-label">К оплате (предоплата {{ master()?.paymentSettings?.prepaymentPercent }}%)</span>
+            <span class="payment-value">{{ prepaymentAmount() | currencyRub }}</span>
+          </div>
+          <div class="payment-service">{{ selectedService()?.name }}</div>
+        </div>
+
+        <!-- Payment Methods -->
+        <div class="payment-methods">
+          <p class="section-label">Способ оплаты</p>
+          <div class="method-tabs">
+            @if (acceptedMethods().card) {
+              <button
+                type="button"
+                class="method-tab"
+                [class.active]="selectedPaymentMethod() === 'card'"
+                (click)="selectPaymentMethod('card')"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+                Карта
+              </button>
+            }
+            @if (acceptedMethods().sbp) {
+              <button
+                type="button"
+                class="method-tab"
+                [class.active]="selectedPaymentMethod() === 'sbp'"
+                (click)="selectPaymentMethod('sbp')"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+                </svg>
+                СБП
+              </button>
+            }
+            @if (acceptedMethods().yoomoney) {
+              <button
+                type="button"
+                class="method-tab"
+                [class.active]="selectedPaymentMethod() === 'yoomoney'"
+                (click)="selectPaymentMethod('yoomoney')"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+                ЮMoney
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Card Selection / Form -->
+        @if (selectedPaymentMethod() === 'card') {
+          <div class="card-section">
+            @if (savedCards().length > 0 && !isAddingNewCard()) {
+              <!-- Saved Cards -->
+              <p class="section-label">Сохранённые карты</p>
+              <div class="saved-cards">
+                @for (card of savedCards(); track card.id) {
+                  <button
+                    type="button"
+                    class="saved-card"
+                    [class.selected]="selectedCardId() === card.id"
+                    (click)="selectCard(card.id)"
+                  >
+                    <div class="card-brand" [attr.data-brand]="card.brand">
+                      {{ getCardBrandIcon(card.brand) }}
+                    </div>
+                    <div class="card-info">
+                      <span class="card-number">•••• {{ card.last4 }}</span>
+                      <span class="card-expiry">{{ card.expMonth | number:'2.0-0' }}/{{ card.expYear % 100 }}</span>
+                    </div>
+                    @if (card.isDefault) {
+                      <span class="card-default">Основная</span>
+                    }
+                    <div class="card-check">
+                      @if (selectedCardId() === card.id) {
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                      }
+                    </div>
+                  </button>
+                }
+              </div>
+              <button type="button" class="add-card-btn" (click)="startAddNewCard()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                </svg>
+                Добавить новую карту
+              </button>
+            } @else {
+              <!-- New Card Form -->
+              <div class="new-card-form">
+                @if (savedCards().length > 0) {
+                  <button type="button" class="back-to-cards" (click)="cancelAddNewCard()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    К сохранённым картам
+                  </button>
+                }
+
+                <div class="form-group">
+                  <label>Номер карты</label>
+                  <input
+                    type="text"
+                    [ngModel]="newCardNumber"
+                    (input)="formatCardNumber($event)"
+                    placeholder="0000 0000 0000 0000"
+                    maxlength="19"
+                    class="input"
+                  />
+                </div>
+
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Срок</label>
+                    <input
+                      type="text"
+                      [ngModel]="newCardExpiry"
+                      (input)="formatCardExpiry($event)"
+                      placeholder="MM/YY"
+                      maxlength="5"
+                      class="input"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>CVV</label>
+                    <input
+                      type="password"
+                      [(ngModel)]="newCardCvv"
+                      placeholder="•••"
+                      maxlength="4"
+                      class="input"
+                    />
+                  </div>
+                </div>
+
+                <label class="checkbox-label">
+                  <input type="checkbox" [(ngModel)]="saveNewCard" class="checkbox" />
+                  <span>Сохранить карту для будущих оплат</span>
+                </label>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- SBP Info -->
+        @if (selectedPaymentMethod() === 'sbp') {
+          <div class="sbp-info">
+            <div class="sbp-icon">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"></path>
+              </svg>
+            </div>
+            <p>После нажатия "Оплатить" откроется приложение вашего банка для подтверждения платежа</p>
+          </div>
+        }
+
+        <!-- YooMoney Info -->
+        @if (selectedPaymentMethod() === 'yoomoney') {
+          <div class="yoomoney-info">
+            <div class="yoomoney-icon">Ю</div>
+            <p>Вы будете перенаправлены на страницу ЮMoney для оплаты</p>
+          </div>
+        }
+
+        <div class="step-actions">
+          <button type="button" (click)="prevStep()" class="btn btn-secondary">Назад</button>
+          <button
+            type="button"
+            (click)="nextStep()"
+            [disabled]="!canProceedToPayment()"
+            class="btn btn-primary"
+          >
+            Далее
+          </button>
+        </div>
+      </div>
+    } @else if ((step() === 3 && !requiresPayment()) || (step() === 4 && requiresPayment())) {
+      <!-- Final Step: Confirm -->
+      <div class="step-card card">
+        <h2 class="step-title">Подтверждение записи</h2>
+
+        <div class="confirm-details">
+          <div class="confirm-row">
+            <span class="confirm-label">Мастер</span>
+            <span class="confirm-value">{{ master()?.name }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Услуга</span>
+            <span class="confirm-value">{{ selectedService()?.name }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Дата</span>
+            <span class="confirm-value">{{ formatDate(selectedDate()!) }}</span>
+          </div>
+          <div class="confirm-row">
+            <span class="confirm-label">Время</span>
+            <span class="confirm-value">{{ selectedTime() }}</span>
+          </div>
+          <div class="confirm-row confirm-total">
+            <span class="confirm-label">Стоимость</span>
+            <span class="confirm-price">{{ selectedService()?.price | currencyRub }}</span>
+          </div>
+
+          @if (requiresPayment()) {
+            <div class="confirm-row confirm-prepaid">
+              <span class="confirm-label">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                Предоплата
+              </span>
+              <span class="confirm-prepaid-value">{{ prepaymentAmount() | currencyRub }}</span>
+            </div>
+            <div class="confirm-row">
+              <span class="confirm-label">Способ оплаты</span>
+              <span class="confirm-value">
+                @switch (selectedPaymentMethod()) {
+                  @case ('card') {
+                    @if (selectedCardId()) {
+                      Карта •••• {{ getSelectedCardLast4() }}
+                    } @else {
+                      Новая карта •••• {{ newCardNumber.slice(-4) }}
+                    }
+                  }
+                  @case ('sbp') { СБП }
+                  @case ('yoomoney') { ЮMoney }
+                }
+              </span>
+            </div>
+          }
+        </div>
+
+        <div class="step-actions">
+          <button type="button" (click)="prevStep()" class="btn btn-secondary">Назад</button>
+          @if (requiresPayment()) {
+            <button
+              type="button"
+              (click)="processPayment()"
+              [disabled]="isProcessingPayment()"
+              class="btn btn-primary"
+            >
+              @if (isProcessingPayment()) {
+                <span class="btn-loading">
+                  <svg class="spinner-icon" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Оплата...
+                </span>
+              } @else {
+                Оплатить {{ prepaymentAmount() | currencyRub }}
+              }
+            </button>
+          } @else {
+            <button
+              type="button"
+              (click)="confirmBooking()"
+              [disabled]="isSubmitting()"
+              class="btn btn-primary"
+            >
+              @if (isSubmitting()) {
+                <span class="btn-loading">
+                  <svg class="spinner-icon" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                  </svg>
+                  Отправка...
+                </span>
+              } @else {
+                Подтвердить запись
+              }
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

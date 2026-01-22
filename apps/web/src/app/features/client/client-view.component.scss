@@ -1,0 +1,19 @@
+.app-layout {
+  min-height: 100vh;
+  background: var(--color-bg-secondary);
+}
+
+.app-body {
+  display: flex;
+}
+
+.main-content {
+  flex: 1;
+  padding: 1rem;
+  min-height: calc(100vh - 64px);
+
+  @media (min-width: 1024px) {
+    margin-left: 256px;
+    padding: 1.5rem;
+  }
+}

@@ -11,6 +11,67 @@ from rest_framework.views import APIView
 from .services import GeminiService
 
 
+class AnalyzePhotoView(APIView):
+    """Analyze photo using AI vision model."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["ИИ"],
+        summary="Анализ фотографии",
+        description="Комплексный анализ изображения с помощью ИИ. Типы анализа: general, style, quality, recommendation",
+        request={
+            "application/json": {
+                "type": "object",
+                "properties": {
+                    "image_base64": {
+                        "type": "string",
+                        "description": "Base64 encoded image"
+                    },
+                    "analysis_type": {
+                        "type": "string",
+                        "enum": ["general", "style", "quality", "recommendation"],
+                        "description": "Тип анализа: general (общий), style (стиль/тренды), quality (качество работы), recommendation (рекомендации)"
+                    }
+                },
+                "required": ["image_base64"]
+            }
+        },
+        responses={
+            200: {
+                "type": "object",
+                "description": "Результат анализа зависит от типа"
+            }
+        }
+    )
+    def post(self, request):
+        """Analyze photo with specified analysis type."""
+        image_base64 = request.data.get("image_base64", "")
+        analysis_type = request.data.get("analysis_type", "general")
+
+        if not image_base64:
+            return Response(
+                {"error": "image_base64 is required"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        valid_types = ["general", "style", "quality", "recommendation"]
+        if analysis_type not in valid_types:
+            return Response(
+                {"error": f"analysis_type must be one of: {', '.join(valid_types)}"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Remove data URL prefix if present
+        if "," in image_base64:
+            image_base64 = image_base64.split(",")[1]
+
+        service = GeminiService()
+        result = service.analyze_photo(image_base64, analysis_type)
+
+        return Response(result)
+
+
 class GeneratePortfolioContentView(APIView):
     """Generate portfolio content using AI."""
 

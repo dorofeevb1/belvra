@@ -8,8 +8,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Notification
-from .serializers import NotificationMarkReadSerializer, NotificationSerializer
+from .models import Notification, DeviceToken
+from .serializers import NotificationMarkReadSerializer, NotificationSerializer, DeviceTokenSerializer
 
 
 class HealthCheckView(APIView):
@@ -135,4 +135,51 @@ class NotificationViewSet(viewsets.ModelViewSet):
         return Response({
             "detail": f"Удалено уведомлений: {deleted}",
             "count": deleted
+        })
+
+
+@extend_schema_view(
+    list=extend_schema(
+        tags=["Push-уведомления"],
+        summary="Список устройств",
+        description="Получение списка зарегистрированных устройств для push-уведомлений"
+    ),
+    create=extend_schema(
+        tags=["Push-уведомления"],
+        summary="Регистрация устройства",
+        description="Регистрация токена устройства для push-уведомлений"
+    ),
+    destroy=extend_schema(
+        tags=["Push-уведомления"],
+        summary="Удаление устройства",
+        description="Удаление (деактивация) токена устройства"
+    ),
+)
+class DeviceTokenViewSet(viewsets.ModelViewSet):
+    """ViewSet for device push notification tokens."""
+
+    serializer_class = DeviceTokenSerializer
+    permission_classes = [IsAuthenticated]
+    http_method_names = ["get", "post", "delete"]
+    lookup_field = "token"
+
+    def get_queryset(self):
+        return DeviceToken.objects.filter(user=self.request.user, is_active=True)
+
+    def perform_destroy(self, instance):
+        """Deactivate token instead of deleting."""
+        instance.deactivate()
+
+    @extend_schema(
+        tags=["Push-уведомления"],
+        summary="Деактивировать все устройства",
+        description="Деактивировать все токены устройств пользователя"
+    )
+    @action(detail=False, methods=["post"])
+    def deactivate_all(self, request):
+        """Deactivate all device tokens for user."""
+        count = self.get_queryset().update(is_active=False)
+        return Response({
+            "detail": f"Деактивировано устройств: {count}",
+            "count": count
         })
