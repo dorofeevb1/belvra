@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Angular cache
+.angular/
+
+# Build output
+dist/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Capacitor generated
+ios/App/App/public/
+ios/App/Pods/
+android/app/build/
+android/.gradle/
