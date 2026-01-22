@@ -1,7 +1,7 @@
 {
   "apps": [
     {
-      "id": "5f843242",
+      "appId": "5f843242",
       "root": "apps/mobile"
     }
   ]
