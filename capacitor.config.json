@@ -2,6 +2,12 @@
   "appId": "com.beautybook.app",
   "appName": "BeautyBook",
   "webDir": "apps/mobile/dist/mobile/browser",
+  "ios": {
+    "path": "apps/mobile/ios"
+  },
+  "android": {
+    "path": "apps/mobile/android"
+  },
   "server": {
     "cleartext": true,
     "androidScheme": "https"
