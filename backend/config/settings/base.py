@@ -258,8 +258,9 @@ SERVER_EMAIL = env.str("SERVER_EMAIL", default="errors@beautybook.ru")
 # Frontend URL for email links
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:4200")
 
-# AI Settings (Gemini)
-GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
+# AI Settings
+PERPLEXITY_API_KEY = env.str("PERPLEXITY_API_KEY", default="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")
+OLLAMA_URL = env.str("OLLAMA_URL", default="http://localhost:11434")
 
 # Logging
 LOGGING = {

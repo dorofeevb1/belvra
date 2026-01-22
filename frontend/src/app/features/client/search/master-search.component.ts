@@ -2,7 +2,7 @@ import { Component, inject, OnInit, signal, computed, effect, OnDestroy } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { DataService, GeminiService } from '../../../core/services';
+import { DataService, AIService } from '../../../core/services';
 import { Master } from '../../../core/models';
 
 declare const ymaps: any;
@@ -16,7 +16,7 @@ declare const ymaps: any;
 })
 export class MasterSearchComponent implements OnInit, OnDestroy {
   private dataService = inject(DataService);
-  private geminiService = inject(GeminiService);
+  private aiService = inject(AIService);
   private router = inject(Router);
 
   private map: any = null;
@@ -77,7 +77,7 @@ export class MasterSearchComponent implements OnInit, OnDestroy {
     this.isSearching.set(true);
 
     try {
-      const rankedIds = await this.geminiService.searchMasters(
+      const rankedIds = await this.aiService.searchMasters(
         this.searchQuery,
         this.allMasters()
       );

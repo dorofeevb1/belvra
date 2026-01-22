@@ -1,8 +1,7 @@
 """
-AI service using Google Gemini API.
+AI service using Perplexity API for text and Ollama LLaVA for vision.
 """
 
-import base64
 import json
 import logging
 import re
@@ -13,30 +12,58 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 
 
-class GeminiService:
-    """Service for interacting with Google Gemini AI."""
+class AIService:
+    """Service for interacting with Perplexity AI and Ollama LLaVA."""
 
     def __init__(self):
-        self.api_key = getattr(settings, "GEMINI_API_KEY", "")
-        self.model = "gemini-2.0-flash"
-        self.base_url = "https://generativelanguage.googleapis.com/v1beta"
+        self.perplexity_api_key = getattr(settings, "PERPLEXITY_API_KEY", "")
+        self.perplexity_model = "sonar"
+        self.perplexity_url = "https://api.perplexity.ai/chat/completions"
+        self.ollama_url = getattr(settings, "OLLAMA_URL", "http://localhost:11434")
+        self.ollama_vision_model = "llava:7b"
 
-    def _make_request(self, contents: list[dict]) -> dict | None:
-        """Make a request to the Gemini API."""
+    def _make_perplexity_request(self, messages: list[dict], max_tokens: int = 1024) -> dict | None:
+        """Make a request to the Perplexity API."""
         import requests
 
-        if not self.api_key:
-            logger.warning("Gemini API key not configured")
+        if not self.perplexity_api_key:
+            logger.warning("Perplexity API key not configured")
             return None
 
-        url = f"{self.base_url}/models/{self.model}:generateContent?key={self.api_key}"
+        payload = {
+            "model": self.perplexity_model,
+            "messages": messages,
+            "max_tokens": max_tokens,
+            "temperature": 0.7,
+        }
+
+        try:
+            response = requests.post(
+                self.perplexity_url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {self.perplexity_api_key}",
+                    "Content-Type": "application/json"
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            return response.json()
+        except Exception as e:
+            logger.error(f"Perplexity API error: {e}")
+            return None
+
+    def _make_ollama_vision_request(self, image_base64: str, prompt: str) -> dict | None:
+        """Make a vision request to Ollama API with LLaVA model."""
+        import requests
+
+        url = f"{self.ollama_url}/api/generate"
 
         payload = {
-            "contents": contents,
-            "generationConfig": {
-                "temperature": 0.7,
-                "maxOutputTokens": 1024,
-            }
+            "model": self.ollama_vision_model,
+            "prompt": prompt,
+            "images": [image_base64],
+            "stream": False
         }
 
         try:
@@ -44,17 +71,36 @@ class GeminiService:
                 url,
                 json=payload,
                 headers={"Content-Type": "application/json"},
-                timeout=30
+                timeout=120
             )
             response.raise_for_status()
             return response.json()
         except Exception as e:
-            logger.error(f"Gemini API error: {e}")
+            logger.error(f"Ollama API error: {e}")
             return None
+
+    def _extract_perplexity_text(self, response: dict) -> str:
+        """Extract text from Perplexity response."""
+        try:
+            return response.get("choices", [{}])[0].get("message", {}).get("content", "")
+        except (IndexError, KeyError):
+            return ""
+
+    def _extract_ollama_text(self, response: dict) -> str:
+        """Extract text from Ollama response."""
+        try:
+            return response.get("response", "")
+        except (KeyError):
+            return ""
 
     def _extract_json(self, text: str) -> dict | None:
         """Extract JSON from response text."""
         try:
+            # Try to find JSON in markdown code block first
+            match = re.search(r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', text)
+            if match:
+                return json.loads(match.group(1))
+            # Otherwise try to find raw JSON
             match = re.search(r'\{[\s\S]*\}', text)
             if match:
                 return json.loads(match.group(0))
@@ -64,7 +110,7 @@ class GeminiService:
 
     def generate_portfolio_content(self, image_base64: str) -> dict[str, Any]:
         """
-        Generate description and hashtags for a portfolio image.
+        Generate description and hashtags for a portfolio image using Ollama LLaVA.
 
         Args:
             image_base64: Base64 encoded image data
@@ -72,38 +118,30 @@ class GeminiService:
         Returns:
             Dict with 'description' and 'hashtags' keys
         """
-        contents = [
-            {
-                "role": "user",
-                "parts": [
-                    {
-                        "inlineData": {
-                            "mimeType": "image/jpeg",
-                            "data": image_base64
-                        }
-                    },
-                    {
-                        "text": """Ты - эксперт в бьюти-индустрии. Проанализируй это изображение работы бьюти-мастера.
+        prompt = """Проанализируй это изображение работы бьюти-мастера (маникюр, макияж, прическа, брови и т.д.).
 
-Ответь строго в JSON формате:
+Определи:
+1. Какой тип работы изображён (маникюр, педикюр, макияж, причёска, брови, ресницы и т.д.)
+2. Особенности работы (цвет, техника, стиль)
+3. Качество исполнения
+
+Сгенерируй профессиональное описание для портфолио мастера и релевантные хештеги.
+
+Ответь СТРОГО в JSON формате без дополнительного текста:
 {
-  "description": "Профессиональное описание работы на русском языке (2-3 предложения)",
+  "description": "Профессиональное описание работы на русском языке (2-3 предложения, описывающие конкретно ЭТУ работу)",
   "hashtags": ["хештег1", "хештег2", "хештег3", "хештег4", "хештег5"]
 }
 
-Хештеги должны быть релевантными, на русском языке, без символа #."""
-                    }
-                ]
-            }
-        ]
+Хештеги должны быть на русском языке, без символа #, релевантные именно этой работе."""
 
-        response = self._make_request(contents)
+        response = self._make_ollama_vision_request(image_base64, prompt)
 
         if not response:
             return {"description": "", "hashtags": []}
 
         try:
-            text = response.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            text = self._extract_ollama_text(response)
             parsed = self._extract_json(text)
             if parsed:
                 return {
@@ -135,12 +173,14 @@ class GeminiService:
             for m in chat_history[-10:]
         )
 
-        contents = [
+        messages = [
+            {
+                "role": "system",
+                "content": "Ты - помощник бьюти-мастера. Помогаешь составлять короткие профессиональные ответы клиентам."
+            },
             {
                 "role": "user",
-                "parts": [
-                    {
-                        "text": f"""Ты - помощник бьюти-мастера. На основе истории переписки и последнего сообщения клиента, предложи 3 коротких варианта ответа.
+                "content": f"""На основе истории переписки и последнего сообщения клиента, предложи 3 коротких варианта ответа.
 
 История переписки:
 {history_text}
@@ -157,18 +197,16 @@ class GeminiService:
 }}
 
 Ответы должны быть вежливыми, профессиональными и уместными для бьюти-сферы."""
-                    }
-                ]
             }
         ]
 
-        response = self._make_request(contents)
+        response = self._make_perplexity_request(messages)
 
         if not response:
             return []
 
         try:
-            text = response.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            text = self._extract_perplexity_text(response)
             parsed = self._extract_json(text)
             if parsed:
                 suggestions = parsed.get("suggestions", [])
@@ -208,14 +246,14 @@ class GeminiService:
             for m in masters
         ]
 
-        contents = [
+        messages = [
+            {
+                "role": "system",
+                "content": "Ты - поисковая система для бьюти-услуг. Анализируешь запросы пользователей и ранжируешь мастеров по релевантности."
+            },
             {
                 "role": "user",
-                "parts": [
-                    {
-                        "text": f"""Ты - поисковая система для бьюти-услуг. Пользователь ищет мастера по запросу.
-
-Запрос пользователя: "{query}"
+                "content": f"""Пользователь ищет мастера по запросу: "{query}"
 
 Список доступных мастеров:
 {json.dumps(masters_info, ensure_ascii=False, indent=2)}
@@ -228,18 +266,16 @@ class GeminiService:
 }}
 
 Если ни один мастер не подходит, верни пустой массив."""
-                    }
-                ]
             }
         ]
 
-        response = self._make_request(contents)
+        response = self._make_perplexity_request(messages)
 
         if not response:
             return [str(m.get("id", "")) for m in masters]
 
         try:
-            text = response.get("candidates", [{}])[0].get("content", {}).get("parts", [{}])[0].get("text", "")
+            text = self._extract_perplexity_text(response)
             parsed = self._extract_json(text)
             if parsed:
                 return parsed.get("masterIds", [])
@@ -247,3 +283,7 @@ class GeminiService:
             logger.error(f"Error parsing master search: {e}")
 
         return [str(m.get("id", "")) for m in masters]
+
+
+# Alias for backward compatibility
+GeminiService = AIService

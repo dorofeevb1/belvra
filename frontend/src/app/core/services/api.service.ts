@@ -664,4 +664,52 @@ export class ApiService {
       masters
     });
   }
+
+  // ============ Subscription endpoints ============
+
+  getSubscription(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/current/`);
+  }
+
+  getSubscriptionUsage(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/usage/`);
+  }
+
+  createSubscription(data: {
+    plan_id: string;
+    return_url?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/subscriptions/subscribe/`, data);
+  }
+
+  cancelSubscription(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/subscriptions/cancel/`, {});
+  }
+
+  reactivateSubscription(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/subscriptions/reactivate/`, {});
+  }
+
+  changeSubscriptionPlan(data: {
+    plan_id: string;
+    return_url?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/subscriptions/change-plan/`, data);
+  }
+
+  getSubscriptionPayments(params?: any): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params) {
+      Object.keys(params).forEach(key => {
+        if (params[key] !== undefined && params[key] !== null) {
+          httpParams = httpParams.set(key, params[key]);
+        }
+      });
+    }
+    return this.http.get(`${this.baseUrl}/subscriptions/payments/`, { params: httpParams });
+  }
+
+  getSubscriptionPlans(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/plans/`);
+  }
 }

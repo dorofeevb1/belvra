@@ -11,9 +11,88 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  position: relative;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, var(--color-brand-500) 0%, var(--color-brand-600) 100%);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    text-align: center;
+    padding: 2rem 1.5rem;
+  }
+}
+
+.header-bg {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.header-circle {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.header-circle-1 {
+  width: 200px;
+  height: 200px;
+  top: -100px;
+  right: -50px;
+}
+
+.header-circle-2 {
+  width: 150px;
+  height: 150px;
+  bottom: -75px;
+  left: -50px;
 }
 
 .header-content {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  z-index: 1;
+
+  @media (max-width: 640px) {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+.header-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+  flex-shrink: 0;
+
+  svg {
+    width: 1.75rem;
+    height: 1.75rem;
+    color: white;
+  }
+
+  @media (max-width: 640px) {
+    width: 4rem;
+    height: 4rem;
+    background: rgba(255, 255, 255, 0.25);
+
+    svg {
+      width: 2rem;
+      height: 2rem;
+    }
+  }
+}
+
+.header-text {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
@@ -22,13 +101,17 @@
 .page-title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: white;
   letter-spacing: -0.025em;
+
+  @media (max-width: 640px) {
+    font-size: 1.375rem;
+  }
 }
 
 .page-subtitle {
   font-size: 0.875rem;
-  color: var(--color-text-tertiary);
+  color: rgba(255, 255, 255, 0.8);
 }
 
 .status-badge {
@@ -38,15 +121,17 @@
   padding: 0.375rem 0.75rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-success);
-  background: var(--color-success-bg);
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-full);
+  position: relative;
+  z-index: 1;
 }
 
 .status-dot {
   width: 0.5rem;
   height: 0.5rem;
-  background: var(--color-success);
+  background: #4ade80;
   border-radius: var(--radius-full);
   animation: pulse-dot 2s ease-in-out infinite;
 }
@@ -406,6 +491,14 @@
   margin-top: 0.5rem;
 }
 
+.map-error-text {
+  font-size: 0.75rem;
+  color: var(--color-error, #ef4444);
+  margin-top: 0.5rem;
+  text-align: center;
+  padding: 0 1rem;
+}
+
 /* Empty State */
 .empty-state {
   display: flex;
@@ -434,4 +527,158 @@
 .empty-state-title {
   font-size: 0.875rem;
   color: var(--color-text-tertiary);
+}
+
+/* Subscription Banner */
+.subscription-banner {
+  margin-top: -0.5rem;
+}
+
+.subscription-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(245, 158, 11, 0.08));
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+:host-context(.dark) .subscription-card {
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+  border-color: rgba(251, 191, 36, 0.3);
+}
+
+.subscription-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  flex-wrap: wrap;
+}
+
+.subscription-icon {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 0.75rem;
+  flex-shrink: 0;
+}
+
+.subscription-icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.subscription-info {
+  flex: 1;
+  min-width: 200px;
+}
+
+.subscription-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin: 0 0 0.125rem 0;
+}
+
+.subscription-desc {
+  font-size: 0.8125rem;
+  color: var(--color-text-tertiary);
+  margin: 0;
+}
+
+.btn-pro {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+
+.btn-pro:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.35);
+}
+
+.usage-limits {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 0 1.25rem 1rem 1.25rem;
+}
+
+@media (max-width: 640px) {
+  .usage-limits {
+    grid-template-columns: 1fr;
+  }
+}
+
+.usage-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+}
+
+.usage-count {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.usage-bar {
+  height: 0.375rem;
+  background: var(--color-surface-tertiary);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+}
+
+.usage-fill {
+  height: 100%;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: var(--radius-full);
+  transition: width 0.3s ease;
+}
+
+.usage-fill.usage-warning {
+  background: linear-gradient(135deg, #fb923c, #f97316);
+}
+
+.usage-fill.usage-critical {
+  background: linear-gradient(135deg, #f87171, #ef4444);
+}
+
+/* PRO Status Section */
+.pro-status-section {
+  margin-top: -0.5rem;
+}
+
+.pro-status-card-inline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.1));
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.pro-status-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pro-status-text {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
 }

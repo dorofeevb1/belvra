@@ -7,7 +7,7 @@ import { ApiService } from './api.service';
 @Injectable({
   providedIn: 'root'
 })
-export class GeminiService {
+export class AIService {
   private api = inject(ApiService);
 
   async generatePortfolioContent(imageBase64: string): Promise<AIGeneratedContent> {
@@ -60,3 +60,6 @@ export class GeminiService {
     }
   }
 }
+
+// Alias for backward compatibility
+export const GeminiService = AIService;

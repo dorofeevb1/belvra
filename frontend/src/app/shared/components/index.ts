@@ -4,3 +4,6 @@ export * from './modal.component';
 export * from './notification-toast.component';
 export * from './loading-spinner.component';
 export * from './empty-state.component';
+export * from './pro-badge.component';
+export * from './upgrade-banner.component';
+export * from './feature-gate.component';

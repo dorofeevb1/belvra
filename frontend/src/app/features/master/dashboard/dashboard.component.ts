@@ -1,10 +1,12 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, DataService, DateService } from '../../../core/services';
+import { SubscriptionService } from '../../../core/services/subscription.service';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
 import { BarChartComponent } from './charts/bar-chart.component';
 import { DonutChartComponent } from './charts/donut-chart.component';
+import { ProBadgeComponent } from '../../../shared/components/pro-badge.component';
 
 declare const ymaps: any;
 
@@ -13,15 +15,18 @@ declare const ymaps: any;
   standalone: true,
   imports: [
     CommonModule,
+    RouterLink,
     CurrencyRubPipe,
     BarChartComponent,
-    DonutChartComponent
+    DonutChartComponent,
+    ProBadgeComponent
   ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit, OnDestroy {
   authService = inject(AuthService);
+  subscriptionService = inject(SubscriptionService);
   private dataService = inject(DataService);
   private dateService = inject(DateService);
   router = inject(Router);
@@ -29,6 +34,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   private map: any = null;
   isLoading = signal(true);
   mapLoaded = signal(false);
+  mapError = signal<string | null>(null);
   stats = signal({ totalProfit: 0, upcomingAppointments: 0, newClients: 0, averageRating: 0 });
   weeklyTrend = signal<{ date: string; count: number }[]>([]);
   servicesPopularity = signal<{ serviceName: string; count: number }[]>([]);
@@ -56,7 +62,13 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.loadData();
+    // Load subscription usage stats
+    this.subscriptionService.loadUsageStats().subscribe();
+
+    // Refresh profile to get latest data (including coordinates)
+    this.authService.refreshProfile().subscribe(() => {
+      this.loadData();
+    });
   }
 
   ngOnDestroy(): void {
@@ -156,13 +168,18 @@ export class DashboardComponent implements OnInit, OnDestroy {
     const master = this.authService.masterData();
 
     if (!master?.coordinates) {
+      console.warn('No coordinates available for map. User may need to re-login.');
+      this.mapError.set('Координаты не указаны. Перезайдите в аккаунт для обновления данных.');
       return;
     }
 
-    // Wait for ymaps to be available (retry up to 10 times)
+    // Wait for ymaps to be available (retry up to 20 times = 10 seconds)
     if (typeof ymaps === 'undefined') {
-      if (retryCount < 10) {
+      if (retryCount < 20) {
         setTimeout(() => this.initMap(retryCount + 1), 500);
+      } else {
+        console.error('Yandex Maps API failed to load');
+        this.mapError.set('Не удалось загрузить карту. Проверьте подключение к интернету.');
       }
       return;
     }
@@ -171,12 +188,6 @@ export class DashboardComponent implements OnInit, OnDestroy {
     if (!container) return;
 
     ymaps.ready(() => {
-      // Clear container before initializing
-      const mapContainer = document.getElementById('yandex-map');
-      if (mapContainer) {
-        mapContainer.innerHTML = '';
-      }
-
       try {
         this.map = new ymaps.Map('yandex-map', {
           center: [master.coordinates!.lat, master.coordinates!.lng],
@@ -206,6 +217,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.mapLoaded.set(true);
       } catch (e) {
         console.error('Error initializing map:', e);
+        this.mapError.set('Ошибка инициализации карты');
       }
     });
   }
@@ -221,5 +233,17 @@ export class DashboardComponent implements OnInit, OnDestroy {
       case 'review':
         break;
     }
+  }
+
+  // Subscription usage helpers
+  getUsagePercent(used: number, limit: number | null): number {
+    if (!limit) return 0;
+    return Math.min(100, (used / limit) * 100);
+  }
+
+  getUsageClass(percent: number): string {
+    if (percent >= 100) return 'usage-critical';
+    if (percent >= 80) return 'usage-warning';
+    return 'usage-normal';
   }
 }

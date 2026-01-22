@@ -31,16 +31,20 @@ import { NotificationToastComponent } from '../../shared/components/notification
     .app-layout {
       min-height: 100vh;
       background: var(--color-bg-secondary);
+      overflow-x: hidden;
     }
 
     .app-container {
       display: flex;
+      overflow-x: hidden;
     }
 
     .app-main {
       flex: 1;
       padding: 1rem;
       min-height: calc(100vh - 60px);
+      overflow-x: hidden;
+      max-width: 100%;
     }
 
     @media (min-width: 1024px) {

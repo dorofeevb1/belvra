@@ -152,25 +152,34 @@ class PaymentViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """Create a new payment."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        appointment = Appointment.objects.get(id=data["appointment_id"])
-
-        payment_service = PaymentService()
-        payment = payment_service.create_appointment_payment(
-            appointment=appointment,
-            payment_type=data.get("payment_type", Payment.PaymentType.FULL_PAYMENT),
-            amount=data.get("amount"),
-            return_url=data.get("return_url", settings.PAYMENT_RETURN_URL),
-            payment_method=data.get("payment_method"),
-        )
-
+        # DISABLED: Online payments are temporarily unavailable, cash only
         return Response(
-            PaymentSerializer(payment).data,
-            status=status.HTTP_201_CREATED
+            {
+                "detail": "Онлайн-оплата временно недоступна. Пожалуйста, оплатите наличными при посещении мастера."
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
         )
+
+        # COMMENTED OUT: Original online payment creation logic
+        # serializer = self.get_serializer(data=request.data)
+        # serializer.is_valid(raise_exception=True)
+        #
+        # data = serializer.validated_data
+        # appointment = Appointment.objects.get(id=data["appointment_id"])
+        #
+        # payment_service = PaymentService()
+        # payment = payment_service.create_appointment_payment(
+        #     appointment=appointment,
+        #     payment_type=data.get("payment_type", Payment.PaymentType.FULL_PAYMENT),
+        #     amount=data.get("amount"),
+        #     return_url=data.get("return_url", settings.PAYMENT_RETURN_URL),
+        #     payment_method=data.get("payment_method"),
+        # )
+        #
+        # return Response(
+        #     PaymentSerializer(payment).data,
+        #     status=status.HTTP_201_CREATED
+        # )
 
     @action(detail=True, methods=["post"])
     def refund(self, request, pk=None):
@@ -351,25 +360,34 @@ class WithdrawalViewSet(ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         """Create a new withdrawal request."""
-        serializer = self.get_serializer(data=request.data, context={"request": request})
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        wallet = request.user.master_profile.wallet
-        destination = PayoutDestination.objects.get(id=data["destination_id"])
-
-        withdrawal_service = WithdrawalService()
-        withdrawal = withdrawal_service.create_withdrawal(
-            wallet=wallet,
-            amount=data["amount"],
-            method=destination.destination_type,
-            destination=destination,
-        )
-
+        # DISABLED: Withdrawals are temporarily unavailable
         return Response(
-            WithdrawalSerializer(withdrawal).data,
-            status=status.HTTP_201_CREATED
+            {
+                "detail": "Вывод средств временно недоступен. Функция будет доступна после подключения платёжной системы."
+            },
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
         )
+
+        # COMMENTED OUT: Original withdrawal creation logic
+        # serializer = self.get_serializer(data=request.data, context={"request": request})
+        # serializer.is_valid(raise_exception=True)
+        #
+        # data = serializer.validated_data
+        # wallet = request.user.master_profile.wallet
+        # destination = PayoutDestination.objects.get(id=data["destination_id"])
+        #
+        # withdrawal_service = WithdrawalService()
+        # withdrawal = withdrawal_service.create_withdrawal(
+        #     wallet=wallet,
+        #     amount=data["amount"],
+        #     method=destination.destination_type,
+        #     destination=destination,
+        # )
+        #
+        # return Response(
+        #     WithdrawalSerializer(withdrawal).data,
+        #     status=status.HTTP_201_CREATED
+        # )
 
     @action(detail=True, methods=["post"])
     def cancel(self, request, pk=None):

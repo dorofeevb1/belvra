@@ -53,11 +53,13 @@ export class BookingCalendarComponent implements OnInit {
   weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
   // Computed: check if payment step is needed
-  readonly requiresPayment = computed(() => {
-    const master = this.master();
-    if (!master?.paymentSettings) return false;
-    return master.paymentSettings.onlinePaymentsEnabled && master.paymentSettings.prepaymentRequired;
-  });
+  // COMMENTED OUT: Online payment is disabled, cash only
+  // readonly requiresPayment = computed(() => {
+  //   const master = this.master();
+  //   if (!master?.paymentSettings) return false;
+  //   return master.paymentSettings.onlinePaymentsEnabled && master.paymentSettings.prepaymentRequired;
+  // });
+  readonly requiresPayment = computed(() => false); // Cash payment only
 
   // Computed: total steps
   readonly totalSteps = computed(() => this.requiresPayment() ? 4 : 3);

@@ -2,7 +2,7 @@ import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { Observable, tap, catchError, of, map } from 'rxjs';
 import { ApiService } from './api.service';
-import { User, Master, Client, UserRole, AuthCredentials } from '../models';
+import { User, Master, Client, UserRole, AuthCredentials, UserSubscription } from '../models';
 
 const TOKEN_KEY = 'beautybook_access_token';
 const REFRESH_TOKEN_KEY = 'beautybook_refresh_token';
@@ -75,6 +75,24 @@ export class AuthService {
     return master ? (master.masterProfileId || master.id) : null;
   });
 
+  /** Check if current user has active PRO subscription */
+  readonly isPro = computed(() => {
+    const user = this.currentUserSignal();
+    if (!user) return false;
+
+    const subscription = (user as Master | Client).subscription;
+    if (!subscription) return false;
+
+    if (subscription.tier !== 'pro') return false;
+
+    // Check if subscription is not expired
+    if (subscription.expiresAt) {
+      return new Date(subscription.expiresAt) > new Date();
+    }
+
+    return subscription.status === 'active';
+  });
+
   constructor() {
     this.checkStoredAuth();
   }
@@ -111,13 +129,31 @@ export class AuthService {
       createdAt: new Date(backendUser.created_at)
     };
 
+    // Map subscription data if available
+    let subscription: UserSubscription | undefined;
+    if (backendUser.subscription) {
+      subscription = {
+        tier: backendUser.subscription.tier || 'free',
+        expiresAt: backendUser.subscription.expires_at
+          ? new Date(backendUser.subscription.expires_at)
+          : undefined,
+        status: backendUser.subscription.status
+      };
+    }
+
     if (role === 'master') {
+      // Build coordinates if available
+      const coordinates = backendUser.latitude && backendUser.longitude
+        ? { lat: parseFloat(backendUser.latitude), lng: parseFloat(backendUser.longitude) }
+        : undefined;
+
       return {
         ...baseUser,
         masterProfileId: backendUser.master_profile_id || backendUser.id,
         specialization: backendUser.specialization || '',
         description: backendUser.bio || '',
-        address: '',
+        address: backendUser.address || '',
+        coordinates,
         rating: parseFloat(backendUser.rating) || 0,
         reviewsCount: backendUser.reviews_count || 0,
         workSchedule: {
@@ -129,13 +165,15 @@ export class AuthService {
           saturday: null,
           sunday: null
         },
-        services: []
+        services: [],
+        subscription
       } as Master;
     }
 
     return {
       ...baseUser,
-      favoritesMasters: []
+      favoritesMasters: [],
+      subscription
     } as Client;
   }
 
@@ -333,6 +371,27 @@ export class AuthService {
     return {
       admin: { email: 'admin@example.com', password: 'admin123' }
     };
+  }
+
+  // Refresh profile from backend (to get updated data like coordinates)
+  refreshProfile(): Observable<boolean> {
+    if (this.useDemoMode()) {
+      return of(true);
+    }
+
+    return this.api.getProfile().pipe(
+      tap(backendUser => {
+        const role: UserRole = backendUser.role === 'master' ? 'master' : 'client';
+        const user = this.mapBackendUser(backendUser, role);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUserSignal.set(user);
+      }),
+      map(() => true),
+      catchError(error => {
+        console.error('Profile refresh error:', error);
+        return of(false);
+      })
+    );
   }
 
   // Email verification

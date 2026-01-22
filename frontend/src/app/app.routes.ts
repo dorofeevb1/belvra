@@ -76,6 +76,10 @@ export const routes: Routes = [
       {
         path: 'settings',
         loadComponent: () => import('./features/master/settings/settings.component').then(m => m.SettingsComponent)
+      },
+      {
+        path: 'subscription',
+        loadComponent: () => import('./features/master/subscription/subscription.component').then(m => m.SubscriptionComponent)
       }
     ]
   },
@@ -101,12 +105,20 @@ export const routes: Routes = [
         loadComponent: () => import('./features/client/my-appointments/my-appointments.component').then(m => m.MyAppointmentsComponent)
       },
       {
+        path: 'chat',
+        loadComponent: () => import('./features/client/chat/client-chat.component').then(m => m.ClientChatComponent)
+      },
+      {
         path: 'favorites',
         loadComponent: () => import('./features/client/favorites/favorites.component').then(m => m.FavoritesComponent)
       },
       {
         path: 'profile',
         loadComponent: () => import('./features/client/profile/client-profile.component').then(m => m.ClientProfileComponent)
+      },
+      {
+        path: 'subscription',
+        loadComponent: () => import('./features/client/subscription/subscription.component').then(m => m.ClientSubscriptionComponent)
       }
     ]
   },

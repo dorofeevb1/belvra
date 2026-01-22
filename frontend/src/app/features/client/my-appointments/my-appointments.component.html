@@ -1,8 +1,15 @@
 <div class="appointments-page animate-fadeInUp">
   <header class="page-header">
-    <div>
-      <h1 class="page-title">Мои записи</h1>
-      <p class="page-subtitle">Управление вашими записями к мастерам</p>
+    <div class="header-content">
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1 class="page-title">Мои записи</h1>
+        <p class="page-subtitle">Управление вашими записями к мастерам</p>
+      </div>
     </div>
   </header>
 
@@ -174,8 +181,33 @@
               }
             </div>
 
+            <!-- Cash Payment Only Notice -->
+            <div class="cash-payment-notice">
+              <div class="cash-payment-icon">
+                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+              </div>
+              <h3 class="cash-payment-title">Оплата наличными</h3>
+              <p class="cash-payment-desc">
+                На данный момент доступна только оплата наличными при посещении мастера.
+              </p>
+              <p class="cash-payment-desc">
+                Онлайн-оплата временно недоступна.
+              </p>
+            </div>
+
+            <!-- Payment Summary -->
+            <div class="payment-summary">
+              <div class="payment-summary-row">
+                <span>К оплате при визите:</span>
+                <span class="payment-summary-amount">{{ apt.price | currencyRub }}</span>
+              </div>
+            </div>
+
+            <!-- COMMENTED OUT: Online Payment Options
             @if (!paymentUrl()) {
-              <!-- Payment Type Selection -->
+              // Payment Type Selection
               @if (!apt.prepaid || apt.prepaid === 0) {
                 <div class="form-group">
                   <label class="form-label">Тип оплаты</label>
@@ -210,7 +242,7 @@
                 </div>
               }
 
-              <!-- Payment Method Selection -->
+              // Payment Method Selection
               <div class="form-group">
                 <label class="form-label">Способ оплаты</label>
                 <div class="payment-methods-select">
@@ -249,7 +281,7 @@
                 </div>
               </div>
 
-              <!-- Payment Summary -->
+              // Payment Summary
               <div class="payment-summary">
                 <div class="payment-summary-row">
                   <span>К оплате:</span>
@@ -257,7 +289,7 @@
                 </div>
               </div>
             } @else {
-              <!-- Payment Created - Show Link -->
+              // Payment Created - Show Link
               <div class="payment-created">
                 <div class="payment-created-icon">
                   <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -270,9 +302,29 @@
                 </p>
               </div>
             }
+            END COMMENTED OUT -->
           </div>
 
           <div class="modal-footer">
+            <button
+              type="button"
+              (click)="closePaymentModal()"
+              class="btn btn-secondary"
+            >
+              Закрыть
+            </button>
+            <button
+              type="button"
+              (click)="closePaymentModal()"
+              class="btn btn-primary"
+            >
+              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              Понятно
+            </button>
+
+            <!-- COMMENTED OUT: Online Payment Buttons
             @if (!paymentUrl()) {
               <button
                 type="button"
@@ -313,6 +365,7 @@
                 Оплатить {{ paymentAmount() | currencyRub }}
               </button>
             }
+            END COMMENTED OUT -->
           </div>
         }
       </div>

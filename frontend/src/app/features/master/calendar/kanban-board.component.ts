@@ -102,7 +102,7 @@ import { TodoItem, TodoStatus, TODO_STATUS_LABELS, TODO_PRIORITY_COLORS } from '
               </div>
             } @empty {
               <div class="empty-column">
-                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
                 </svg>
                 <p>Нет задач</p>
@@ -270,6 +270,10 @@ import { TodoItem, TodoStatus, TODO_STATUS_LABELS, TODO_PRIORITY_COLORS } from '
       color: var(--color-text-disabled);
 
       svg {
+        width: 2rem;
+        height: 2rem;
+        max-width: 32px;
+        max-height: 32px;
         margin-bottom: 0.5rem;
       }
 

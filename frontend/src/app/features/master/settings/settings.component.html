@@ -81,6 +81,20 @@
         </svg>
         <span>Платежи</span>
       </button>
+      <button
+        type="button"
+        (click)="setTab('subscription')"
+        class="tab-btn"
+        [class.active]="activeTab() === 'subscription'"
+      >
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"></path>
+        </svg>
+        <span>Подписка</span>
+        @if (subscriptionService.isPro()) {
+          <span class="pro-indicator"></span>
+        }
+      </button>
     </nav>
 
     <!-- Profile Tab -->
@@ -881,6 +895,123 @@
             </div>
           }
         </form>
+      </section>
+    }
+
+    <!-- Subscription Tab -->
+    @if (activeTab() === 'subscription') {
+      <section class="card tab-content subscription-tab">
+        <div class="section-body">
+          <!-- Current Status -->
+          <div class="subscription-status-card" [class.is-pro]="subscriptionService.isPro()">
+            <div class="status-header">
+              <div class="status-icon">
+                @if (subscriptionService.isPro()) {
+                  <svg fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+                  </svg>
+                } @else {
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                }
+              </div>
+              <div class="status-info">
+                <h3>{{ subscriptionService.isPro() ? 'PRO подписка' : 'Бесплатный план' }}</h3>
+                @if (subscriptionService.isPro() && subscriptionService.daysUntilExpiry() !== null) {
+                  <p>
+                    @if (subscriptionService.subscription()?.cancelAtPeriodEnd) {
+                      Истекает через {{ subscriptionService.daysUntilExpiry() }} дн.
+                    } @else {
+                      Продление через {{ subscriptionService.daysUntilExpiry() }} дн.
+                    }
+                  </p>
+                } @else if (!subscriptionService.isPro()) {
+                  <p>Ограниченные возможности</p>
+                }
+              </div>
+            </div>
+            <a routerLink="/master/subscription" class="manage-btn">
+              {{ subscriptionService.isPro() ? 'Управление' : 'Улучшить' }}
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Usage Stats (for FREE users) -->
+          @if (!subscriptionService.isPro()) {
+            <div class="usage-section">
+              <h4 class="section-label">Использование лимитов</h4>
+              <div class="usage-grid">
+                <div class="usage-card">
+                  <div class="usage-header">
+                    <span class="usage-label">Записи в месяц</span>
+                    <span class="usage-value">{{ subscriptionService.usageStats().appointmentsThisMonth }}/{{ subscriptionService.limits().maxAppointmentsPerMonth }}</span>
+                  </div>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth)"></div>
+                  </div>
+                </div>
+                <div class="usage-card">
+                  <div class="usage-header">
+                    <span class="usage-label">Услуги</span>
+                    <span class="usage-value">{{ subscriptionService.usageStats().servicesCount }}/{{ subscriptionService.limits().maxServicesCount }}</span>
+                  </div>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount)"></div>
+                  </div>
+                </div>
+                <div class="usage-card">
+                  <div class="usage-header">
+                    <span class="usage-label">Портфолио</span>
+                    <span class="usage-value">{{ subscriptionService.usageStats().portfolioItemsCount }}/{{ subscriptionService.limits().maxPortfolioItems }}</span>
+                  </div>
+                  <div class="usage-bar">
+                    <div class="usage-fill" [style.width.%]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- PRO Benefits -->
+          <div class="benefits-section">
+            <h4 class="section-label">{{ subscriptionService.isPro() ? 'Ваши преимущества' : 'Преимущества PRO' }}</h4>
+            <ul class="benefits-list">
+              <li [class.active]="subscriptionService.isPro()">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Неограниченные записи</span>
+              </li>
+              <li [class.active]="subscriptionService.isPro()">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Неограниченные услуги и портфолио</span>
+              </li>
+              <li [class.active]="subscriptionService.isPro()">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Комиссия всего 5% (вместо 10%)</span>
+              </li>
+              <li [class.active]="subscriptionService.isPro()">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Продвижение в поиске</span>
+              </li>
+              <li [class.active]="subscriptionService.isPro()">
+                <svg fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                </svg>
+                <span>Расширенная аналитика</span>
+              </li>
+            </ul>
+          </div>
+        </div>
       </section>
     }
 

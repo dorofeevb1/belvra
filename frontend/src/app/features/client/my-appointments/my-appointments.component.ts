@@ -59,9 +59,11 @@ export class MyAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
-    this.handlePaymentReturn();
+    // COMMENTED OUT: Online payment handling
+    // this.handlePaymentReturn();
   }
 
+  /* COMMENTED OUT: Online payment return handling
   private handlePaymentReturn(): void {
     this.route.queryParams.subscribe(params => {
       const paymentStatus = params['payment'];
@@ -102,6 +104,7 @@ export class MyAppointmentsComponent implements OnInit {
       }
     });
   }
+  */
 
   private loadData(): void {
     const clientId = this.authService.clientData()?.id;
@@ -242,6 +245,7 @@ export class MyAppointmentsComponent implements OnInit {
     }
   }
 
+  /* COMMENTED OUT: Online payment processing
   processPayment(): void {
     const apt = this.paymentAppointment();
     if (!apt || this.paymentAmount() <= 0) return;
@@ -282,6 +286,7 @@ export class MyAppointmentsComponent implements OnInit {
       this.closePaymentModal();
     }
   }
+  */
 
   formatMoney(amount: number): string {
     return new Intl.NumberFormat('ru-RU', {

@@ -64,10 +64,19 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     client_name = serializers.CharField(source="client.full_name", read_only=True)
     master_name = serializers.CharField(source="master.user.full_name", read_only=True)
-    service_name = serializers.CharField(source="appointment.service.name", read_only=True)
+    service_name = serializers.SerializerMethodField()
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     payment_type_display = serializers.CharField(source="get_payment_type_display", read_only=True)
     payment_method_display = serializers.CharField(source="get_payment_method_display", read_only=True)
+
+    def get_service_name(self, obj):
+        """Get service name from master_service or service."""
+        if obj.appointment:
+            if obj.appointment.master_service:
+                return obj.appointment.master_service.name
+            elif obj.appointment.service:
+                return obj.appointment.service.name
+        return "Услуга"
 
     class Meta:
         model = Payment

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService, DataService, GeminiService } from '../../../core/services';
+import { AuthService, DataService, AIService } from '../../../core/services';
 import { Chat, ChatMessage, AISuggestion } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 
@@ -17,7 +17,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
 
   private authService = inject(AuthService);
   private dataService = inject(DataService);
-  private geminiService = inject(GeminiService);
+  private aiService = inject(AIService);
 
   isLoading = signal(true);
   chats = signal<Chat[]>([]);
@@ -48,7 +48,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   }
 
   private loadChats(): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.getChats(masterId).subscribe(data => {
@@ -89,7 +89,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
       content: m.content
     }));
 
-    const suggestions = await this.geminiService.generateChatSuggestions(chatHistory, lastMessage);
+    const suggestions = await this.aiService.generateChatSuggestions(chatHistory, lastMessage);
     this.aiSuggestions.set(suggestions);
   }
 
@@ -102,7 +102,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
     const chat = this.selectedChat();
     if (!chat || !this.newMessage.trim()) return;
 
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.sendMessage({

@@ -87,6 +87,16 @@ export class MasterProfileComponent implements OnInit, OnDestroy {
     });
   }
 
+  startChat(): void {
+    const masterId = this.id();
+    if (!masterId) return;
+
+    // Navigate to client chat with this master
+    this.router.navigate(['/client/chat'], {
+      queryParams: { masterId }
+    });
+  }
+
   private initMap(master: Master): void {
     if (typeof ymaps === 'undefined' || !master.coordinates) {
       return;

@@ -1,11 +1,22 @@
 <div class="dashboard animate-fadeInUp">
   <!-- Page Header -->
   <header class="page-header">
+    <div class="header-bg">
+      <div class="header-circle header-circle-1"></div>
+      <div class="header-circle header-circle-2"></div>
+    </div>
     <div class="header-content">
-      <h1 class="page-title">
-        {{ greeting }}, {{ getMasterFirstName() }}
-      </h1>
-      <p class="page-subtitle">Вот что происходит в вашем бизнесе сегодня</p>
+      <div class="header-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>
+      </div>
+      <div class="header-text">
+        <h1 class="page-title">
+          {{ greeting }}, {{ getMasterFirstName() }}
+        </h1>
+        <p class="page-subtitle">Вот что происходит в вашем бизнесе сегодня</p>
+      </div>
     </div>
     <span class="status-badge">
       <span class="status-dot"></span>
@@ -76,7 +87,7 @@
         </div>
         <div class="stat-content">
           <span class="stat-label">Рейтинг</span>
-          <span class="stat-value">{{ stats().averageRating || '4.9' }}</span>
+          <span class="stat-value">{{ stats().averageRating }}</span>
           <div class="star-rating">
             @for (star of [1,2,3,4,5]; track star) {
               <svg fill="currentColor" viewBox="0 0 20 20">
@@ -87,6 +98,104 @@
         </div>
       </div>
     </section>
+
+    <!-- PRO Upgrade Banner (for FREE users) -->
+    @if (!subscriptionService.isPro()) {
+      <section class="subscription-banner">
+        <div class="card subscription-card">
+          <div class="subscription-header">
+            <div class="subscription-icon">
+              <svg fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd"/>
+              </svg>
+            </div>
+            <div class="subscription-info">
+              <h3 class="subscription-title">Перейдите на PRO</h3>
+              <p class="subscription-desc">Снимите ограничения и получите больше клиентов</p>
+            </div>
+            <a routerLink="/master/subscription" class="btn btn-pro">
+              Подробнее
+            </a>
+          </div>
+
+          <!-- Usage Limits -->
+          <div class="usage-limits">
+            <!-- Appointments -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Записи в месяц</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().appointmentsThisMonth }}/{{ subscriptionService.limits().maxAppointmentsPerMonth || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().appointmentsThisMonth, subscriptionService.limits().maxAppointmentsPerMonth)"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Services -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Услуги</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().servicesCount }}/{{ subscriptionService.limits().maxServicesCount || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().servicesCount, subscriptionService.limits().maxServicesCount)"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Portfolio -->
+            <div class="usage-item">
+              <div class="usage-label">
+                <span>Портфолио</span>
+                <span class="usage-count">
+                  {{ subscriptionService.usageStats().portfolioItemsCount }}/{{ subscriptionService.limits().maxPortfolioItems || '∞' }}
+                </span>
+              </div>
+              <div class="usage-bar">
+                <div
+                  class="usage-fill"
+                  [class.usage-warning]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems) >= 80"
+                  [class.usage-critical]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems) >= 100"
+                  [style.width.%]="getUsagePercent(subscriptionService.usageStats().portfolioItemsCount, subscriptionService.limits().maxPortfolioItems)"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- PRO Status Badge (for PRO users) -->
+    @if (subscriptionService.isPro()) {
+      <section class="pro-status-section">
+        <div class="card pro-status-card-inline">
+          <div class="pro-status-content">
+            <app-pro-badge [size]="'md'" [showIcon]="true" />
+            <span class="pro-status-text">
+              @if (subscriptionService.daysUntilExpiry() !== null) {
+                Подписка активна • {{ subscriptionService.daysUntilExpiry() }} дн. до продления
+              } @else {
+                Подписка активна
+              }
+            </span>
+          </div>
+          <a routerLink="/master/subscription" class="btn btn-ghost btn-sm">Управление</a>
+        </div>
+      </section>
+    }
 
     <!-- Charts Row -->
     <section class="charts-grid">
@@ -195,7 +304,11 @@
                   </svg>
                 </div>
                 <span class="map-address">{{ authService.masterData()?.address }}</span>
-                <span class="map-loading-text">Загрузка карты...</span>
+                @if (mapError()) {
+                  <span class="map-error-text">{{ mapError() }}</span>
+                } @else {
+                  <span class="map-loading-text">Загрузка карты...</span>
+                }
               </div>
             }
           </div>

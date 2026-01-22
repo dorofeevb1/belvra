@@ -14,6 +14,8 @@ export interface Chat {
   clientId: string;
   clientName: string;
   clientAvatar?: string;
+  masterName?: string;
+  masterAvatar?: string;
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;

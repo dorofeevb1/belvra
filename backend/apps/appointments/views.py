@@ -237,10 +237,18 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         date_str = appointment.date.strftime("%d.%m.%Y")
         time_str = appointment.start_time.strftime("%H:%M")
 
+        # Get service name (custom service or catalog service)
+        if appointment.master_service:
+            service_name = appointment.master_service.name
+        elif appointment.service:
+            service_name = appointment.service.name
+        else:
+            service_name = "Услуга"
+
         send_appointment_cancelled_task.delay(
             recipient_email=recipient_email,
             recipient_name=recipient_name,
-            service_name=appointment.service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str,
             cancelled_by=cancelled_by,
@@ -252,7 +260,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         NotificationService.notify_appointment_cancelled(
             user=notify_user,
             cancelled_by=cancelled_by,
-            service_name=appointment.service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str,
             reason=appointment.cancellation_reason
@@ -298,11 +306,19 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         time_str = appointment.start_time.strftime("%H:%M")
         master_name = master.user.full_name or master.user.email
 
+        # Get service name (custom service or catalog service)
+        if appointment.master_service:
+            service_name = appointment.master_service.name
+        elif appointment.service:
+            service_name = appointment.service.name
+        else:
+            service_name = "Услуга"
+
         send_appointment_confirmation_task.delay(
             client_email=client.email,
             client_name=client.full_name or client.email,
             master_name=master_name,
-            service_name=appointment.service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str,
             price=str(appointment.price),
@@ -313,7 +329,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         NotificationService.notify_appointment_confirmed(
             client_user=client,
             master_name=master_name,
-            service_name=appointment.service.name,
+            service_name=service_name,
             date=date_str,
             time=time_str
         )
@@ -429,13 +445,21 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         new_date_str = appointment.date.strftime("%d.%m.%Y")
         new_time_str = appointment.start_time.strftime("%H:%M")
 
+        # Get service name (custom service or catalog service)
+        if appointment.master_service:
+            service_name = appointment.master_service.name
+        elif appointment.service:
+            service_name = appointment.service.name
+        else:
+            service_name = "Услуга"
+
         # Determine who rescheduled and send notifications
         if is_master:
             # Master rescheduled - notify client
             NotificationService.notify_appointment_rescheduled(
                 user=appointment.client,
                 rescheduled_by="мастером",
-                service_name=appointment.service.name,
+                service_name=service_name,
                 old_date=old_date_str,
                 old_time=old_time_str,
                 new_date=new_date_str,
@@ -446,7 +470,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             NotificationService.notify_appointment_rescheduled(
                 user=appointment.master.user,
                 rescheduled_by="клиентом",
-                service_name=appointment.service.name,
+                service_name=service_name,
                 old_date=old_date_str,
                 old_time=old_time_str,
                 new_date=new_date_str,

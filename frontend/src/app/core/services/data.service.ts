@@ -54,6 +54,11 @@ export class DataService {
   }
 
   private mapBackendMaster(backendMaster: any): Master {
+    // Build coordinates object if latitude and longitude are available
+    const coordinates = backendMaster.latitude && backendMaster.longitude
+      ? { lat: parseFloat(backendMaster.latitude), lng: parseFloat(backendMaster.longitude) }
+      : undefined;
+
     return {
       id: backendMaster.id,
       email: backendMaster.user?.email || '',
@@ -63,8 +68,8 @@ export class DataService {
       avatar: backendMaster.user?.avatar || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       specialization: backendMaster.specialization || '',
       description: backendMaster.bio || '',
-      address: '',
-      coordinates: { lat: 55.751244, lng: 37.618423 },
+      address: backendMaster.address || '',
+      coordinates,
       rating: parseFloat(backendMaster.rating) || 0,
       reviewsCount: backendMaster.reviews_count || 0,
       workSchedule: {
@@ -644,6 +649,8 @@ export class DataService {
       clientId: chat.client_id,
       clientName: chat.client_name || 'Клиент',
       clientAvatar: chat.client_avatar,
+      masterName: chat.master_name || 'Мастер',
+      masterAvatar: chat.master_avatar ? this.getFullMediaUrl(chat.master_avatar) : undefined,
       lastMessage: chat.last_message,
       lastMessageTime: chat.last_message_time ? new Date(chat.last_message_time) : undefined,
       unreadCount: chat.unread_count || 0

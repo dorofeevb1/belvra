@@ -1,8 +1,10 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
 import { forkJoin, of } from 'rxjs';
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
+import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
 
 interface BackendSchedule {
@@ -16,7 +18,7 @@ interface BackendSchedule {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
@@ -27,6 +29,7 @@ export class SettingsComponent implements OnInit {
   private notificationService = inject(NotificationService);
   protected themeService = inject(ThemeService);
   private apiService = inject(ApiService);
+  subscriptionService = inject(SubscriptionService);
 
   isLoading = signal(true);
   isSaving = signal(false);
@@ -36,7 +39,7 @@ export class SettingsComponent implements OnInit {
   private backendSchedules: BackendSchedule[] = [];
 
   // Active tab
-  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'payments'>('profile');
+  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'>('profile');
 
   // Avatar
   avatarPreview = signal<string>('');
@@ -285,6 +288,12 @@ export class SettingsComponent implements OnInit {
 
   // Service methods
   addService(service?: BeautyService): void {
+    // Check limit only for new services (not when loading existing ones)
+    if (!service && !this.subscriptionService.canAddService()) {
+      this.notificationService.warning('Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг.');
+      return;
+    }
+
     const group = this.fb.group({
       id: [service?.id || ''],
       serviceId: [service?.serviceId || ''], // Global catalog service ID
@@ -312,7 +321,7 @@ export class SettingsComponent implements OnInit {
   }
 
   // Tab navigation
-  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'payments'): void {
+  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'): void {
     this.activeTab.set(tab);
   }
 
@@ -682,5 +691,10 @@ export class SettingsComponent implements OnInit {
         error: (err) => reject(err)
       });
     });
+  }
+
+  getUsagePercent(used: number, limit: number | null): number {
+    if (!limit) return 0;
+    return Math.min(100, (used / limit) * 100);
   }
 }

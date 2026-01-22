@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, DataService, NotificationService } from '../../../core/services';
+import { SubscriptionService } from '../../../core/services/subscription.service';
 import { PortfolioItem } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import { PortfolioItemModalComponent } from './portfolio-item-modal.component';
@@ -20,6 +21,7 @@ export class PortfolioComponent implements OnInit {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private notificationService = inject(NotificationService);
+  private subscriptionService = inject(SubscriptionService);
 
   isLoading = signal(true);
   portfolio = signal<PortfolioItem[]>([]);
@@ -41,6 +43,10 @@ export class PortfolioComponent implements OnInit {
   }
 
   openAddModal(): void {
+    if (!this.subscriptionService.canAddPortfolioItem()) {
+      this.notificationService.warning('Достигнут лимит портфолио. Перейдите на PRO для добавления неограниченного количества работ.');
+      return;
+    }
     this.editingItem.set(null);
     this.showModal.set(true);
   }

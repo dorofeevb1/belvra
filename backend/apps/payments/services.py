@@ -19,6 +19,7 @@ from yookassa.domain.models import Amount, Receipt, ReceiptItem
 from yookassa.domain.request import PaymentRequest, RefundRequest
 
 from apps.appointments.models import Appointment
+from apps.core.notifications import NotificationService
 from apps.payments.models import Payment, PayoutDestination, Wallet, Withdrawal
 
 logger = logging.getLogger(__name__)
@@ -373,6 +374,16 @@ class PaymentService:
                 payment.appointment.status = Appointment.Status.CONFIRMED
             payment.appointment.save()
 
+        # Send notification to master about received payment
+        if payment.master and payment.master.user:
+            client_name = payment.client.full_name if payment.client else "Клиент"
+            NotificationService.notify_payment_received(
+                master_user=payment.master.user,
+                client_name=client_name,
+                amount=str(payment.amount),
+                service_name=payment.description or "Услуга"
+            )
+
         logger.info(f"Processed successful payment {payment.id}, net amount: {payment.net_amount}")
 
     @transaction.atomic
@@ -428,6 +439,14 @@ class PaymentService:
         wallet.total_earned -= net_refund
         wallet.total_commission_paid -= commission_refund
         wallet.save()
+
+        # Send notification to client about refund
+        if payment.client:
+            NotificationService.notify_payment_refunded(
+                client_user=payment.client,
+                amount=str(refund_amount),
+                reason=reason or "Возврат средств"
+            )
 
         logger.info(f"Processed refund for payment {payment.id}, amount: {refund_amount}")
 

@@ -1,12 +1,12 @@
 import { Component, inject, signal, OnInit, OnDestroy, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { InAppNotificationService, InAppNotification } from '../../../core/services/in-app-notification.service';
 
 @Component({
   selector: 'app-notification-bell',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule],
   template: `
     <div class="notification-container">
       <button class="bell-button" (click)="toggleDropdown()" [class.has-unread]="notificationService.unreadCount() > 0">
@@ -163,11 +163,24 @@ import { InAppNotificationService, InAppNotification } from '../../../core/servi
       top: calc(100% + 8px);
       right: 0;
       width: 380px;
+      max-width: calc(100vw - 2rem);
       background: white;
       border-radius: 12px;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
       z-index: 1000;
       overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+      .dropdown {
+        position: fixed;
+        top: 60px;
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+        max-width: none;
+        max-height: calc(100vh - 80px);
+      }
     }
 
     .dropdown-header {

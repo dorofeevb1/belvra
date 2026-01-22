@@ -2,7 +2,7 @@ import { Component, input, output, inject, signal, OnChanges } from '@angular/co
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ModalComponent } from '../../../shared/components/modal.component';
-import { AuthService, DataService, GeminiService, NotificationService } from '../../../core/services';
+import { AuthService, DataService, AIService, NotificationService } from '../../../core/services';
 import { PortfolioItem, BeautyService } from '../../../core/models';
 
 @Component({
@@ -353,7 +353,7 @@ export class PortfolioItemModalComponent implements OnChanges {
 
   private authService = inject(AuthService);
   private dataService = inject(DataService);
-  private geminiService = inject(GeminiService);
+  private aiService = inject(AIService);
   private notificationService = inject(NotificationService);
 
   imagePreview = signal<string>('');
@@ -434,7 +434,7 @@ export class PortfolioItemModalComponent implements OnChanges {
     this.isGenerating.set(true);
 
     try {
-      const result = await this.geminiService.generatePortfolioContent(this.imageBase64());
+      const result = await this.aiService.generatePortfolioContent(this.imageBase64());
 
       if (result.description) {
         this.description = result.description;

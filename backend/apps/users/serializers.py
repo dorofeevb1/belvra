@@ -11,6 +11,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     full_name = serializers.ReadOnlyField()
     master_profile_id = serializers.SerializerMethodField()
+    # Master profile read fields
+    address = serializers.SerializerMethodField()
+    latitude = serializers.SerializerMethodField()
+    longitude = serializers.SerializerMethodField()
+    rating = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
     # Write-only fields for master profile updates
     specialization = serializers.CharField(write_only=True, required=False, allow_blank=True)
     bio = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -20,7 +26,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "phone", "first_name", "last_name",
             "full_name", "avatar", "role", "is_verified", "created_at",
-            "master_profile_id", "specialization", "bio"
+            "master_profile_id", "specialization", "bio",
+            "address", "latitude", "longitude", "rating", "reviews_count"
         ]
         read_only_fields = ["id", "is_verified", "created_at"]
 
@@ -28,6 +35,31 @@ class UserSerializer(serializers.ModelSerializer):
         """Return master profile ID if user is a master."""
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
             return str(obj.master_profile.id)
+        return None
+
+    def get_address(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return obj.master_profile.address
+        return None
+
+    def get_latitude(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return float(obj.master_profile.latitude) if obj.master_profile.latitude else None
+        return None
+
+    def get_longitude(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return float(obj.master_profile.longitude) if obj.master_profile.longitude else None
+        return None
+
+    def get_rating(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return float(obj.master_profile.rating)
+        return None
+
+    def get_reviews_count(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return obj.master_profile.reviews_count
         return None
 
     def update(self, instance, validated_data):
@@ -128,7 +160,8 @@ class MasterProfileSerializer(serializers.ModelSerializer):
         model = MasterProfile
         fields = [
             "id", "user", "bio", "experience_years",
-            "specialization", "rating", "reviews_count", "is_available"
+            "specialization", "rating", "reviews_count", "is_available",
+            "address", "latitude", "longitude"
         ]
         read_only_fields = ["id", "rating", "reviews_count"]
 

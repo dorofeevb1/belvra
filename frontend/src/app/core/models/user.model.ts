@@ -1,3 +1,5 @@
+import { UserSubscription } from './subscription.model';
+
 export type UserRole = 'master' | 'client';
 
 export interface User {
@@ -69,6 +71,7 @@ export interface Master extends User {
   socialLinks?: SocialLinks;
   notificationSettings?: NotificationSettings;
   paymentSettings?: PaymentSettings;
+  subscription?: UserSubscription;
 }
 
 export interface SavedCard {
@@ -85,6 +88,7 @@ export interface Client extends User {
   favoritesMasters?: string[];
   savedCards?: SavedCard[];
   notificationSettings?: NotificationSettings;
+  subscription?: UserSubscription;
 }
 
 export interface WorkSchedule {
