@@ -37,10 +37,17 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
 
   filteredChats = computed(() => {
     const query = this.searchQuery.toLowerCase().trim();
-    if (!query) return this.chats();
-    return this.chats().filter(c =>
-      c.masterName?.toLowerCase().includes(query)
-    );
+    let result = this.chats();
+    if (query) {
+      result = result.filter(c =>
+        c.masterName?.toLowerCase().includes(query)
+      );
+    }
+    return [...result].sort((a, b) => {
+      const timeA = a.lastMessageTime ? new Date(a.lastMessageTime).getTime() : 0;
+      const timeB = b.lastMessageTime ? new Date(b.lastMessageTime).getTime() : 0;
+      return timeB - timeA;
+    });
   });
 
   filteredMasters = computed(() => {
@@ -136,7 +143,7 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
         list.map(c => c.id === chat.id ? {
           ...c,
           lastMessage: message.content,
-          lastMessageTime: message.timestamp
+          lastMessageTime: message.timestamp || new Date()
         } : c)
       );
     });
