@@ -177,7 +177,9 @@ class TestGetMessagesAPI:
         response = authenticated_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 8
+        # Paginated response
+        results = response.data.get("results", response.data)
+        assert len(results) == 8
 
     def test_get_messages_not_participant(self, authenticated_client):
         chat = ChatFactory()  # Other user's chat

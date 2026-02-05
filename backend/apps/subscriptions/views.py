@@ -232,6 +232,12 @@ class ChangePlanView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        if new_plan.user_type != subscription.plan.user_type:
+            return Response(
+                {"error": "Невозможно сменить тип плана"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         service = SubscriptionService()
         result = service.change_plan(subscription, new_plan, immediately)
 

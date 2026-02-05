@@ -27,6 +27,11 @@ help:
 	@echo "  make prod-build       - Build production images"
 	@echo "  make prod-up          - Start production"
 	@echo "  make prod-down        - Stop production"
+	@echo "  make deploy           - Deploy to production server"
+	@echo ""
+	@echo "Infrastructure:"
+	@echo "  make gitlab-setup     - Install GitLab CE on server"
+	@echo "  make gitlab-runner    - Setup GitLab CI Runner"
 
 # Development
 build:
@@ -99,3 +104,14 @@ restart:
 
 restart-backend:
 	docker compose restart backend celery celery-beat
+
+# Deploy
+deploy:
+	bash infra/deploy.sh
+
+# Infrastructure
+gitlab-setup:
+	bash infra/gitlab/setup.sh
+
+gitlab-runner:
+	bash infra/gitlab/setup-runner.sh

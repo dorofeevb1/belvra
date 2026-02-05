@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -158,6 +159,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             return AppointmentCreateSerializer
         return AppointmentSerializer
 
+    @transaction.atomic
     def perform_create(self, serializer):
         """Create appointment and send email to master."""
         appointment = serializer.save()
@@ -214,7 +216,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         serializer = AppointmentCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        appointment.status = Appointment.Status.CANCELLED
+        appointment.transition_to(Appointment.Status.CANCELLED)
         appointment.cancelled_at = timezone.now()
         appointment.cancellation_reason = serializer.validated_data.get("reason", "")
         appointment.save()
@@ -290,13 +292,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if appointment.status != Appointment.Status.PENDING:
-            return Response(
-                {"error": "Можно подтвердить только ожидающую запись"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        appointment.status = Appointment.Status.CONFIRMED
+        appointment.transition_to(Appointment.Status.CONFIRMED)
         appointment.save()
 
         # Send confirmation email to client
@@ -358,13 +354,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        if appointment.status != Appointment.Status.CONFIRMED:
-            return Response(
-                {"error": "Можно завершить только подтверждённую запись"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        appointment.status = Appointment.Status.COMPLETED
+        appointment.transition_to(Appointment.Status.COMPLETED)
         appointment.save()
 
         return Response(AppointmentSerializer(appointment).data)
@@ -530,16 +520,16 @@ class AvailableSlotsView(generics.GenericAPIView):
         )
 
         slots = []
-        current_time = datetime.combine(date, schedule.start_time)
-        end_datetime = datetime.combine(date, schedule.end_time)
+        current_time = timezone.make_aware(datetime.combine(date, schedule.start_time))
+        end_datetime = timezone.make_aware(datetime.combine(date, schedule.end_time))
 
         while current_time + slot_duration <= end_datetime:
             slot_end = current_time + slot_duration
             is_available = True
 
             for appt in existing_appointments:
-                appt_start = datetime.combine(date, appt.start_time)
-                appt_end = datetime.combine(date, appt.end_time)
+                appt_start = timezone.make_aware(datetime.combine(date, appt.start_time))
+                appt_end = timezone.make_aware(datetime.combine(date, appt.end_time))
 
                 if not (slot_end <= appt_start or current_time >= appt_end):
                     is_available = False

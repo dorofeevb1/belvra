@@ -2,6 +2,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets, status
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny, IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
@@ -140,7 +141,7 @@ class MasterServiceViewSet(viewsets.ModelViewSet):
         if hasattr(self.request.user, 'master_profile'):
             serializer.save(master=self.request.user.master_profile)
         else:
-            raise ValueError("User must have a master profile")
+            raise PermissionDenied("User must have a master profile")
 
     @extend_schema(
         tags=["Услуги мастеров"],
@@ -199,20 +200,20 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not hasattr(self.request.user, "master_profile"):
-            raise ValueError("User must have a master profile")
+            raise PermissionDenied("User must have a master profile")
         serializer.save(master=self.request.user.master_profile)
 
     def perform_update(self, serializer):
         # Ensure master can only update their own items
         instance = self.get_object()
         if instance.master != self.request.user.master_profile:
-            raise ValueError("You can only update your own portfolio items")
+            raise PermissionDenied("You can only update your own portfolio items")
         serializer.save()
 
     def perform_destroy(self, instance):
         # Ensure master can only delete their own items
         if instance.master != self.request.user.master_profile:
-            raise ValueError("You can only delete your own portfolio items")
+            raise PermissionDenied("You can only delete your own portfolio items")
         instance.delete()
 
     @extend_schema(

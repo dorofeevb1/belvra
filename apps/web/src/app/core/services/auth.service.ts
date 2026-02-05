@@ -1,50 +1,12 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, tap, catchError, of, map } from 'rxjs';
+import { Observable, tap, catchError, of, map, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
-import { User, Master, Client, UserRole, AuthCredentials, UserSubscription } from '../models';
+import { User, Master, Client, UserRole, UserSubscription } from '../models';
 
 const TOKEN_KEY = 'beautybook_access_token';
 const REFRESH_TOKEN_KEY = 'beautybook_refresh_token';
 const USER_KEY = 'beautybook_user';
-
-// Demo data for fallback mode
-const DEMO_MASTER: Master = {
-  id: 'master-1',
-  email: 'master@beautybook.ru',
-  name: 'Анна Петрова',
-  role: 'master',
-  phone: '+7 (999) 123-45-67',
-  avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-  specialization: 'Мастер маникюра и педикюра',
-  description: 'Профессиональный мастер маникюра с опытом работы более 5 лет.',
-  address: 'Москва, ул. Тверская, д. 15',
-  coordinates: { lat: 55.764019, lng: 37.606738 },
-  rating: 4.8,
-  reviewsCount: 156,
-  workSchedule: {
-    monday: { start: '09:00', end: '18:00' },
-    tuesday: { start: '09:00', end: '18:00' },
-    wednesday: { start: '09:00', end: '18:00' },
-    thursday: { start: '09:00', end: '18:00' },
-    friday: { start: '09:00', end: '18:00' },
-    saturday: { start: '10:00', end: '16:00' },
-    sunday: null
-  },
-  services: ['service-1', 'service-2', 'service-3'],
-  createdAt: new Date('2023-01-15')
-};
-
-const DEMO_CLIENT: Client = {
-  id: 'client-1',
-  email: 'client@beautybook.ru',
-  name: 'Мария Иванова',
-  role: 'client',
-  phone: '+7 (999) 987-65-43',
-  avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-  favoritesMasters: ['master-1'],
-  createdAt: new Date('2023-06-01')
-};
 
 @Injectable({
   providedIn: 'root'
@@ -55,11 +17,9 @@ export class AuthService {
 
   private currentUserSignal = signal<User | null>(null);
   private isAuthenticatedSignal = signal<boolean>(false);
-  private useDemoMode = signal<boolean>(false);
 
   readonly currentUser = this.currentUserSignal.asReadonly();
   readonly isAuthenticated = this.isAuthenticatedSignal.asReadonly();
-  readonly isDemoMode = this.useDemoMode.asReadonly();
 
   readonly isMaster = computed(() => this.currentUserSignal()?.role === 'master');
   readonly isClient = computed(() => this.currentUserSignal()?.role === 'client');
@@ -74,6 +34,8 @@ export class AuthService {
     const master = this.masterData();
     return master ? (master.masterProfileId || master.id) : null;
   });
+
+  readonly hasMasterProfile = computed(() => this.currentUserSignal()?.hasMasterProfile === true);
 
   /** Check if current user has active PRO subscription */
   readonly isPro = computed(() => {
@@ -126,6 +88,7 @@ export class AuthService {
       role: role,
       phone: backendUser.phone || '',
       avatar: backendUser.avatar,
+      hasMasterProfile: backendUser.has_master_profile || false,
       createdAt: new Date(backendUser.created_at)
     };
 
@@ -177,51 +140,52 @@ export class AuthService {
     } as Client;
   }
 
-  // Real API login
-  loginWithApi(email: string, password: string): Observable<boolean> {
+  login(email: string, password: string, preferredRole?: UserRole): Observable<boolean> {
     return this.api.login(email, password).pipe(
-      tap(response => {
+      switchMap(response => {
         localStorage.setItem(TOKEN_KEY, response.access);
         localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh);
 
-        const role: UserRole = response.user.role === 'master' ? 'master' : 'client';
-        const user = this.mapBackendUser(response.user, role);
+        const backendRole = response.user.role;
+        const hasMasterProfile = response.user.has_master_profile || false;
 
+        // Determine effective role based on preference
+        let effectiveRole: UserRole;
+        if (preferredRole === 'master' && (backendRole === 'master' || hasMasterProfile)) {
+          effectiveRole = 'master';
+        } else if (preferredRole === 'client') {
+          effectiveRole = 'client';
+        } else {
+          effectiveRole = backendRole === 'master' ? 'master' : 'client';
+        }
+
+        const user = this.mapBackendUser(response.user, effectiveRole);
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         this.currentUserSignal.set(user);
         this.isAuthenticatedSignal.set(true);
-        this.useDemoMode.set(false);
+
+        // If backend role differs from desired, switch on the server too
+        if (effectiveRole !== backendRole && (effectiveRole === 'master' || effectiveRole === 'client')) {
+          return this.api.switchRole(effectiveRole).pipe(
+            tap(switchResponse => {
+              localStorage.setItem(TOKEN_KEY, switchResponse.access);
+              localStorage.setItem(REFRESH_TOKEN_KEY, switchResponse.refresh);
+              const updatedUser = this.mapBackendUser(switchResponse.user, effectiveRole);
+              localStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+              this.currentUserSignal.set(updatedUser);
+            }),
+            map(() => true),
+            catchError(() => of(true)) // Login succeeded even if switch fails
+          );
+        }
+
+        return of(true);
       }),
-      map(() => true),
       catchError(error => {
         console.error('Login error:', error);
         return of(false);
       })
     );
-  }
-
-  // Demo mode login (fallback)
-  login(credentials: AuthCredentials): boolean {
-    // Try demo credentials
-    if (credentials.role === 'master') {
-      if (credentials.email === 'master@beautybook.ru' && credentials.password === 'master123') {
-        this.setDemoUser(DEMO_MASTER);
-        return true;
-      }
-    } else {
-      if (credentials.email === 'client@beautybook.ru' && credentials.password === 'client123') {
-        this.setDemoUser(DEMO_CLIENT);
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private setDemoUser(user: User): void {
-    this.currentUserSignal.set(user);
-    this.isAuthenticatedSignal.set(true);
-    this.useDemoMode.set(true);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
   }
 
   // Register new user
@@ -256,7 +220,6 @@ export class AuthService {
         localStorage.setItem(USER_KEY, JSON.stringify(user));
         this.currentUserSignal.set(user);
         this.isAuthenticatedSignal.set(true);
-        this.useDemoMode.set(false);
       }),
       map(() => true),
       catchError(error => {
@@ -266,16 +229,55 @@ export class AuthService {
     );
   }
 
+  switchRole(targetRole: UserRole): Observable<boolean> {
+    return this.api.switchRole(targetRole).pipe(
+      tap(response => {
+        localStorage.setItem(TOKEN_KEY, response.access);
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh);
+
+        const role: UserRole = response.user.role === 'master' ? 'master' : 'client';
+        const user = this.mapBackendUser(response.user, role);
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUserSignal.set(user);
+
+        // Navigate to the new role's section
+        this.router.navigate([role === 'master' ? '/master' : '/client']);
+      }),
+      map(() => true),
+      catchError(error => {
+        console.error('Switch role error:', error);
+        return of(false);
+      })
+    );
+  }
+
+  becomeMaster(): Observable<boolean> {
+    return this.api.becomeMaster().pipe(
+      tap(response => {
+        localStorage.setItem(TOKEN_KEY, response.access);
+        localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh);
+
+        const user = this.mapBackendUser(response.user, 'master');
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+        this.currentUserSignal.set(user);
+
+        this.router.navigate(['/master']);
+      }),
+      map(() => true),
+      catchError(error => {
+        console.error('Become master error:', error);
+        return of(false);
+      })
+    );
+  }
+
   logout(): void {
-    if (!this.useDemoMode()) {
-      this.api.logout().subscribe({
-        error: (err) => console.error('Logout error:', err)
-      });
-    }
+    this.api.logout().subscribe({
+      error: (err) => console.error('Logout error:', err)
+    });
 
     this.currentUserSignal.set(null);
     this.isAuthenticatedSignal.set(false);
-    this.useDemoMode.set(false);
     this.clearStorage();
     this.router.navigate(['/login']);
   }
@@ -287,8 +289,7 @@ export class AuthService {
       return of(false);
     }
 
-    // If localOnly flag is set or in demo mode, just update locally
-    if (localOnly || this.useDemoMode()) {
+    if (localOnly) {
       const updated = { ...current, ...updates } as Master;
       this.currentUserSignal.set(updated);
       localStorage.setItem(USER_KEY, JSON.stringify(updated));
@@ -313,11 +314,7 @@ export class AuthService {
       map(() => true),
       catchError(error => {
         console.error('Profile update error:', error);
-        // Still update locally on error
-        const updated = { ...current, ...updates } as Master;
-        this.currentUserSignal.set(updated);
-        localStorage.setItem(USER_KEY, JSON.stringify(updated));
-        return of(true);
+        return of(false);
       })
     );
   }
@@ -326,14 +323,6 @@ export class AuthService {
     const current = this.currentUserSignal();
     if (!current || current.role !== 'client') {
       return of(false);
-    }
-
-    // If in demo mode, just update locally
-    if (this.useDemoMode()) {
-      const updated = { ...current, ...updates } as Client;
-      this.currentUserSignal.set(updated);
-      localStorage.setItem(USER_KEY, JSON.stringify(updated));
-      return of(true);
     }
 
     // Call API to update profile
@@ -351,34 +340,13 @@ export class AuthService {
       map(() => true),
       catchError(error => {
         console.error('Profile update error:', error);
-        // Still update locally on error
-        const updated = { ...current, ...updates } as Client;
-        this.currentUserSignal.set(updated);
-        localStorage.setItem(USER_KEY, JSON.stringify(updated));
-        return of(true);
+        return of(false);
       })
     );
   }
 
-  getDemoCredentials(role: UserRole): { email: string; password: string } {
-    return role === 'master'
-      ? { email: 'master@beautybook.ru', password: 'master123' }
-      : { email: 'client@beautybook.ru', password: 'client123' };
-  }
-
-  // Get backend credentials hint
-  getBackendCredentials(): { admin: { email: string; password: string } } {
-    return {
-      admin: { email: 'admin@example.com', password: 'admin123' }
-    };
-  }
-
   // Refresh profile from backend (to get updated data like coordinates)
   refreshProfile(): Observable<boolean> {
-    if (this.useDemoMode()) {
-      return of(true);
-    }
-
     return this.api.getProfile().pipe(
       tap(backendUser => {
         const role: UserRole = backendUser.role === 'master' ? 'master' : 'client';

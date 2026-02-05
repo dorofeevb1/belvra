@@ -94,13 +94,32 @@ class Appointment(BaseModel):
     cancellation_reason = models.TextField(blank=True)
     is_archived = models.BooleanField(default=False, db_index=True)
 
+    VALID_TRANSITIONS = {
+        "pending": ["confirmed", "cancelled"],
+        "confirmed": ["completed", "cancelled", "no_show"],
+        "completed": [],
+        "cancelled": [],
+        "no_show": [],
+    }
+
     class Meta:
         verbose_name = "Запись"
         verbose_name_plural = "Записи"
         ordering = ["-date", "-start_time"]
+        indexes = [
+            models.Index(fields=["master", "date", "status"]),
+        ]
 
     def __str__(self):
         return f"{self.client.full_name} -> {self.master.user.full_name} ({self.date})"
+
+    def transition_to(self, new_status):
+        allowed = self.VALID_TRANSITIONS.get(self.status, [])
+        if new_status not in allowed:
+            raise ValidationError(
+                f"Нельзя перевести из '{self.get_status_display()}' в '{new_status}'"
+            )
+        self.status = new_status
 
     def clean(self):
         if self.start_time >= self.end_time:

@@ -84,6 +84,14 @@ export class ApiService {
     return this.http.delete(`${this.baseUrl}/auth/profile/avatar/`);
   }
 
+  switchRole(role: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/profile/switch-role/`, { role });
+  }
+
+  becomeMaster(): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/profile/become-master/`, {});
+  }
+
   changePassword(oldPassword: string, newPassword: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/password/change/`, {
       old_password: oldPassword,

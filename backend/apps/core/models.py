@@ -48,6 +48,7 @@ class Notification(BaseModel):
         REVIEW_NEW = "review_new", "Новый отзыв"
         PAYMENT_RECEIVED = "payment_received", "Платёж получен"
         PAYMENT_REFUNDED = "payment_refunded", "Возврат платежа"
+        CHAT_MESSAGE = "chat_message", "Новое сообщение"
         SYSTEM = "system", "Системное"
 
     user = models.ForeignKey(

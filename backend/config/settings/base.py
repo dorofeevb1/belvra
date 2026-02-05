@@ -177,6 +177,8 @@ REST_FRAMEWORK = {
     "DEFAULT_THROTTLE_RATES": {
         "anon": "100/hour",
         "user": "1000/hour",
+        "login": "10/minute",
+        "register": "5/minute",
     },
 }
 
@@ -308,7 +310,7 @@ SERVER_EMAIL = env.str("SERVER_EMAIL", default="errors@beautybook.ru")
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:4200")
 
 # AI Settings
-PERPLEXITY_API_KEY = env.str("PERPLEXITY_API_KEY", default="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")
+PERPLEXITY_API_KEY = env.str("PERPLEXITY_API_KEY", default="")
 OLLAMA_URL = env.str("OLLAMA_URL", default="http://localhost:11434")
 
 # Logging

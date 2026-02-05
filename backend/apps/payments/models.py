@@ -360,6 +360,9 @@ class Withdrawal(BaseModel):
         verbose_name = "Запрос на вывод"
         verbose_name_plural = "Запросы на вывод"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["wallet", "status"]),
+        ]
 
     def __str__(self):
         return f"Вывод #{self.id} - {self.amount} ₽ ({self.get_status_display()})"

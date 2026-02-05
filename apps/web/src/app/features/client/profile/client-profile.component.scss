@@ -15,7 +15,7 @@
   font-size: 1.5rem;
   font-weight: 600;
   margin-bottom: 1.5rem;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 // Tabs
@@ -24,7 +24,7 @@
   gap: 0.5rem;
   margin-bottom: 1.5rem;
   padding: 0.25rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 12px;
   overflow-x: auto;
 
@@ -43,7 +43,7 @@
   border: none;
   background: transparent;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -56,12 +56,12 @@
   }
 
   &:hover {
-    color: var(--text-primary);
+    color: var(--color-text-primary);
   }
 
   &.active {
-    background: var(--bg-primary);
-    color: var(--primary);
+    background: var(--color-surface-primary);
+    color: var(--color-brand-500);
     box-shadow: var(--shadow-sm);
   }
 }
@@ -95,7 +95,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,7 +103,7 @@
   svg {
     width: 40px;
     height: 40px;
-    color: var(--text-muted);
+    color: var(--color-text-tertiary);
   }
 }
 
@@ -114,7 +114,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--primary);
+  background: var(--color-brand-500);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -132,7 +132,7 @@
   }
 
   &:hover {
-    background: var(--primary-dark);
+    background: var(--color-brand-700);
   }
 }
 
@@ -141,7 +141,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--danger);
+  color: var(--color-error);
   font-size: 0.875rem;
   cursor: pointer;
 
@@ -158,7 +158,7 @@
     display: block;
     font-size: 0.875rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     margin-bottom: 0.5rem;
   }
 }
@@ -172,20 +172,20 @@
 .input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-border-primary);
   border-radius: 8px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: var(--color-surface-primary);
+  color: var(--color-text-primary);
   font-size: 1rem;
   transition: border-color 0.2s ease;
 
   &:focus {
     outline: none;
-    border-color: var(--primary);
+    border-color: var(--color-brand-500);
   }
 
   &::placeholder {
-    color: var(--text-muted);
+    color: var(--color-text-tertiary);
   }
 }
 
@@ -202,7 +202,7 @@ select.input {
   display: block;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   margin-bottom: 0.75rem;
 }
 
@@ -210,7 +210,7 @@ select.input {
   display: flex;
   gap: 0.5rem;
   padding: 0.25rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 10px;
 }
 
@@ -224,7 +224,7 @@ select.input {
   border: none;
   background: transparent;
   border-radius: 8px;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
   font-size: 0.875rem;
   font-weight: 500;
   cursor: pointer;
@@ -236,12 +236,12 @@ select.input {
   }
 
   &:hover {
-    color: var(--text-primary);
+    color: var(--color-text-primary);
   }
 
   &.active {
-    background: var(--bg-primary);
-    color: var(--primary);
+    background: var(--color-surface-primary);
+    color: var(--color-brand-500);
     box-shadow: var(--shadow-sm);
   }
 }
@@ -250,7 +250,7 @@ select.input {
 .logout-section {
   margin-top: 2rem;
   padding-top: 1.5rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-primary);
 }
 
 // Cards Tab
@@ -264,7 +264,7 @@ select.input {
 .section-title {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
   margin: 0;
 }
 
@@ -275,12 +275,12 @@ select.input {
   svg {
     width: 48px;
     height: 48px;
-    color: var(--text-muted);
+    color: var(--color-text-tertiary);
     margin-bottom: 1rem;
   }
 
   p {
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     margin-bottom: 1rem;
   }
 }
@@ -297,7 +297,7 @@ select.input {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 12px;
   transition: all 0.2s ease;
 
@@ -339,18 +339,18 @@ select.input {
 
 .card-number {
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 }
 
 .card-expiry {
   font-size: 0.875rem;
-  color: var(--text-secondary);
+  color: var(--color-text-secondary);
 }
 
 .card-default {
   padding: 0.25rem 0.5rem;
-  background: var(--primary-light);
-  color: var(--primary);
+  background: var(--color-brand-100);
+  color: var(--color-brand-500);
   font-size: 0.75rem;
   font-weight: 500;
   border-radius: 4px;
@@ -365,7 +365,7 @@ select.input {
   width: 32px;
   height: 32px;
   border: none;
-  background: var(--bg-primary);
+  background: var(--color-surface-primary);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -376,19 +376,19 @@ select.input {
   svg {
     width: 16px;
     height: 16px;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
 
   &:hover {
     svg {
-      color: var(--primary);
+      color: var(--color-brand-500);
     }
   }
 
   &.delete:hover {
-    background: var(--danger-light);
+    background: var(--color-error-bg);
     svg {
-      color: var(--danger);
+      color: var(--color-error);
     }
   }
 }
@@ -401,13 +401,13 @@ select.input {
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 12px;
   z-index: 1;
 
   p {
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
     margin: 0;
   }
 }
@@ -422,19 +422,19 @@ select.input {
   gap: 0.75rem;
   margin-top: 1.5rem;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 8px;
 
   svg {
     flex-shrink: 0;
     width: 20px;
     height: 20px;
-    color: var(--text-muted);
+    color: var(--color-text-tertiary);
   }
 
   p {
     font-size: 0.875rem;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
     margin: 0;
   }
 }
@@ -452,13 +452,13 @@ select.input {
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 12px;
   cursor: pointer;
   transition: background 0.2s ease;
 
   &:hover {
-    background: var(--bg-tertiary);
+    background: var(--color-surface-hover);
   }
 }
 
@@ -467,12 +467,12 @@ select.input {
   align-items: center;
   gap: 0.75rem;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--color-text-primary);
 
   svg {
     width: 20px;
     height: 20px;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
 }
 
@@ -486,7 +486,7 @@ select.input {
   position: relative;
   width: 44px;
   height: 24px;
-  background: var(--border-color);
+  background: var(--color-border-primary);
   border-radius: 12px;
   transition: background 0.2s ease;
 
@@ -505,7 +505,7 @@ select.input {
 }
 
 .toggle-input:checked + .toggle-switch {
-  background: var(--primary);
+  background: var(--color-brand-500);
 
   &::after {
     transform: translateX(20px);
@@ -527,7 +527,7 @@ select.input {
 .modal {
   width: 100%;
   max-width: 400px;
-  background: var(--bg-primary);
+  background: var(--color-surface-primary);
   border-radius: 16px;
   overflow: hidden;
   box-shadow: var(--shadow-xl);
@@ -538,13 +538,13 @@ select.input {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--color-border-primary);
 
   h3 {
     margin: 0;
     font-size: 1.125rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--color-text-primary);
   }
 }
 
@@ -552,7 +552,7 @@ select.input {
   width: 32px;
   height: 32px;
   border: none;
-  background: var(--bg-secondary);
+  background: var(--color-surface-secondary);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -563,11 +563,11 @@ select.input {
   svg {
     width: 20px;
     height: 20px;
-    color: var(--text-secondary);
+    color: var(--color-text-secondary);
   }
 
   &:hover {
-    background: var(--bg-tertiary);
+    background: var(--color-surface-hover);
   }
 }
 
@@ -580,7 +580,7 @@ select.input {
   justify-content: flex-end;
   gap: 0.75rem;
   padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--color-border-primary);
 }
 
 .card-secure-info {
@@ -589,7 +589,7 @@ select.input {
   justify-content: center;
   gap: 0.5rem;
   margin-top: 1rem;
-  color: var(--text-muted);
+  color: var(--color-text-tertiary);
   font-size: 0.875rem;
 
   svg {
@@ -624,39 +624,39 @@ select.input {
 }
 
 .btn-primary {
-  background: var(--primary);
+  background: var(--color-brand-500);
   color: white;
 
   &:hover:not(:disabled) {
-    background: var(--primary-dark);
+    background: var(--color-brand-700);
   }
 }
 
 .btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
+  background: var(--color-surface-secondary);
+  color: var(--color-text-primary);
 
   &:hover:not(:disabled) {
-    background: var(--bg-tertiary);
+    background: var(--color-surface-hover);
   }
 }
 
 .btn-danger {
-  background: var(--danger);
+  background: var(--color-error);
   color: white;
 
   &:hover:not(:disabled) {
-    background: var(--danger-dark);
+    background: var(--color-error);
   }
 }
 
 .btn-danger-outline {
   background: transparent;
-  color: var(--danger);
-  border: 1px solid var(--danger);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
 
   &:hover:not(:disabled) {
-    background: var(--danger-light);
+    background: var(--color-error-bg);
   }
 }
 
@@ -688,7 +688,7 @@ select.input {
 
 // Card
 .card {
-  background: var(--bg-primary);
+  background: var(--color-surface-primary);
   border-radius: 16px;
   box-shadow: var(--shadow-sm);
 }

@@ -464,6 +464,16 @@ export class SettingsComponent implements OnInit {
       // Step 5: Save services
       const masterId = this.authService.masterData()?.masterProfileId || this.authService.masterData()?.id;
       if (masterId) {
+        // Delete removed services from backend
+        const currentIds = new Set(this.servicesArray.value.map((s: any) => s.id).filter((id: string) => id && !id.startsWith('service-')));
+        const initialServices = this.initialValues.services || [];
+        for (const initial of initialServices) {
+          if (initial.id && !initial.id.startsWith('service-') && !currentIds.has(initial.id)) {
+            this.dataService.deleteService(initial.id).subscribe();
+          }
+        }
+
+        // Create/update remaining services
         const services = this.servicesArray.value;
         for (const service of services) {
           if (service.id && !service.id.startsWith('service-')) {
@@ -530,21 +540,6 @@ export class SettingsComponent implements OnInit {
 
   // Load schedule from backend API
   private loadScheduleFromApi(): void {
-    // Only load from API if not in demo mode
-    if (this.authService.isDemoMode()) {
-      const master = this.authService.masterData();
-      if (master?.workSchedule) {
-        this.weekDays.forEach(day => {
-          const schedule = master.workSchedule[day.key as keyof WorkSchedule];
-          this.scheduleForm.patchValue({
-            [day.key + 'Enabled']: !!schedule,
-            [day.key + 'Start']: schedule?.start || '09:00',
-            [day.key + 'End']: schedule?.end || '18:00'
-          });
-        });
-      }
-      return;
-    }
 
     this.apiService.getSchedules().subscribe({
       next: (response) => {
@@ -604,12 +599,6 @@ export class SettingsComponent implements OnInit {
   // Save schedule to backend API
   private saveScheduleToApi(): Promise<void> {
     return new Promise((resolve, reject) => {
-      // In demo mode, just resolve
-      if (this.authService.isDemoMode()) {
-        resolve();
-        return;
-      }
-
       // Map day keys to weekday numbers
       const dayKeyToWeekday: { [key: string]: number } = {
         'monday': 0,

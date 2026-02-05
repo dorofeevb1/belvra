@@ -5,6 +5,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import logout
 from django.core.cache import cache
+from django.db import transaction
 from django.db.models import F, FloatField, Value
 from django.db.models.functions import ACos, Cos, Radians, Sin
 from django.utils import timezone
@@ -13,6 +14,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -38,6 +40,14 @@ from .serializers import (
 )
 
 
+class LoginRateThrottle(ScopedRateThrottle):
+    scope = "login"
+
+
+class RegisterRateThrottle(ScopedRateThrottle):
+    scope = "register"
+
+
 @extend_schema(
     tags=["Аутентификация"],
     summary="Регистрация пользователя",
@@ -50,6 +60,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
+    throttle_classes = [RegisterRateThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -82,6 +93,7 @@ class LoginView(APIView):
     """User login endpoint."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [LoginRateThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -500,6 +512,69 @@ class ResendVerificationEmailView(APIView):
         return Response({"detail": "Письмо для подтверждения отправлено"})
 
 
+@extend_schema(
+    tags=["Профиль"],
+    summary="Переключить роль",
+    description="Переключить активную роль пользователя между клиентом и мастером"
+)
+class SwitchRoleView(APIView):
+    """Switch user's active role between client and master."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        target_role = request.data.get("role")
+
+        if target_role not in ("client", "master"):
+            return Response(
+                {"detail": "Укажите роль: 'client' или 'master'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if target_role == "master":
+            if not hasattr(user, 'master_profile'):
+                return Response(
+                    {"detail": "У вас нет профиля мастера. Сначала станьте мастером."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        user.role = target_role
+        user.save(update_fields=["role"])
+
+        token_data = TokenSerializer.get_token(user)
+        return Response(token_data)
+
+
+@extend_schema(
+    tags=["Профиль"],
+    summary="Стать мастером",
+    description="Создать профиль мастера для текущего пользователя (клиент становится также мастером)"
+)
+class BecomeMasterView(APIView):
+    """Create a master profile for current user and switch to master role."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+
+        if hasattr(user, 'master_profile'):
+            # Already has master profile, just switch role
+            user.role = 'master'
+            user.save(update_fields=["role"])
+            token_data = TokenSerializer.get_token(user)
+            return Response(token_data)
+
+        with transaction.atomic():
+            MasterProfile.objects.create(user=user)
+            user.role = 'master'
+            user.save(update_fields=["role"])
+
+        token_data = TokenSerializer.get_token(user)
+        return Response(token_data, status=status.HTTP_201_CREATED)
+
+
 @extend_schema_view(
     list=extend_schema(
         tags=["Избранное"],
@@ -559,19 +634,21 @@ class FavoriteMasterViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        favorite, created = FavoriteMaster.objects.get_or_create(
-            user=request.user,
-            master=master
-        )
+        with transaction.atomic():
+            favorite = FavoriteMaster.objects.select_for_update().filter(
+                user=request.user,
+                master=master
+            ).first()
 
-        if not created:
-            favorite.delete()
+            if favorite:
+                favorite.delete()
+                return Response({
+                    "is_favorite": False,
+                    "detail": "Мастер удалён из избранного"
+                })
+
+            FavoriteMaster.objects.create(user=request.user, master=master)
             return Response({
-                "is_favorite": False,
-                "detail": "Мастер удалён из избранного"
-            })
-
-        return Response({
-            "is_favorite": True,
-            "detail": "Мастер добавлен в избранное"
-        }, status=status.HTTP_201_CREATED)
+                "is_favorite": True,
+                "detail": "Мастер добавлен в избранное"
+            }, status=status.HTTP_201_CREATED)

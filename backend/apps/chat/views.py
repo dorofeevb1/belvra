@@ -2,6 +2,7 @@ from django.db.models import Q
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -80,6 +81,22 @@ class ChatViewSet(viewsets.ModelViewSet):
         # Update chat timestamp
         chat.save(update_fields=["updated_at"])
 
+        # Send notification to recipient
+        try:
+            from apps.core.notifications import NotificationService
+            if sender_role == ChatMessage.SenderRole.MASTER:
+                recipient = chat.client
+            else:
+                recipient = chat.master.user
+            NotificationService.notify_chat_message(
+                recipient_user=recipient,
+                sender_name=user.full_name,
+                message_preview=serializer.validated_data["content"],
+                chat_id=str(chat.id)
+            )
+        except Exception:
+            pass  # Don't fail message sending if notification fails
+
         return Response(
             ChatMessageSerializer(message).data,
             status=status.HTTP_201_CREATED
@@ -92,11 +109,15 @@ class ChatViewSet(viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["get"])
     def messages(self, request, pk=None):
-        """Get all messages in a chat."""
+        """Get messages in a chat with pagination."""
         chat = self.get_object()
-        messages = chat.messages.all().order_by("created_at")
-        serializer = ChatMessageSerializer(messages, many=True)
-        return Response(serializer.data)
+        messages = chat.messages.select_related("sender").order_by("-created_at")
+
+        paginator = LimitOffsetPagination()
+        paginator.default_limit = 50
+        page = paginator.paginate_queryset(messages, request)
+        serializer = ChatMessageSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(
         tags=["Чат"],

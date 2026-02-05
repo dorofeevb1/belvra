@@ -9,6 +9,7 @@ export interface User {
   role: UserRole;
   phone?: string;
   avatar?: string;
+  hasMasterProfile?: boolean;
   createdAt: Date;
 }
 

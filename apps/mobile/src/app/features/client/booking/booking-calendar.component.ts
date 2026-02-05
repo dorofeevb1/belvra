@@ -140,7 +140,7 @@ export class BookingCalendarComponent implements OnInit {
     if (!masterId || !service) return;
 
     this.isLoadingSlots.set(true);
-    this.dataService.getAvailableSlots(masterId, date, service.duration).subscribe(slots => {
+    this.dataService.getAvailableSlotsForService(masterId, service.id, date).subscribe(slots => {
       this.availableSlots.set(slots);
       this.isLoadingSlots.set(false);
     });

@@ -53,13 +53,11 @@ export class BookingCalendarComponent implements OnInit {
   weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
   // Computed: check if payment step is needed
-  // COMMENTED OUT: Online payment is disabled, cash only
-  // readonly requiresPayment = computed(() => {
-  //   const master = this.master();
-  //   if (!master?.paymentSettings) return false;
-  //   return master.paymentSettings.onlinePaymentsEnabled && master.paymentSettings.prepaymentRequired;
-  // });
-  readonly requiresPayment = computed(() => false); // Cash payment only
+  readonly requiresPayment = computed(() => {
+    const master = this.master();
+    if (!master?.paymentSettings) return false;
+    return master.paymentSettings.onlinePaymentsEnabled && master.paymentSettings.prepaymentRequired;
+  });
 
   // Computed: total steps
   readonly totalSteps = computed(() => this.requiresPayment() ? 4 : 3);
@@ -140,7 +138,7 @@ export class BookingCalendarComponent implements OnInit {
     if (!masterId || !service) return;
 
     this.isLoadingSlots.set(true);
-    this.dataService.getAvailableSlots(masterId, date, service.duration).subscribe(slots => {
+    this.dataService.getAvailableSlotsForService(masterId, service.id, date).subscribe(slots => {
       this.availableSlots.set(slots);
       this.isLoadingSlots.set(false);
     });

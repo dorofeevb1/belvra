@@ -10,6 +10,7 @@ import {
   Review, TodoItem, TodoStatus, UsedMaterial,
   ServiceCategory
 } from '../models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
@@ -18,7 +19,7 @@ export class DataService {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private readonly DELAY = 300;
-  private readonly MEDIA_BASE_URL = 'http://localhost:8000';
+  private readonly MEDIA_BASE_URL = environment.mediaUrl;
 
   private getFullMediaUrl(url: string | null): string {
     if (!url) return '';
@@ -165,12 +166,6 @@ export class DataService {
   }
 
   addService(service: Omit<BeautyService, 'id'> & { serviceId?: string }): Observable<BeautyService> {
-    // If in demo mode, use mock
-    if (this.auth.isDemoMode()) {
-      const newService = { ...service, id: `service-${Date.now()}` };
-      return of(newService).pipe(delay(this.DELAY));
-    }
-
     // Prepare request data
     const requestData: any = {
       price: service.price,
@@ -207,11 +202,6 @@ export class DataService {
   }
 
   updateService(id: string, updates: Partial<BeautyService>): Observable<BeautyService> {
-    // If in demo mode, use mock
-    if (this.auth.isDemoMode()) {
-      return of({ id, ...updates } as BeautyService).pipe(delay(this.DELAY));
-    }
-
     // Prepare update data
     const updateData: any = {
       price: updates.price,
@@ -246,11 +236,6 @@ export class DataService {
   }
 
   deleteService(id: string): Observable<void> {
-    // If in demo mode, use mock
-    if (this.auth.isDemoMode()) {
-      return of(void 0).pipe(delay(this.DELAY));
-    }
-
     return this.api.deleteMasterService(id).pipe(
       map(() => void 0),
       catchError(() => of(void 0))
@@ -259,10 +244,6 @@ export class DataService {
 
   // Get master's own services (for authenticated master)
   getMyServices(): Observable<BeautyService[]> {
-    if (this.auth.isDemoMode()) {
-      return of(this.getMockServices());
-    }
-
     return this.api.getMyMasterServices().pipe(
       map((response: any) => {
         const results = response.results || response;
@@ -706,7 +687,10 @@ export class DataService {
 
   getMessages(chatId: string): Observable<ChatMessage[]> {
     return this.api.getChatMessages(chatId).pipe(
-      map((messages: any[]) => messages.map(m => this.mapBackendMessage(m))),
+      map((response: any) => {
+        const messages = Array.isArray(response) ? response : (response.results || []);
+        return messages.map((m: any) => this.mapBackendMessage(m)).reverse();
+      }),
       catchError(() => of([]))
     );
   }

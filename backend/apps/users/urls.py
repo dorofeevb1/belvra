@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
+    BecomeMasterView,
     ChangePasswordView,
     FavoriteMasterViewSet,
     LoginView,
@@ -15,6 +16,7 @@ from .views import (
     PasswordResetValidateTokenView,
     RegisterView,
     ResendVerificationEmailView,
+    SwitchRoleView,
     UploadAvatarView,
     UserProfileView,
     VerifyEmailView,
@@ -30,6 +32,8 @@ urlpatterns = [
     path("token/refresh/", TokenRefreshView.as_view(), name="token-refresh"),
     path("profile/", UserProfileView.as_view(), name="profile"),
     path("profile/avatar/", UploadAvatarView.as_view(), name="profile-avatar"),
+    path("profile/switch-role/", SwitchRoleView.as_view(), name="switch-role"),
+    path("profile/become-master/", BecomeMasterView.as_view(), name="become-master"),
     path("password/change/", ChangePasswordView.as_view(), name="change-password"),
     path("password/reset/", PasswordResetRequestView.as_view(), name="password-reset"),
     path("password/reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),

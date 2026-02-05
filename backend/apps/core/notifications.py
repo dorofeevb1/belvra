@@ -137,6 +137,24 @@ class NotificationService:
         )
 
     @classmethod
+    def notify_chat_message(cls, recipient_user, sender_name: str, message_preview: str, chat_id: str):
+        """Notify user about new chat message."""
+        preview = message_preview[:100] + "..." if len(message_preview) > 100 else message_preview
+        # Determine link based on user role
+        if recipient_user.role == 'master':
+            link = f"/master/chat?id={chat_id}"
+        else:
+            link = f"/client/chat?id={chat_id}"
+
+        return cls.create_notification(
+            user=recipient_user,
+            notification_type=Notification.NotificationType.CHAT_MESSAGE,
+            title=f"Сообщение от {sender_name}",
+            message=preview,
+            link=link
+        )
+
+    @classmethod
     def notify_system(cls, user, title: str, message: str, link: str = ""):
         """Create system notification."""
         return cls.create_notification(

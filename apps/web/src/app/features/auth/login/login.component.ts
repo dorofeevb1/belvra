@@ -27,23 +27,6 @@ export class LoginComponent {
   showPassword = signal(false);
   isLoading = signal(false);
   errorMessage = signal('');
-  useApiMode = signal(false);
-
-  fillDemoCredentials(): void {
-    const credentials = this.authService.getDemoCredentials(this.selectedRole());
-    this.email = credentials.email;
-    this.password = credentials.password;
-    this.errorMessage.set('');
-    this.useApiMode.set(false);
-  }
-
-  fillBackendCredentials(): void {
-    // Fill with a test master from backend
-    this.email = 'анна.петрова@beautystyle.ru';
-    this.password = 'master123';
-    this.errorMessage.set('');
-    this.useApiMode.set(true);
-  }
 
   async onSubmit(): Promise<void> {
     if (!this.email || !this.password) {
@@ -54,37 +37,21 @@ export class LoginComponent {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    // Try API login first
     try {
-      const apiSuccess = await firstValueFrom(
-        this.authService.loginWithApi(this.email, this.password)
+      const success = await firstValueFrom(
+        this.authService.login(this.email, this.password, this.selectedRole())
       );
 
-      if (apiSuccess) {
+      if (success) {
         this.notificationService.success('Добро пожаловать в BeautyBook!');
         const user = this.authService.currentUser();
         const route = user?.role === 'master' ? '/master' : '/client';
         this.router.navigate([route]);
-        this.isLoading.set(false);
-        return;
+      } else {
+        this.errorMessage.set('Неверный email или пароль');
       }
     } catch {
-      // API login failed, trying demo mode
-    }
-
-    // Fallback to demo mode
-    const demoSuccess = this.authService.login({
-      email: this.email,
-      password: this.password,
-      role: this.selectedRole()
-    });
-
-    if (demoSuccess) {
-      this.notificationService.success('Добро пожаловать в BeautyBook! (демо-режим)');
-      const route = this.selectedRole() === 'master' ? '/master' : '/client';
-      this.router.navigate([route]);
-    } else {
-      this.errorMessage.set('Неверный email или пароль');
+      this.errorMessage.set('Ошибка входа. Попробуйте позже.');
     }
 
     this.isLoading.set(false);

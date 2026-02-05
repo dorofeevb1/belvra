@@ -1,31 +1,21 @@
-# Multi-stage build for Angular
-FROM node:20-alpine as builder
+# Build stage
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci
+# Install dependencies (no lock file, use npm install)
+COPY package.json ./
+RUN npm install
 
 # Copy source and build
 COPY . .
 RUN npm run build -- --configuration=production
 
-# Production image with nginx
-FROM nginx:alpine
+# Production stage - copies built files to volume
+FROM alpine:3.20
 
-# Copy built files
-COPY --from=builder /app/dist/beauty-style-service/browser /usr/share/nginx/html
+# Copy built files from builder
+COPY --from=builder /app/dist/web/browser /app/dist
 
-# Copy nginx config for SPA
-RUN echo 'server { \
-    listen 80; \
-    location / { \
-        root /usr/share/nginx/html; \
-        try_files $uri $uri/ /index.html; \
-    } \
-}' > /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+# Copy files to volume mount point on start
+CMD ["sh", "-c", "cp -r /app/dist/* /out/ 2>/dev/null || true && echo 'Frontend build copied to volume' && sleep infinity"]

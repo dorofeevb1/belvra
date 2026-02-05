@@ -2,6 +2,7 @@
 Models for beauty services.
 """
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.core.models import BaseModel
@@ -121,6 +122,10 @@ class MasterService(BaseModel):
     def __str__(self):
         name = self.name
         return f"{self.master.user.full_name} - {name}"
+
+    def clean(self):
+        if not self.service and not self.custom_name:
+            raise ValidationError("Укажите услугу из каталога или своё название")
 
     @property
     def name(self):

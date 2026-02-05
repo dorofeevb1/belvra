@@ -1,0 +1,83 @@
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    hostname: gitlab
+    restart: always
+    ports:
+      - "8929:80"        # Web UI
+      - "2224:22"        # SSH для git clone/push
+    volumes:
+      - gitlab_config:/etc/gitlab
+      - gitlab_logs:/var/log/gitlab
+      - gitlab_data:/var/opt/gitlab
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        # Доступ по IP + порт
+        external_url 'http://37.77.104.201:8929'
+        nginx['listen_port'] = 80
+        nginx['listen_https'] = false
+
+        # SSH на порту 2224
+        gitlab_rails['gitlab_shell_ssh_port'] = 2224
+
+        # === Оптимизация для 4 ГБ RAM ===
+
+        # Puma (web server) — минимум воркеров
+        puma['worker_processes'] = 2
+        puma['min_threads'] = 1
+        puma['max_threads'] = 2
+
+        # Sidekiq — снижаем concurrency
+        sidekiq['max_concurrency'] = 5
+        sidekiq['min_concurrency'] = 1
+
+        # Отключаем мониторинг (экономит ~500 МБ)
+        prometheus_monitoring['enable'] = false
+        prometheus['enable'] = false
+        alertmanager['enable'] = false
+        node_exporter['enable'] = false
+        redis_exporter['enable'] = false
+        postgres_exporter['enable'] = false
+        gitlab_exporter['enable'] = false
+
+        # Отключаем ненужные сервисы
+        registry['enable'] = false
+        mattermost['enable'] = false
+        gitlab_pages['enable'] = false
+        gitlab_kas['enable'] = false
+        sentinel['enable'] = false
+
+        # PostgreSQL — встроенный, оптимизируем
+        postgresql['shared_buffers'] = "128MB"
+        postgresql['work_mem'] = "8MB"
+        postgresql['maintenance_work_mem'] = "64MB"
+        postgresql['effective_cache_size'] = "256MB"
+        postgresql['max_worker_processes'] = 4
+
+        # Redis — ограничиваем память
+        redis['maxmemory'] = "128mb"
+        redis['maxmemory_policy'] = "allkeys-lru"
+
+        # Gitaly — ограничиваем concurrency
+        gitaly['configuration'] = {
+          concurrency: [
+            { rpc: "/gitaly.SmartHTTPService/PostReceivePack", max_per_repo: 3 },
+            { rpc: "/gitaly.SSHService/SSHUploadPack", max_per_repo: 3 },
+          ],
+        }
+        gitaly['env'] = {
+          'GITALY_COMMAND_SPAWN_MAX_PARALLEL' => '2',
+          'MALLOC_ARENA_MAX' => '2',
+        }
+
+        # Снижаем частоту фоновых задач
+        gitlab_rails['env'] = {
+          'MALLOC_ARENA_MAX' => '2',
+        }
+    shm_size: '256m'
+
+volumes:
+  gitlab_config:
+  gitlab_logs:
+  gitlab_data:

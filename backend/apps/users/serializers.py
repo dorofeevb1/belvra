@@ -12,6 +12,7 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
     master_profile_id = serializers.SerializerMethodField()
     subscription = serializers.SerializerMethodField()
+    has_master_profile = serializers.SerializerMethodField()
     # Master profile read fields
     address = serializers.SerializerMethodField()
     latitude = serializers.SerializerMethodField()
@@ -27,17 +28,21 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             "id", "email", "phone", "first_name", "last_name",
             "full_name", "avatar", "role", "is_verified", "created_at",
-            "master_profile_id", "specialization", "bio",
+            "master_profile_id", "has_master_profile", "specialization", "bio",
             "address", "latitude", "longitude", "rating", "reviews_count",
             "subscription"
         ]
-        read_only_fields = ["id", "is_verified", "created_at"]
+        read_only_fields = ["id", "email", "role", "is_verified", "created_at"]
 
     def get_master_profile_id(self, obj):
         """Return master profile ID if user is a master."""
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
             return str(obj.master_profile.id)
         return None
+
+    def get_has_master_profile(self, obj):
+        """Return True if user has a master profile (can switch to master mode)."""
+        return hasattr(obj, 'master_profile') and obj.master_profile is not None
 
     def get_address(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
@@ -104,6 +109,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(write_only=True, validators=[validate_password])
     password_confirm = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(
+        choices=[("client", "Клиент"), ("master", "Мастер")],
+        default="client"
+    )
 
     class Meta:
         model = User
