@@ -22,6 +22,7 @@ rsync -avz --delete \
   --exclude=dist \
   --exclude=.angular \
   --exclude=.env \
+  --exclude=.env.prod \
   --exclude=celerybeat-schedule \
   -e ssh ${PROJECT_ROOT}/ ${SERVER}:${REMOTE_DIR}/
 

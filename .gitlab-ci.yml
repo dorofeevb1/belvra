@@ -55,6 +55,7 @@ deploy-prod:
       --exclude=dist
       --exclude=.angular
       --exclude=.env
+      --exclude=.env.prod
       --exclude=celerybeat-schedule
       -e ssh ./ root@37.77.104.201:${REMOTE_DIR}/
 
