@@ -29,7 +29,19 @@ class ChatViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Show chats where user is either master or client
+        role = self.request.query_params.get("role")
+
+        if role == "client":
+            return Chat.objects.filter(client=user).select_related(
+                "master__user", "client"
+            ).prefetch_related("messages")
+
+        if role == "master" and hasattr(user, "master_profile"):
+            return Chat.objects.filter(
+                master=user.master_profile
+            ).select_related("master__user", "client").prefetch_related("messages")
+
+        # No role filter: show all chats for this user
         if hasattr(user, "master_profile"):
             return Chat.objects.filter(
                 Q(master=user.master_profile) | Q(client=user)

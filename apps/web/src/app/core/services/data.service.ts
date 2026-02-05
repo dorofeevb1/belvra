@@ -649,12 +649,11 @@ export class DataService {
     };
   }
 
-  getChats(masterId: string): Observable<Chat[]> {
-    return this.api.getChats().pipe(
+  getChats(_masterId?: string): Observable<Chat[]> {
+    return this.api.getChats('master').pipe(
       map((response: any) => {
         const results = response.results || response;
         return (Array.isArray(results) ? results : [])
-          .filter((c: any) => c.master_id === masterId)
           .map((c: any) => this.mapBackendChat(c));
       }),
       catchError(() => of([]))
@@ -662,7 +661,7 @@ export class DataService {
   }
 
   getAllChats(): Observable<Chat[]> {
-    return this.api.getChats().pipe(
+    return this.api.getChats('client').pipe(
       map((response: any) => {
         const results = response.results || response;
         return (Array.isArray(results) ? results : []).map((c: any) => this.mapBackendChat(c));

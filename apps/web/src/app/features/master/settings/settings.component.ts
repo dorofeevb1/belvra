@@ -2,7 +2,6 @@ import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
-import { forkJoin, of } from 'rxjs';
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
@@ -458,7 +457,7 @@ export class SettingsComponent implements OnInit {
       try {
         await this.saveScheduleToApi();
       } catch {
-        // Schedule save failed silently - user will see notification on next load
+        this.notificationService.warning('Не удалось сохранить расписание. Попробуйте ещё раз.');
       }
 
       // Step 5: Save services
@@ -596,85 +595,32 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  // Save schedule to backend API
+  // Save schedule to backend API using bulk endpoint
   private saveScheduleToApi(): Promise<void> {
     return new Promise((resolve, reject) => {
-      // Map day keys to weekday numbers
       const dayKeyToWeekday: { [key: string]: number } = {
-        'monday': 0,
-        'tuesday': 1,
-        'wednesday': 2,
-        'thursday': 3,
-        'friday': 4,
-        'saturday': 5,
-        'sunday': 6
+        'monday': 0, 'tuesday': 1, 'wednesday': 2, 'thursday': 3,
+        'friday': 4, 'saturday': 5, 'sunday': 6
       };
 
-      // Build current schedules from form
-      const currentSchedules: { weekday: number; start_time: string; end_time: string; is_working: boolean }[] = [];
+      const schedules: { weekday: number; start_time: string; end_time: string; is_working: boolean }[] = [];
       this.weekDays.forEach(day => {
         const enabled = this.scheduleForm.get(day.key + 'Enabled')?.value;
         const startTime = this.scheduleForm.get(day.key + 'Start')?.value || '09:00';
         const endTime = this.scheduleForm.get(day.key + 'End')?.value || '18:00';
 
-        currentSchedules.push({
+        schedules.push({
           weekday: dayKeyToWeekday[day.key],
-          start_time: startTime + ':00', // Add seconds for backend
+          start_time: startTime + ':00',
           end_time: endTime + ':00',
-          is_working: enabled
+          is_working: !!enabled
         });
       });
 
-      // Compare with backend schedules and create update operations
-      const operations: any[] = [];
-
-      currentSchedules.forEach(current => {
-        const existing = this.backendSchedules.find(s => s.weekday === current.weekday);
-
-        if (existing) {
-          // Update existing schedule
-          if (existing.start_time !== current.start_time ||
-              existing.end_time !== current.end_time ||
-              existing.is_working !== current.is_working) {
-            operations.push(
-              this.apiService.updateSchedule(existing.id, {
-                start_time: current.start_time,
-                end_time: current.end_time,
-                is_working: current.is_working
-              })
-            );
-          }
-        } else {
-          // Create new schedule
-          operations.push(
-            this.apiService.createSchedule({
-              weekday: current.weekday,
-              start_time: current.start_time,
-              end_time: current.end_time,
-              is_working: current.is_working
-            })
-          );
-        }
-      });
-
-      if (operations.length === 0) {
-        resolve();
-        return;
-      }
-
-      forkJoin(operations).subscribe({
-        next: (responses) => {
-          // Update backendSchedules with responses (for created schedules)
-          responses.forEach((response: any) => {
-            if (response && response.id) {
-              const existingIndex = this.backendSchedules.findIndex(s => s.weekday === response.weekday);
-              if (existingIndex >= 0) {
-                this.backendSchedules[existingIndex] = response;
-              } else {
-                this.backendSchedules.push(response);
-              }
-            }
-          });
+      this.apiService.bulkUpdateSchedules(schedules).subscribe({
+        next: (response) => {
+          const results: BackendSchedule[] = response.schedules || [];
+          this.backendSchedules = results.filter((s: any) => s.id);
           resolve();
         },
         error: (err) => reject(err)
