@@ -1,8 +1,9 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent, SidebarComponent, NavItem } from '../../shared/components';
 import { NotificationToastComponent } from '../../shared/components/notification-toast.component';
+import { DataService } from '../../core/services';
 
 @Component({
   selector: 'app-client-view',
@@ -11,7 +12,8 @@ import { NotificationToastComponent } from '../../shared/components/notification
   templateUrl: './client-view.component.html',
   styleUrl: './client-view.component.scss'
 })
-export class ClientViewComponent {
+export class ClientViewComponent implements OnInit {
+  private dataService = inject(DataService);
   sidebarOpen = signal(false);
 
   navItems: NavItem[] = [
@@ -41,4 +43,16 @@ export class ClientViewComponent {
       route: '/client/profile'
     }
   ];
+
+  ngOnInit(): void {
+    this.loadUnreadCount();
+  }
+
+  private loadUnreadCount(): void {
+    this.dataService.getAllChats().subscribe(chats => {
+      const total = chats.reduce((sum, c) => sum + c.unreadCount, 0);
+      const chatItem = this.navItems.find(i => i.route === '/client/chat');
+      if (chatItem) chatItem.badge = total;
+    });
+  }
 }

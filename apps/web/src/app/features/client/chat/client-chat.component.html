@@ -89,8 +89,8 @@
       <!-- Messages -->
       <div #messagesContainer class="messages-container">
         @for (message of messages(); track message.id) {
-          <div class="message" [class.outgoing]="message.senderRole === 'client'">
-            <div class="message-bubble" [class.outgoing]="message.senderRole === 'client'">
+          <div class="message" [class.outgoing]="message.senderId === currentUserId()">
+            <div class="message-bubble" [class.outgoing]="message.senderId === currentUserId()">
               <p class="message-text">{{ message.content }}</p>
               <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
             </div>

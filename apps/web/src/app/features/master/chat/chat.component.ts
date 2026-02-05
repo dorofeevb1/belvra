@@ -24,6 +24,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   selectedChat = signal<Chat | null>(null);
   messages = signal<ChatMessage[]>([]);
   aiSuggestions = signal<AISuggestion[]>([]);
+  currentUserId = computed(() => this.authService.currentUser()?.id || '');
   searchQuery = '';
   newMessage = '';
   private shouldScroll = false;

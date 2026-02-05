@@ -26,6 +26,7 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
   messages = signal<ChatMessage[]>([]);
   searchQuery = '';
   newMessage = '';
+  currentUserId = computed(() => this.authService.currentUser()?.id || '');
   private shouldScroll = false;
 
   // New chat modal
