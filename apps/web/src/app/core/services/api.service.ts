@@ -582,8 +582,10 @@ export class ApiService {
   // ============ Chat endpoints ============
 
   getChats(role?: 'client' | 'master'): Observable<any> {
-    const params = role ? { role } : {};
-    return this.http.get(`${this.baseUrl}/chats/`, { params });
+    if (role) {
+      return this.http.get(`${this.baseUrl}/chats/`, { params: { role } });
+    }
+    return this.http.get(`${this.baseUrl}/chats/`);
   }
 
   getChatById(id: string): Observable<any> {
