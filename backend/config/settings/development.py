@@ -8,11 +8,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
 
-# Debug Toolbar
-INSTALLED_APPS = ["debug_toolbar"] + INSTALLED_APPS
-MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + MIDDLEWARE
+# Debug Toolbar (optional — only if installed)
+try:
+    import debug_toolbar  # noqa: F401
 
-INTERNAL_IPS = ["127.0.0.1", "localhost"]
+    INSTALLED_APPS = ["debug_toolbar"] + INSTALLED_APPS
+    MIDDLEWARE = ["debug_toolbar.middleware.DebugToolbarMiddleware"] + MIDDLEWARE
+    INTERNAL_IPS = ["127.0.0.1", "localhost"]
+except ImportError:
+    pass
 
 # Email backend for development
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
