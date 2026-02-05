@@ -134,7 +134,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ["status", "date"]
+    filterset_fields = ["status", "date", "master"]
     ordering_fields = ["date", "start_time", "created_at"]
     ordering = ["-date", "-start_time"]
 
