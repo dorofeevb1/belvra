@@ -23,11 +23,18 @@ help:
 	@echo "  make test             - Run backend tests"
 	@echo "  make lint             - Run linters"
 	@echo ""
-	@echo "Production:"
+	@echo "Dev environment (port 8080):"
+	@echo "  make dev-build        - Build dev images"
+	@echo "  make dev-up           - Start dev"
+	@echo "  make dev-down         - Stop dev"
+	@echo "  make dev-logs         - View dev logs"
+	@echo "  make deploy-dev       - Deploy to dev server"
+	@echo ""
+	@echo "Production (port 80):"
 	@echo "  make prod-build       - Build production images"
 	@echo "  make prod-up          - Start production"
 	@echo "  make prod-down        - Stop production"
-	@echo "  make deploy           - Deploy to production server"
+	@echo "  make deploy-prod      - Deploy to production server"
 	@echo ""
 	@echo "Infrastructure:"
 	@echo "  make gitlab-setup     - Install GitLab CE on server"
@@ -81,6 +88,19 @@ format:
 	docker compose exec backend isort apps/
 	docker compose exec backend black apps/
 
+# Dev environment
+dev-build:
+	docker compose -f docker-compose.dev.yml build
+
+dev-up:
+	docker compose -f docker-compose.dev.yml up -d
+
+dev-down:
+	docker compose -f docker-compose.dev.yml down
+
+dev-logs:
+	docker compose -f docker-compose.dev.yml logs -f
+
 # Production
 prod-build:
 	docker compose -f docker-compose.prod.yml build
@@ -106,8 +126,11 @@ restart-backend:
 	docker compose restart backend celery celery-beat
 
 # Deploy
-deploy:
-	bash infra/deploy.sh
+deploy-dev:
+	bash infra/deploy.sh dev
+
+deploy-prod:
+	bash infra/deploy.sh prod
 
 # Infrastructure
 gitlab-setup:

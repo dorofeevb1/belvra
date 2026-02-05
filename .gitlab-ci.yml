@@ -1,12 +1,17 @@
 stages:
   - test
-  - deploy
+  - deploy-dev
+  - deploy-prod
 
 variables:
-  COMPOSE_FILE: docker-compose.prod.yml
-  REMOTE_DIR: /opt/beautystyle
+  REMOTE_DIR_DEV: /opt/beautystyle/dev
+  REMOTE_DIR_PROD: /opt/beautystyle/prod
+  DEPLOY_SERVER: root@37.77.104.201
 
-# --- Test Stage ---
+# ============================================================
+# Test Stage — backend and frontend run in parallel
+# ============================================================
+
 backend-test:
   stage: test
   image: python:3.12-slim
@@ -32,20 +37,45 @@ backend-test:
     - master
     - merge_requests
 
-# --- Deploy Stage ---
-deploy-prod:
-  stage: deploy
-  image: alpine:3.20
+frontend-build:
+  stage: test
+  image: node:20-alpine
+  before_script:
+    - cd apps/web
+    - npm ci --prefer-offline || npm install
+  script:
+    - npx ng build --configuration=production
+  artifacts:
+    paths:
+      - apps/web/dist/
+    expire_in: 1 hour
+  only:
+    - master
+    - merge_requests
+
+# ============================================================
+# Deploy Dev — automatic after tests pass
+# ============================================================
+
+.deploy-template: &deploy_template
   before_script:
     - apk add --no-cache openssh-client rsync
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
     - ssh-keyscan -H 37.77.104.201 >> ~/.ssh/known_hosts 2>/dev/null
-  script:
-    - echo "=== Деплой на продакшен ==="
 
-    # 1. Синхронизация кода
+deploy-dev:
+  stage: deploy-dev
+  image: alpine:3.20
+  <<: *deploy_template
+  script:
+    - echo "=== Деплой на DEV ==="
+
+    # 1. Создаём директорию если не существует
+    - ssh ${DEPLOY_SERVER} "mkdir -p ${REMOTE_DIR_DEV}"
+
+    # 2. Синхронизация кода
     - >
       rsync -avz --delete
       --exclude=node_modules
@@ -56,27 +86,86 @@ deploy-prod:
       --exclude=.angular
       --exclude=.env
       --exclude=.env.prod
+      --exclude=.env.dev
       --exclude=celerybeat-schedule
-      -e ssh ./ root@37.77.104.201:${REMOTE_DIR}/
+      -e ssh ./ ${DEPLOY_SERVER}:${REMOTE_DIR_DEV}/
 
-    # 2. Восстанавливаем .env
-    - ssh root@37.77.104.201 "cd ${REMOTE_DIR} && cp .env.prod .env"
+    # 3. Восстанавливаем .env
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_DEV} && cp .env.dev .env"
 
-    # 3. Сборка контейнеров
-    - ssh root@37.77.104.201 "cd ${REMOTE_DIR} && docker compose -f ${COMPOSE_FILE} build"
+    # 4. Сборка контейнеров
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_DEV} && docker compose -f docker-compose.dev.yml build"
 
-    # 4. Перезапуск
-    - ssh root@37.77.104.201 "cd ${REMOTE_DIR} && docker compose -f ${COMPOSE_FILE} down && docker compose -f ${COMPOSE_FILE} up -d"
+    # 5. Перезапуск
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_DEV} && docker compose -f docker-compose.dev.yml down && docker compose -f docker-compose.dev.yml up -d"
 
-    # 5. Миграции + статика
+    # 6. Миграции + статика
     - >
-      ssh root@37.77.104.201 "cd ${REMOTE_DIR} && sleep 5 &&
-      docker compose -f ${COMPOSE_FILE} exec -T backend python manage.py migrate --noinput &&
-      docker compose -f ${COMPOSE_FILE} exec -T backend python manage.py collectstatic --noinput"
+      ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_DEV} && sleep 5 &&
+      docker compose -f docker-compose.dev.yml exec -T backend python manage.py migrate --noinput &&
+      docker compose -f docker-compose.dev.yml exec -T backend python manage.py collectstatic --noinput"
 
-    # 6. Проверка
-    - ssh root@37.77.104.201 "curl -sf http://localhost/ > /dev/null && echo 'Frontend OK' || echo 'Frontend FAIL'"
-    - ssh root@37.77.104.201 "curl -sf http://localhost/api/v1/services/categories/ > /dev/null && echo 'API OK' || echo 'API FAIL'"
+    # 7. Проверка
+    - ssh ${DEPLOY_SERVER} "curl -sf http://localhost:8080/ > /dev/null && echo 'DEV Frontend OK' || echo 'DEV Frontend FAIL'"
+    - ssh ${DEPLOY_SERVER} "curl -sf http://localhost:8080/api/v1/services/categories/ > /dev/null && echo 'DEV API OK' || echo 'DEV API FAIL'"
+  needs:
+    - backend-test
+    - frontend-build
+  only:
+    - master
+  environment:
+    name: development
+    url: http://37.77.104.201:8080
+
+# ============================================================
+# Deploy Prod — manual, after dev is verified
+# ============================================================
+
+deploy-prod:
+  stage: deploy-prod
+  image: alpine:3.20
+  <<: *deploy_template
+  script:
+    - echo "=== Деплой на PROD ==="
+
+    # 1. Создаём директорию если не существует
+    - ssh ${DEPLOY_SERVER} "mkdir -p ${REMOTE_DIR_PROD}"
+
+    # 2. Синхронизация кода
+    - >
+      rsync -avz --delete
+      --exclude=node_modules
+      --exclude=.git
+      --exclude=__pycache__
+      --exclude='*.pyc'
+      --exclude=dist
+      --exclude=.angular
+      --exclude=.env
+      --exclude=.env.prod
+      --exclude=.env.dev
+      --exclude=celerybeat-schedule
+      -e ssh ./ ${DEPLOY_SERVER}:${REMOTE_DIR_PROD}/
+
+    # 3. Восстанавливаем .env
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_PROD} && cp .env.prod .env"
+
+    # 4. Сборка контейнеров
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_PROD} && docker compose -f docker-compose.prod.yml build"
+
+    # 5. Перезапуск
+    - ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_PROD} && docker compose -f docker-compose.prod.yml down && docker compose -f docker-compose.prod.yml up -d"
+
+    # 6. Миграции + статика
+    - >
+      ssh ${DEPLOY_SERVER} "cd ${REMOTE_DIR_PROD} && sleep 5 &&
+      docker compose -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput &&
+      docker compose -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput"
+
+    # 7. Проверка
+    - ssh ${DEPLOY_SERVER} "curl -sf http://localhost/ > /dev/null && echo 'PROD Frontend OK' || echo 'PROD Frontend FAIL'"
+    - ssh ${DEPLOY_SERVER} "curl -sf http://localhost/api/v1/services/categories/ > /dev/null && echo 'PROD API OK' || echo 'PROD API FAIL'"
+  needs:
+    - deploy-dev
   only:
     - master
   when: manual

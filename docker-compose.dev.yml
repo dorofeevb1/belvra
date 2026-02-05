@@ -1,10 +1,10 @@
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (dev)
   db:
     image: postgres:16-alpine
-    container_name: beautystyle_db_prod
+    container_name: beautystyle_db_dev
     volumes:
-      - postgres_data_prod:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -16,15 +16,15 @@ services:
       retries: 5
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
-  # Redis
+  # Redis (dev)
   redis:
     image: redis:7-alpine
-    container_name: beautystyle_redis_prod
+    container_name: beautystyle_redis_dev
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     volumes:
-      - redis_data_prod:/data
+      - redis_data_dev:/data
     healthcheck:
       test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-}", "ping"]
       interval: 10s
@@ -32,22 +32,22 @@ services:
       retries: 5
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
-  # Django Backend
+  # Django Backend (dev)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_backend_prod
+    container_name: beautystyle_backend_dev
     volumes:
-      - backend_static_prod:/app/staticfiles
-      - backend_media_prod:/app/media
+      - backend_static_dev:/app/staticfiles
+      - backend_media_dev:/app/media
     env_file:
       - .env
     environment:
-      - DJANGO_ENV=production
-      - DJANGO_DEBUG=False
+      - DJANGO_ENV=development
+      - DJANGO_DEBUG=True
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - DJANGO_ALLOWED_HOSTS=${DJANGO_ALLOWED_HOSTS}
       - POSTGRES_DB=${POSTGRES_DB}
@@ -68,29 +68,29 @@ services:
         condition: service_healthy
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
-  # Angular Frontend Builder (builds static files into volume)
+  # Angular Frontend Builder (dev)
   frontend:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
-    container_name: beautystyle_frontend_prod
+    container_name: beautystyle_frontend_dev
     volumes:
-      - frontend_dist_prod:/out
+      - frontend_dist_dev:/out
     restart: "no"
 
-  # Celery Worker
+  # Celery Worker (dev)
   celery:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_celery_prod
-    command: celery -A config worker -l INFO --concurrency=4
+    container_name: beautystyle_celery_dev
+    command: celery -A config worker -l INFO --concurrency=2
     env_file:
       - .env
     environment:
-      - DJANGO_ENV=production
+      - DJANGO_ENV=development
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -106,19 +106,19 @@ services:
       - backend
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
-  # Celery Beat
+  # Celery Beat (dev)
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_celery_beat_prod
+    container_name: beautystyle_celery_beat_dev
     command: celery -A config beat -l INFO
     env_file:
       - .env
     environment:
-      - DJANGO_ENV=production
+      - DJANGO_ENV=development
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -134,34 +134,34 @@ services:
       - celery
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
-  # Nginx
+  # Nginx (dev) - port 8080
   nginx:
     image: nginx:alpine
-    container_name: beautystyle_nginx_prod
+    container_name: beautystyle_nginx_dev
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d/prod.conf:/etc/nginx/conf.d/default.conf:ro
-      - backend_static_prod:/var/www/static:ro
-      - backend_media_prod:/var/www/media:ro
-      - frontend_dist_prod:/var/www/frontend:ro
+      - ./nginx/conf.d/dev.conf:/etc/nginx/conf.d/default.conf:ro
+      - backend_static_dev:/var/www/static:ro
+      - backend_media_dev:/var/www/media:ro
+      - frontend_dist_dev:/var/www/frontend:ro
     depends_on:
       - backend
       - frontend
     restart: always
     networks:
-      - beautystyle_network_prod
+      - beautystyle_network_dev
 
 volumes:
-  postgres_data_prod:
-  redis_data_prod:
-  backend_static_prod:
-  backend_media_prod:
-  frontend_dist_prod:
+  postgres_data_dev:
+  redis_data_dev:
+  backend_static_dev:
+  backend_media_dev:
+  frontend_dist_dev:
 
 networks:
-  beautystyle_network_prod:
+  beautystyle_network_dev:
     driver: bridge
