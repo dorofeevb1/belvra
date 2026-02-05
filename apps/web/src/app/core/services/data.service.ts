@@ -266,13 +266,13 @@ export class DataService {
 
   // ==================== APPOINTMENTS (from backend) ====================
 
-  getAppointments(masterId: string): Observable<Appointment[]> {
-    return this.api.getAppointments({ master: masterId }).pipe(
+  getAppointments(_masterId?: string): Observable<Appointment[]> {
+    return this.api.getAppointments().pipe(
       map((response: any) => {
         const results = response.results || response;
         return results.map((apt: any) => this.mapBackendAppointment(apt));
       }),
-      catchError(() => of(this.getMockAppointments().filter(a => a.masterId === masterId)))
+      catchError(() => of([]))
     );
   }
 
@@ -609,8 +609,7 @@ export class DataService {
 
   deletePortfolioItem(id: string): Observable<void> {
     return this.api.deletePortfolioItem(id).pipe(
-      map(() => void 0),
-      catchError(() => of(void 0))
+      map(() => void 0)
     );
   }
 

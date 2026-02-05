@@ -77,10 +77,7 @@ export class AppointmentsComponent implements OnInit {
   }
 
   private loadData(): void {
-    const masterId = this.authService.masterData()?.id;
-    if (!masterId) return;
-
-    this.dataService.getAppointments(masterId).subscribe(data => {
+    this.dataService.getAppointments().subscribe(data => {
       this.appointments.set(data);
       this.isLoading.set(false);
     });

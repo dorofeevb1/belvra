@@ -88,9 +88,14 @@ export class PortfolioComponent implements OnInit {
   deleteItem(id: string): void {
     if (!confirm('Удалить эту работу?')) return;
 
-    this.dataService.deletePortfolioItem(id).subscribe(() => {
-      this.portfolio.update(list => list.filter(item => item.id !== id));
-      this.notificationService.success('Работа удалена');
+    this.dataService.deletePortfolioItem(id).subscribe({
+      next: () => {
+        this.portfolio.update(list => list.filter(item => item.id !== id));
+        this.notificationService.success('Работа удалена');
+      },
+      error: () => {
+        this.notificationService.error('Не удалось удалить работу');
+      }
     });
   }
 }
