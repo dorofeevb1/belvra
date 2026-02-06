@@ -34,8 +34,9 @@ export class PhoneMaskDirective implements ControlValueAccessor {
     this.el.nativeElement.disabled = isDisabled;
   }
 
-  @HostListener('input', ['$event.target.value'])
-  onInput(value: string): void {
+  @HostListener('input')
+  onInput(): void {
+    const value = this.el.nativeElement.value;
     const formatted = this.formatPhone(value);
     this.el.nativeElement.value = formatted;
     // Store clean number for the form
