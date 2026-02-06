@@ -194,4 +194,32 @@ export class DateService {
     if (hour < 22) return 'Добрый вечер';
     return 'Доброй ночи';
   }
+
+  /**
+   * Check if a time slot is in the past for a given date.
+   * Returns true if the slot has already passed.
+   */
+  isSlotPast(dateStr: string, timeStr: string): boolean {
+    const now = dayjs();
+    const slotDateTime = dayjs(`${dateStr} ${timeStr}`, 'YYYY-MM-DD HH:mm');
+    return slotDateTime.isBefore(now);
+  }
+
+  /**
+   * Filter out past time slots for a given date.
+   * Returns only future slots.
+   */
+  filterPastSlots(dateStr: string, slots: string[]): string[] {
+    if (dateStr !== this.todayStr()) {
+      return slots; // For future dates, return all slots
+    }
+    return slots.filter(slot => !this.isSlotPast(dateStr, slot));
+  }
+
+  /**
+   * Get current time as HH:mm string.
+   */
+  currentTime(): string {
+    return dayjs().format('HH:mm');
+  }
 }

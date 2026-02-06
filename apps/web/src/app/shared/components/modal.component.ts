@@ -85,6 +85,17 @@ import { CommonModule } from '@angular/common';
       flex: 1;
       padding: 1.5rem;
       overflow-y: auto;
+      min-height: 0;
+    }
+
+    ::ng-deep .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--color-border-secondary);
+      flex-shrink: 0;
     }
 
     @keyframes fadeIn {

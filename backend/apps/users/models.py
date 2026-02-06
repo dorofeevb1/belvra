@@ -101,6 +101,26 @@ class MasterProfile(TimeStampedModel):
     latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
     longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
 
+    # Social links
+    telegram = models.CharField(max_length=100, blank=True)
+    instagram = models.CharField(max_length=100, blank=True)
+    vk = models.CharField(max_length=200, blank=True)
+    whatsapp = models.CharField(max_length=20, blank=True)
+
+    # Notification settings
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    push_notifications = models.BooleanField(default=True)
+    reminder_hours = models.PositiveIntegerField(default=24)
+
+    # Payment settings
+    online_payments_enabled = models.BooleanField(default=False)
+    prepayment_required = models.BooleanField(default=False)
+    prepayment_percent = models.PositiveIntegerField(default=30)
+    accept_card = models.BooleanField(default=True)
+    accept_sbp = models.BooleanField(default=True)
+    accept_yoomoney = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = "Профиль мастера"
         verbose_name_plural = "Профили мастеров"

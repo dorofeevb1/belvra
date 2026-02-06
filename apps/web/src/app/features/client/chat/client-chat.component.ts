@@ -177,4 +177,14 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
     this.closeNewChatModal();
     this.openChatWithMaster(master.id);
   }
+
+  shouldShowDateSeparator(index: number): boolean {
+    const msgs = this.messages();
+    if (index === 0) return true;
+
+    const current = new Date(msgs[index].timestamp);
+    const prev = new Date(msgs[index - 1].timestamp);
+
+    return current.toDateString() !== prev.toDateString();
+  }
 }

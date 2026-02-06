@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } fr
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
+import { PhoneMaskDirective } from '../../../shared/directives/phone-mask.directive';
 
 interface BackendSchedule {
   id: string;
@@ -17,7 +18,7 @@ interface BackendSchedule {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PhoneMaskDirective],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
@@ -429,13 +430,31 @@ export class SettingsComponent implements OnInit {
         this.avatarChanged.set(false);
       }
 
-      // Step 2: Update profile via API
+      // Step 2: Update profile via API (including all settings)
       await this.apiService.updateProfile({
         first_name: this.profileForm.get('name')?.value?.split(' ')[0] || '',
         last_name: this.profileForm.get('name')?.value?.split(' ').slice(1).join(' ') || '',
         phone: this.profileForm.get('phone')?.value || '',
         specialization: this.profileForm.get('specialization')?.value || '',
-        bio: this.profileForm.get('description')?.value || ''
+        bio: this.profileForm.get('description')?.value || '',
+        address_write: this.profileForm.get('address')?.value || '',
+        // Social links
+        telegram: this.profileForm.get('telegram')?.value || '',
+        instagram: this.profileForm.get('instagram')?.value || '',
+        vk: this.profileForm.get('vk')?.value || '',
+        whatsapp: this.profileForm.get('whatsapp')?.value || '',
+        // Notification settings
+        email_notifications: this.notificationsForm.get('emailNotifications')?.value,
+        sms_notifications: this.notificationsForm.get('smsNotifications')?.value,
+        push_notifications: this.notificationsForm.get('pushNotifications')?.value,
+        reminder_hours: this.notificationsForm.get('reminderHours')?.value,
+        // Payment settings
+        online_payments_enabled: this.paymentsForm.get('onlinePaymentsEnabled')?.value,
+        prepayment_required: this.paymentsForm.get('prepaymentRequired')?.value,
+        prepayment_percent: this.paymentsForm.get('prepaymentPercent')?.value,
+        accept_card: this.paymentsForm.get('acceptCard')?.value,
+        accept_sbp: this.paymentsForm.get('acceptSbp')?.value,
+        accept_yoomoney: this.paymentsForm.get('acceptYoomoney')?.value
       }).toPromise();
 
       // Step 3: Update local state only (API already called in step 2)

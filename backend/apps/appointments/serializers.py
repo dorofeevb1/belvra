@@ -84,6 +84,12 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         from apps.users.models import MasterProfile
         from apps.services.models import Service, MasterService
 
+        # Validate that time is not in the past for today
+        if attrs["date"] == timezone.now().date():
+            current_time = timezone.now().time()
+            if attrs["start_time"] <= current_time:
+                raise serializers.ValidationError({"start_time": "Нельзя записаться на прошедшее время"})
+
         try:
             master = MasterProfile.objects.get(id=attrs["master_id"])
         except MasterProfile.DoesNotExist:

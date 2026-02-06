@@ -110,6 +110,25 @@ export class AuthService {
         ? { lat: parseFloat(backendUser.latitude), lng: parseFloat(backendUser.longitude) }
         : undefined;
 
+      // Map social links
+      const socialLinks = backendUser.social_links || {};
+
+      // Map notification settings
+      const notificationSettings = backendUser.notification_settings || {
+        emailNotifications: true,
+        smsNotifications: false,
+        pushNotifications: true,
+        reminderHours: 24
+      };
+
+      // Map payment settings
+      const paymentSettings = backendUser.payment_settings || {
+        onlinePaymentsEnabled: false,
+        prepaymentRequired: false,
+        prepaymentPercent: 30,
+        acceptedMethods: { card: true, sbp: true, yoomoney: false }
+      };
+
       return {
         ...baseUser,
         masterProfileId: backendUser.master_profile_id || backendUser.id,
@@ -129,6 +148,9 @@ export class AuthService {
           sunday: null
         },
         services: [],
+        socialLinks,
+        notificationSettings,
+        paymentSettings,
         subscription
       } as Master;
     }

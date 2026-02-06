@@ -140,4 +140,14 @@ export class ChatComponent implements OnInit, AfterViewChecked {
       el.scrollTop = el.scrollHeight;
     }
   }
+
+  shouldShowDateSeparator(index: number): boolean {
+    const msgs = this.messages();
+    if (index === 0) return true;
+
+    const current = new Date(msgs[index].timestamp);
+    const prev = new Date(msgs[index - 1].timestamp);
+
+    return current.toDateString() !== prev.toDateString();
+  }
 }

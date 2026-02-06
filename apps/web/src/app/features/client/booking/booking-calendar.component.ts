@@ -139,7 +139,9 @@ export class BookingCalendarComponent implements OnInit {
 
     this.isLoadingSlots.set(true);
     this.dataService.getAvailableSlotsForService(masterId, service.id, date).subscribe(slots => {
-      this.availableSlots.set(slots);
+      // Filter out past time slots for today
+      const filteredSlots = this.dateService.filterPastSlots(date, slots);
+      this.availableSlots.set(filteredSlots);
       this.isLoadingSlots.set(false);
     });
   }

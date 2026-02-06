@@ -522,10 +522,17 @@ class AvailableSlotsView(generics.GenericAPIView):
         slots = []
         current_time = timezone.make_aware(datetime.combine(date, schedule.start_time))
         end_datetime = timezone.make_aware(datetime.combine(date, schedule.end_time))
+        now = timezone.now()
+        is_today = date == now.date()
 
         while current_time + slot_duration <= end_datetime:
             slot_end = current_time + slot_duration
             is_available = True
+
+            # Skip past time slots for today
+            if is_today and current_time <= now:
+                current_time += timedelta(minutes=30)
+                continue
 
             for appt in existing_appointments:
                 appt_start = timezone.make_aware(datetime.combine(date, appt.start_time))

@@ -303,7 +303,7 @@
 
         <div class="todo-list">
           @for (todo of todayTodos(); track todo.id) {
-            <div class="todo-item" [class.completed]="todo.status === 'done'">
+            <div class="todo-item" [class.completed]="todo.status === 'done'" [class.priority-high]="todo.priority === 'high'" [class.priority-low]="todo.priority === 'low'">
               <button
                 type="button"
                 (click)="toggleTodo(todo)"
@@ -316,7 +316,15 @@
                   </svg>
                 }
               </button>
-              <span class="todo-text" [class.done]="todo.status === 'done'">{{ todo.title }}</span>
+              <div class="todo-content">
+                @if (todo.time) {
+                  <span class="todo-time">{{ todo.time }}</span>
+                }
+                <span class="todo-text" [class.done]="todo.status === 'done'">{{ todo.title }}</span>
+              </div>
+              @if (todo.priority === 'high') {
+                <span class="todo-priority-badge high">!</span>
+              }
               <button type="button" (click)="deleteTodo(todo.id)" class="todo-delete btn btn-ghost btn-icon-sm">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

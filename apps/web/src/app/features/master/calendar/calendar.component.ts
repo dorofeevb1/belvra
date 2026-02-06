@@ -77,7 +77,19 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   todayTodos = computed(() => {
     const today = this.dateService.todayStr();
-    return this.allTodos().filter(t => t.date === today);
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return this.allTodos()
+      .filter(t => t.date === today)
+      .sort((a, b) => {
+        // Sort by priority first (high > medium > low)
+        const priorityDiff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
+        if (priorityDiff !== 0) return priorityDiff;
+        // Then by time if available
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        if (a.time) return -1;
+        if (b.time) return 1;
+        return 0;
+      });
   });
 
   completedTodosCount = computed(() => {

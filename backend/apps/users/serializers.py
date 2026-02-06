@@ -19,9 +19,30 @@ class UserSerializer(serializers.ModelSerializer):
     longitude = serializers.SerializerMethodField()
     rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
+    social_links = serializers.SerializerMethodField()
+    notification_settings = serializers.SerializerMethodField()
+    payment_settings = serializers.SerializerMethodField()
     # Write-only fields for master profile updates
     specialization = serializers.CharField(write_only=True, required=False, allow_blank=True)
     bio = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    address_write = serializers.CharField(write_only=True, required=False, allow_blank=True, source='address')
+    # Social links write fields
+    telegram = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    instagram = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    vk = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    whatsapp = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    # Notification settings write fields
+    email_notifications = serializers.BooleanField(write_only=True, required=False)
+    sms_notifications = serializers.BooleanField(write_only=True, required=False)
+    push_notifications = serializers.BooleanField(write_only=True, required=False)
+    reminder_hours = serializers.IntegerField(write_only=True, required=False)
+    # Payment settings write fields
+    online_payments_enabled = serializers.BooleanField(write_only=True, required=False)
+    prepayment_required = serializers.BooleanField(write_only=True, required=False)
+    prepayment_percent = serializers.IntegerField(write_only=True, required=False)
+    accept_card = serializers.BooleanField(write_only=True, required=False)
+    accept_sbp = serializers.BooleanField(write_only=True, required=False)
+    accept_yoomoney = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = User
@@ -29,7 +50,12 @@ class UserSerializer(serializers.ModelSerializer):
             "id", "email", "phone", "first_name", "last_name",
             "full_name", "avatar", "role", "is_verified", "created_at",
             "master_profile_id", "has_master_profile", "specialization", "bio",
-            "address", "latitude", "longitude", "rating", "reviews_count",
+            "address", "address_write", "latitude", "longitude", "rating", "reviews_count",
+            "social_links", "notification_settings", "payment_settings",
+            "telegram", "instagram", "vk", "whatsapp",
+            "email_notifications", "sms_notifications", "push_notifications", "reminder_hours",
+            "online_payments_enabled", "prepayment_required", "prepayment_percent",
+            "accept_card", "accept_sbp", "accept_yoomoney",
             "subscription"
         ]
         read_only_fields = ["id", "email", "role", "is_verified", "created_at"]
@@ -69,6 +95,43 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.master_profile.reviews_count
         return None
 
+    def get_social_links(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            mp = obj.master_profile
+            return {
+                "telegram": mp.telegram or "",
+                "instagram": mp.instagram or "",
+                "vk": mp.vk or "",
+                "whatsapp": mp.whatsapp or ""
+            }
+        return None
+
+    def get_notification_settings(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            mp = obj.master_profile
+            return {
+                "emailNotifications": mp.email_notifications,
+                "smsNotifications": mp.sms_notifications,
+                "pushNotifications": mp.push_notifications,
+                "reminderHours": mp.reminder_hours
+            }
+        return None
+
+    def get_payment_settings(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            mp = obj.master_profile
+            return {
+                "onlinePaymentsEnabled": mp.online_payments_enabled,
+                "prepaymentRequired": mp.prepayment_required,
+                "prepaymentPercent": mp.prepayment_percent,
+                "acceptedMethods": {
+                    "card": mp.accept_card,
+                    "sbp": mp.accept_sbp,
+                    "yoomoney": mp.accept_yoomoney
+                }
+            }
+        return None
+
     def get_subscription(self, obj):
         """Return subscription info if user has one."""
         if hasattr(obj, 'subscription'):
@@ -88,6 +151,24 @@ class UserSerializer(serializers.ModelSerializer):
         # Extract master profile fields
         specialization = validated_data.pop('specialization', None)
         bio = validated_data.pop('bio', None)
+        address = validated_data.pop('address', None)
+        # Social links
+        telegram = validated_data.pop('telegram', None)
+        instagram = validated_data.pop('instagram', None)
+        vk = validated_data.pop('vk', None)
+        whatsapp = validated_data.pop('whatsapp', None)
+        # Notification settings
+        email_notifications = validated_data.pop('email_notifications', None)
+        sms_notifications = validated_data.pop('sms_notifications', None)
+        push_notifications = validated_data.pop('push_notifications', None)
+        reminder_hours = validated_data.pop('reminder_hours', None)
+        # Payment settings
+        online_payments_enabled = validated_data.pop('online_payments_enabled', None)
+        prepayment_required = validated_data.pop('prepayment_required', None)
+        prepayment_percent = validated_data.pop('prepayment_percent', None)
+        accept_card = validated_data.pop('accept_card', None)
+        accept_sbp = validated_data.pop('accept_sbp', None)
+        accept_yoomoney = validated_data.pop('accept_yoomoney', None)
 
         # Update user fields
         instance = super().update(instance, validated_data)
@@ -99,6 +180,39 @@ class UserSerializer(serializers.ModelSerializer):
                 master_profile.specialization = specialization
             if bio is not None:
                 master_profile.bio = bio
+            if address is not None:
+                master_profile.address = address
+            # Social links
+            if telegram is not None:
+                master_profile.telegram = telegram
+            if instagram is not None:
+                master_profile.instagram = instagram
+            if vk is not None:
+                master_profile.vk = vk
+            if whatsapp is not None:
+                master_profile.whatsapp = whatsapp
+            # Notification settings
+            if email_notifications is not None:
+                master_profile.email_notifications = email_notifications
+            if sms_notifications is not None:
+                master_profile.sms_notifications = sms_notifications
+            if push_notifications is not None:
+                master_profile.push_notifications = push_notifications
+            if reminder_hours is not None:
+                master_profile.reminder_hours = reminder_hours
+            # Payment settings
+            if online_payments_enabled is not None:
+                master_profile.online_payments_enabled = online_payments_enabled
+            if prepayment_required is not None:
+                master_profile.prepayment_required = prepayment_required
+            if prepayment_percent is not None:
+                master_profile.prepayment_percent = prepayment_percent
+            if accept_card is not None:
+                master_profile.accept_card = accept_card
+            if accept_sbp is not None:
+                master_profile.accept_sbp = accept_sbp
+            if accept_yoomoney is not None:
+                master_profile.accept_yoomoney = accept_yoomoney
             master_profile.save()
 
         return instance

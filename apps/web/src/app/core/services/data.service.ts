@@ -597,7 +597,10 @@ export class DataService {
     const formData = new FormData();
     if (updates.title) formData.append('title', updates.title);
     if (updates.description !== undefined) formData.append('description', updates.description);
-    if (updates.serviceId) formData.append('service', updates.serviceId);
+    // Always send service field, even if empty, to allow unlinking
+    if (updates.serviceId !== undefined) {
+      formData.append('service', updates.serviceId || '');
+    }
     if (updates.hashtags) formData.append('hashtags', JSON.stringify(updates.hashtags));
     if (imageFile) formData.append('image', imageFile);
 
