@@ -6,6 +6,7 @@ import { forkJoin, of } from 'rxjs';
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
+import { PhoneMaskDirective } from '../../../shared/directives';
 
 interface BackendSchedule {
   id: string;
@@ -18,7 +19,7 @@ interface BackendSchedule {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink],
+  imports: [CommonModule, ReactiveFormsModule, RouterLink, PhoneMaskDirective],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
@@ -289,9 +290,15 @@ export class SettingsComponent implements OnInit {
   // Service methods
   addService(service?: BeautyService): void {
     // Check limit only for new services (not when loading existing ones)
-    if (!service && !this.subscriptionService.canAddService()) {
-      this.notificationService.warning('Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг.');
-      return;
+    if (!service) {
+      const limits = this.subscriptionService.limits();
+      const currentCount = this.servicesArray.length;
+
+      // Check if we've reached the limit
+      if (limits.maxServicesCount !== null && currentCount >= limits.maxServicesCount) {
+        this.notificationService.warning('Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг.');
+        return;
+      }
     }
 
     const group = this.fb.group({
@@ -305,6 +312,17 @@ export class SettingsComponent implements OnInit {
       defaultMaterialsCost: [service?.defaultMaterialsCost || 0, [Validators.min(0), Validators.max(100000)]]
     });
     this.servicesArray.push(group);
+
+    // Scroll to the newly added service
+    if (!service) {
+      setTimeout(() => {
+        const serviceCards = document.querySelectorAll('.service-card');
+        const lastCard = serviceCards[serviceCards.length - 1];
+        if (lastCard) {
+          lastCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 100);
+    }
   }
 
   confirmDeleteService(index: number): void {

@@ -116,12 +116,36 @@ export class DataService {
   }
 
   private mapBackendReview(backendReview: any): Review {
+    // Try multiple sources for client name
+    let clientName = 'Клиент';
+    if (backendReview.appointment?.client_name) {
+      clientName = backendReview.appointment.client_name;
+    } else if (backendReview.appointment?.client?.full_name) {
+      clientName = backendReview.appointment.client.full_name;
+    } else if (backendReview.appointment?.client?.first_name) {
+      clientName = backendReview.appointment.client.first_name;
+      if (backendReview.appointment.client.last_name) {
+        clientName += ' ' + backendReview.appointment.client.last_name;
+      }
+    }
+
+    // Try to get master name
+    let masterName = '';
+    if (backendReview.appointment?.master_name) {
+      masterName = backendReview.appointment.master_name;
+    } else if (backendReview.appointment?.master?.full_name) {
+      masterName = backendReview.appointment.master.full_name;
+    } else if (backendReview.appointment?.master?.first_name) {
+      masterName = backendReview.appointment.master.first_name;
+    }
+
     return {
       id: backendReview.id,
-      masterId: backendReview.appointment?.master || '',
-      clientId: backendReview.appointment?.client || '',
-      clientName: backendReview.appointment?.client_name || 'Клиент',
-      clientAvatar: undefined,
+      masterId: backendReview.appointment?.master?.id || backendReview.appointment?.master || '',
+      masterName: masterName || undefined,
+      clientId: backendReview.appointment?.client?.id || backendReview.appointment?.client || '',
+      clientName,
+      clientAvatar: backendReview.appointment?.client?.avatar,
       appointmentId: backendReview.appointment?.id || backendReview.appointment,
       rating: backendReview.rating,
       comment: backendReview.comment || '',
@@ -439,6 +463,16 @@ export class DataService {
     );
   }
 
+  getClientReviews(clientId: string): Observable<Review[]> {
+    return this.api.getReviews({ client: clientId }).pipe(
+      map((response: any) => {
+        const results = response.results || response;
+        return (Array.isArray(results) ? results : []).map((r: any) => this.mapBackendReview(r));
+      }),
+      catchError(() => of(this.getMockReviews().filter(r => r.clientId === clientId)))
+    );
+  }
+
   // ==================== MASTERS (from backend) ====================
 
   getAllMasters(): Observable<Master[]> {
@@ -470,12 +504,32 @@ export class DataService {
   // ==================== TRANSACTIONS ====================
 
   private mapBackendTransaction(t: any): Transaction {
+    // Try multiple sources for service name
+    let serviceName = 'Услуга';
+    if (t.service_name) {
+      serviceName = t.service_name;
+    } else if (t.appointment?.service?.name) {
+      serviceName = t.appointment.service.name;
+    } else if (t.appointment?.service_name) {
+      serviceName = t.appointment.service_name;
+    }
+
+    // Try multiple sources for client name
+    let clientName = 'Клиент';
+    if (t.client_name) {
+      clientName = t.client_name;
+    } else if (t.appointment?.client?.full_name) {
+      clientName = t.appointment.client.full_name;
+    } else if (t.appointment?.client_name) {
+      clientName = t.appointment.client_name;
+    }
+
     return {
       id: t.id,
       masterId: t.master_id,
       appointmentId: t.appointment_id,
-      clientName: t.client_name,
-      serviceName: t.service_name,
+      clientName,
+      serviceName,
       date: t.date,
       income: t.income,
       materialsCost: t.materials_cost,

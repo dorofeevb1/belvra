@@ -23,9 +23,14 @@ import { InAppNotificationService, InAppNotification } from '../../../core/servi
         <div class="dropdown">
           <div class="dropdown-header">
             <h3>Уведомления</h3>
-            @if (notificationService.unreadCount() > 0) {
-              <button class="mark-all-btn" (click)="markAllAsRead()">Прочитать все</button>
-            }
+            <div class="header-actions">
+              @if (notificationService.unreadCount() > 0) {
+                <button class="mark-all-btn" (click)="markAllAsRead()">Прочитать все</button>
+              }
+              @if (notificationService.notifications().length > 0) {
+                <button class="mark-all-btn clear-btn" (click)="clearRead()">Очистить</button>
+              }
+            </div>
           </div>
 
           <div class="dropdown-content">
@@ -212,6 +217,15 @@ import { InAppNotificationService, InAppNotification } from '../../../core/servi
       background: #f3f4f6;
     }
 
+    .header-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .clear-btn {
+      color: #9ca3af;
+    }
+
     .dropdown-content {
       max-height: 400px;
       overflow-y: auto;
@@ -388,6 +402,10 @@ export class NotificationBellComponent implements OnInit, OnDestroy {
   deleteNotification(event: Event, id: string): void {
     event.stopPropagation();
     this.notificationService.deleteNotification(id).subscribe();
+  }
+
+  clearRead(): void {
+    this.notificationService.clearReadNotifications().subscribe();
   }
 
   formatTime(dateString: string): string {

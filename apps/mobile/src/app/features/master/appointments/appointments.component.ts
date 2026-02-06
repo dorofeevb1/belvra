@@ -142,12 +142,19 @@ export class AppointmentsComponent implements OnInit {
     const apt = this.selectedAppointment();
     if (!apt) return;
 
-    this.dataService.rescheduleAppointment(apt.id, event.date, event.time).subscribe(updated => {
-      this.appointments.update(list =>
-        list.map(a => a.id === apt.id ? updated : a)
-      );
-      this.showRescheduleModal.set(false);
-      this.notificationService.success('Запись перенесена');
+    this.dataService.rescheduleAppointment(apt.id, event.date, event.time).subscribe({
+      next: (updated) => {
+        this.appointments.update(list =>
+          list.map(a => a.id === apt.id ? { ...a, ...updated } : a)
+        );
+        this.showRescheduleModal.set(false);
+        this.notificationService.success('Запись перенесена');
+      },
+      error: (err) => {
+        console.error('Reschedule error:', err);
+        const errorMessage = err?.error?.error || err?.error?.message || 'Невозможно перенести запись на прошедшее время';
+        this.notificationService.error(errorMessage);
+      }
     });
   }
 
@@ -157,7 +164,7 @@ export class AppointmentsComponent implements OnInit {
 
     this.dataService.updateAppointmentMaterials(apt.id, event.materials, event.totalCost).subscribe(updated => {
       this.appointments.update(list =>
-        list.map(a => a.id === apt.id ? updated : a)
+        list.map(a => a.id === apt.id ? { ...a, ...updated } : a)
       );
       this.showMaterialsModal.set(false);
       this.notificationService.success('Материалы сохранены');

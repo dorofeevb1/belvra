@@ -110,7 +110,7 @@
                         [title]="apt.clientName + ' - ' + apt.serviceName"
                         (click)="onAppointmentClick(apt, $event)"
                       >
-                        <div class="appointment-time">{{ apt.startTime }}</div>
+                        <div class="appointment-time">{{ apt.startTime }}@if (apt.status === 'completed') { <span class="completed-label">Завершено</span>}</div>
                         <div class="appointment-client">{{ apt.clientName }}</div>
                         <div class="appointment-service">{{ apt.serviceName }}</div>
                       </div>
@@ -120,6 +120,7 @@
                         <div
                           class="reminder-block"
                           [class.done]="reminder.status === 'done'"
+                          [class.expired]="isReminderExpired(reminder)"
                           [class.priority-low]="reminder.priority === 'low'"
                           [class.priority-medium]="reminder.priority === 'medium'"
                           [class.priority-high]="reminder.priority === 'high'"
@@ -214,7 +215,7 @@
             </div>
             <div class="mobile-apt-info">
               <div class="mobile-apt-client">{{ apt.clientName }}</div>
-              <div class="mobile-apt-service">{{ apt.serviceName }}</div>
+              <div class="mobile-apt-service">{{ apt.serviceName }}@if (apt.status === 'completed') { <span class="completed-label"> — Завершено</span>}</div>
             </div>
             <svg class="mobile-apt-arrow w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -225,6 +226,7 @@
           <div
             class="mobile-reminder"
             [class.done]="reminder.status === 'done'"
+            [class.expired]="isReminderExpired(reminder)"
             [class.priority-low]="reminder.priority === 'low'"
             [class.priority-medium]="reminder.priority === 'medium'"
             [class.priority-high]="reminder.priority === 'high'"
@@ -667,8 +669,14 @@
           </div>
         }
         <div class="detail-row">
-          <span class="status-badge" [class.done]="reminder.status === 'done'">
-            {{ reminder.status === 'done' ? 'Выполнено' : 'Активно' }}
+          <span class="status-badge" [class.done]="reminder.status === 'done'" [class.expired]="isReminderExpired(reminder)">
+            @if (reminder.status === 'done') {
+              Выполнено
+            } @else if (isReminderExpired(reminder)) {
+              Просрочено
+            } @else {
+              Активно
+            }
           </span>
         </div>
       </div>

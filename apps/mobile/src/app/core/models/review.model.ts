@@ -1,6 +1,7 @@
 export interface Review {
   id: string;
   masterId: string;
+  masterName?: string;
   clientId: string;
   clientName: string;
   clientAvatar?: string;

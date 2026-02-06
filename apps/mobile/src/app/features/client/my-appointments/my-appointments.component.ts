@@ -53,7 +53,15 @@ export class MyAppointmentsComponent implements OnInit {
   pastAppointments = computed(() => {
     const today = new Date().toISOString().split('T')[0];
     return this.appointments()
-      .filter(a => a.date < today || a.status === 'completed' || a.status === 'cancelled')
+      .filter(a => {
+        // Cancelled always go to past
+        if (a.status === 'cancelled') return true;
+        // Completed today stays in past but we display correctly
+        if (a.status === 'completed') return true;
+        // Past dates go to past
+        if (a.date < today) return true;
+        return false;
+      })
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   });
 
@@ -193,10 +201,15 @@ export class MyAppointmentsComponent implements OnInit {
       appointmentId: apt.id,
       rating: this.reviewRating(),
       comment: this.reviewComment.trim()
-    }).subscribe(() => {
-      this.reviewedAppointments.update(set => new Set([...set, apt.id]));
-      this.showReviewModal.set(false);
-      this.notificationService.success('Отзыв отправлен!');
+    }).subscribe({
+      next: () => {
+        this.reviewedAppointments.update(set => new Set([...set, apt.id]));
+        this.showReviewModal.set(false);
+        this.notificationService.success('Отзыв отправлен!');
+      },
+      error: (err) => {
+        this.notificationService.error(err.error?.detail || 'Ошибка отправки отзыва');
+      }
     });
   }
 

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService, DataService } from '../../../core/services';
+import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, Master } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 
@@ -19,6 +20,7 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private route = inject(ActivatedRoute);
+  private notificationService = inject(InAppNotificationService);
 
   isLoading = signal(true);
   chats = signal<Chat[]>([]);
@@ -103,6 +105,8 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
         this.chats.update(list =>
           list.map(c => c.id === chat.id ? { ...c, unreadCount: 0 } : c)
         );
+        // Refresh notification badge count
+        this.notificationService.refreshUnreadCount();
       });
     }
   }
@@ -111,6 +115,8 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
     this.dataService.getMessages(chatId).subscribe(data => {
       this.messages.set(data);
       this.shouldScroll = true;
+      // Force scroll after DOM update
+      setTimeout(() => this.scrollToBottom(), 0);
     });
   }
 
@@ -142,9 +148,14 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
   }
 
   private scrollToBottom(): void {
-    if (this.messagesContainer) {
-      const el = this.messagesContainer.nativeElement;
-      el.scrollTop = el.scrollHeight;
+    try {
+      if (this.messagesContainer) {
+        const el = this.messagesContainer.nativeElement;
+        // Use smooth: auto for instant scroll
+        el.scrollTo({ top: el.scrollHeight, behavior: 'auto' });
+      }
+    } catch (err) {
+      console.error('Error scrolling to bottom:', err);
     }
   }
 

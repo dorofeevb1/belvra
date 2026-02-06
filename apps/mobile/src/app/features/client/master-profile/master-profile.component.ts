@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, signal, input, effect } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, input, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { DataService } from '../../../core/services';
@@ -28,6 +28,19 @@ export class MasterProfileComponent implements OnInit, OnDestroy {
   portfolio = signal<PortfolioItem[]>([]);
   reviews = signal<Review[]>([]);
   activeTab = signal<'services' | 'portfolio' | 'reviews' | 'location'>('services');
+
+  // Computed rating from reviews (updates dynamically when new reviews are added)
+  computedRating = computed(() => {
+    const revs = this.reviews();
+    if (revs.length === 0) return this.master()?.rating || 0;
+    const avg = revs.reduce((sum, r) => sum + r.rating, 0) / revs.length;
+    return Math.round(avg * 10) / 10;
+  });
+
+  computedReviewsCount = computed(() => {
+    const revs = this.reviews();
+    return revs.length || this.master()?.reviewsCount || 0;
+  });
 
   constructor() {
     // Initialize map when location tab is active

@@ -31,12 +31,13 @@ export class InAppNotificationService {
   readonly isLoading = this.isLoadingSignal.asReadonly();
 
   private pollingSubscription: any = null;
+  private visibilityHandler: (() => void) | null = null;
 
   startPolling(): void {
     if (this.pollingSubscription) return;
 
-    // Poll every 30 seconds
-    this.pollingSubscription = interval(30000).pipe(
+    // Poll every 15 seconds for more responsive updates
+    this.pollingSubscription = interval(15000).pipe(
       switchMap(() => {
         if (this.auth.isAuthenticated()) {
           return this.fetchUnreadCount();
@@ -50,6 +51,14 @@ export class InAppNotificationService {
     if (this.auth.isAuthenticated()) {
       this.fetchUnreadCount().subscribe();
     }
+
+    // Refresh on tab visibility change (when user switches back to app)
+    this.visibilityHandler = () => {
+      if (!document.hidden && this.auth.isAuthenticated()) {
+        this.fetchUnreadCount().subscribe();
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
   }
 
   stopPolling(): void {
@@ -57,13 +66,26 @@ export class InAppNotificationService {
       this.pollingSubscription.unsubscribe();
       this.pollingSubscription = null;
     }
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+  }
+
+  /** Refresh unread count - call after reading messages in chat */
+  refreshUnreadCount(): void {
+    if (this.auth.isAuthenticated()) {
+      this.fetchUnreadCount().subscribe();
+    }
   }
 
   fetchNotifications(): Observable<InAppNotification[]> {
     this.isLoadingSignal.set(true);
     return this.api.getNotifications().pipe(
       tap((response: any) => {
-        const notifications = response.results || response || [];
+        const allNotifications = response.results || response || [];
+        // Filter notifications relevant to current role
+        const notifications = this.filterByRole(allNotifications);
         this.notificationsSignal.set(notifications);
         this.updateUnreadCount(notifications);
         this.isLoadingSignal.set(false);
@@ -74,6 +96,21 @@ export class InAppNotificationService {
         return of([]);
       })
     );
+  }
+
+  /** Filter notifications based on user role to avoid cross-role leakage */
+  private filterByRole(notifications: InAppNotification[]): InAppNotification[] {
+    const isMaster = this.auth.isMaster();
+    const masterTypes = ['appointment_new', 'appointment_confirmed', 'appointment_cancelled', 'appointment_reminder', 'review_new', 'payment_received', 'payment_refunded'];
+    const clientTypes = ['appointment_confirmed', 'appointment_cancelled', 'appointment_reminder', 'appointment_completed', 'payment_received', 'payment_refunded'];
+
+    return notifications.filter(n => {
+      // System notifications are shown to all
+      if (n.notification_type === 'system') return true;
+      // Filter by role
+      if (isMaster) return masterTypes.includes(n.notification_type);
+      return clientTypes.includes(n.notification_type);
+    });
   }
 
   fetchUnreadCount(): Observable<{ count: number }> {

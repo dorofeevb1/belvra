@@ -253,15 +253,31 @@ export class AuthService {
       return of(false);
     }
 
+    // Build API payload only with defined fields
+    const apiData: Record<string, any> = {};
+    if (updates.name !== undefined) {
+      apiData['first_name'] = updates.name.split(' ')[0];
+      apiData['last_name'] = updates.name.split(' ').slice(1).join(' ') || '';
+    }
+    if (updates.phone !== undefined) {
+      apiData['phone'] = updates.phone;
+    }
+    if (updates.avatar !== undefined) {
+      apiData['avatar'] = updates.avatar;
+    }
+
+    // Filter out undefined values from local updates
+    const definedUpdates: Partial<Client> = {};
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        (definedUpdates as any)[key] = value;
+      }
+    }
+
     // Call API to update profile
-    return this.api.updateProfile({
-      first_name: updates.name?.split(' ')[0],
-      last_name: updates.name?.split(' ').slice(1).join(' ') || '',
-      phone: updates.phone,
-      avatar: updates.avatar
-    }).pipe(
+    return this.api.updateProfile(apiData).pipe(
       tap(() => {
-        const updated = { ...current, ...updates } as Client;
+        const updated = { ...current, ...definedUpdates } as Client;
         this.currentUserSignal.set(updated);
         localStorage.setItem(USER_KEY, JSON.stringify(updated));
       }),

@@ -49,6 +49,13 @@ import { CommonModule } from '@angular/common';
       animation: fadeIn 0.15s ease-out;
     }
 
+    @media (max-width: 640px) {
+      .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+      }
+    }
+
     .modal {
       position: relative;
       width: 100%;
@@ -59,6 +66,25 @@ import { CommonModule } from '@angular/common';
       border-radius: var(--radius-2xl);
       box-shadow: var(--shadow-2xl);
       animation: scaleIn 0.2s ease-out;
+    }
+
+    @media (max-width: 640px) {
+      .modal {
+        max-height: 90vh;
+        border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+        animation: slideUp 0.25s ease-out;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(100%);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .modal-sm { max-width: 24rem; }

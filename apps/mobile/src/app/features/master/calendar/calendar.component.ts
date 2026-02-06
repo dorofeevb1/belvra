@@ -136,7 +136,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
     if (!masterId) return;
 
     this.dataService.getAppointments(masterId).subscribe(data => {
-      this.appointments.set(data.filter(a => a.status === 'confirmed' || a.status === 'in_progress'));
+      this.appointments.set(data.filter(a =>
+        a.status === 'confirmed' || a.status === 'in_progress' || a.status === 'completed'
+      ));
     });
 
     this.dataService.getTodos(masterId).subscribe(data => {
@@ -343,6 +345,18 @@ export class CalendarComponent implements OnInit, OnDestroy {
     return this.getRemindersForSlot(slot.date, slot.hour);
   }
 
+  isReminderExpired(reminder: TodoItem): boolean {
+    if (reminder.status === 'done') return false;
+    const today = this.dateService.todayStr();
+    if (reminder.date < today) return true;
+    if (reminder.date === today && reminder.time) {
+      const now = dayjs();
+      const [h, m] = reminder.time.split(':').map(Number);
+      return now.hour() > h || (now.hour() === h && now.minute() > m);
+    }
+    return false;
+  }
+
   getAppointmentColor(status: string): string {
     return APPOINTMENT_STATUS_COLORS[status as keyof typeof APPOINTMENT_STATUS_COLORS] || 'bg-slate-100';
   }
@@ -439,7 +453,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.dataService.rescheduleAppointment(apt.id, newDate, newTime).subscribe({
       next: (updated) => {
         this.appointments.update(appointments =>
-          appointments.map(a => a.id === apt.id ? updated : a)
+          appointments.map(a => a.id === apt.id ? { ...a, ...updated } : a)
         );
         this.isRescheduling.set(false);
         this.closeRescheduleModal();

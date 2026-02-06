@@ -384,7 +384,14 @@ export class RescheduleModalComponent implements OnChanges {
 
     this.isLoadingSlots.set(true);
     this.dataService.getAvailableSlots(masterId, date, apt.duration).subscribe(slots => {
-      this.availableSlots.set(slots);
+      // Filter out past time slots if selected date is today
+      let filteredSlots = slots;
+      if (this.dateService.isToday(date)) {
+        const now = new Date();
+        const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        filteredSlots = slots.filter(slot => slot > currentTime);
+      }
+      this.availableSlots.set(filteredSlots);
       this.isLoadingSlots.set(false);
     });
   }

@@ -189,6 +189,7 @@
                 <input
                   type="tel"
                   formControlName="phone"
+                  appPhoneMask
                   class="input"
                   [class.error]="profileForm.get('phone')?.invalid && profileForm.get('phone')?.touched"
                   placeholder="+7 (999) 123-45-67"
@@ -301,6 +302,7 @@
                 <input
                   type="text"
                   formControlName="whatsapp"
+                  appPhoneMask
                   class="input"
                   [class.error]="profileForm.get('whatsapp')?.invalid && profileForm.get('whatsapp')?.touched"
                   placeholder="+7 (999) 123-45-67"
