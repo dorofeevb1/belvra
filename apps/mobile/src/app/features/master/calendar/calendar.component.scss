@@ -282,11 +282,19 @@
   margin-top: 0.125rem;
 }
 
+.completed-label {
+  font-size: 0.5625rem;
+  font-weight: 600;
+  opacity: 0.8;
+  margin-left: 0.25rem;
+}
+
 /* Appointment Colors */
 .bg-green-100 {
   background: var(--color-success-bg);
   color: var(--color-success);
   border-left-color: var(--color-success);
+  opacity: 0.7;
 }
 
 .bg-blue-100 {
@@ -390,6 +398,13 @@
     .reminder-title {
       text-decoration: line-through;
     }
+  }
+
+  &.expired {
+    opacity: 0.45;
+    border-left-color: var(--color-error) !important;
+    background: var(--color-error-bg) !important;
+    color: var(--color-error) !important;
   }
 }
 
@@ -977,6 +992,13 @@
     }
   }
 
+  &.expired {
+    opacity: 0.5;
+    background: var(--color-error-bg) !important;
+    border-color: var(--color-error) !important;
+    color: var(--color-error);
+  }
+
   // Low priority (green)
   &.priority-low {
     background: #d1fae5;
@@ -1260,6 +1282,11 @@
     background: var(--color-success-bg);
     color: var(--color-success);
   }
+
+  &.expired {
+    background: var(--color-error-bg);
+    color: var(--color-error);
+  }
 }
 
 .reminder-detail-title {
@@ -1416,6 +1443,27 @@
 
   .todo-item {
     padding: 0.625rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .time-slots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .time-slot-btn {
+    min-height: 44px;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .mobile-day-tab {
+    padding: 0.5rem;
+    min-height: 44px;
+  }
+
+  .priority-selector {
+    grid-template-columns: 1fr;
   }
 }
 

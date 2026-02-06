@@ -301,3 +301,20 @@
   height: 500px;
   background: var(--color-surface-secondary);
 }
+
+@media (max-width: 640px) {
+  .map-container {
+    height: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .map-container {
+    height: 250px;
+  }
+
+  .search-input {
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    font-size: 0.9375rem;
+  }
+}

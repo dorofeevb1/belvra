@@ -682,3 +682,22 @@
   font-size: 0.875rem;
   color: var(--color-text-secondary);
 }
+
+/* Mobile adaptive */
+@media (max-width: 480px) {
+  .map-container {
+    height: 12rem;
+  }
+
+  .subscription-info {
+    min-width: 0;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .stats-grid {
+    gap: 0.75rem;
+  }
+}

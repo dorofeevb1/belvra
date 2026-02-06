@@ -728,3 +728,29 @@
   font-weight: 600;
   color: var(--color-success);
 }
+
+/* Mobile adaptive */
+@media (max-width: 480px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .step-actions {
+    flex-direction: column;
+  }
+
+  .time-slot {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .step-card {
+    padding: 1.25rem;
+  }
+
+  .method-tabs {
+    flex-direction: column;
+  }
+}

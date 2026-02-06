@@ -1703,6 +1703,15 @@
     min-height: 44px;
   }
 
+  /* Larger touch targets for interactive elements */
+  .time-slot,
+  .calendar-day,
+  .tab,
+  .chat-item,
+  .mobile-day-tab {
+    min-height: 44px;
+  }
+
   /* Remove hover effects on touch devices */
   .card:hover {
     transform: none;

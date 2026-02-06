@@ -307,3 +307,55 @@
     transform: translateX(0);
   }
 }
+
+/* Mobile adaptive */
+@media (max-width: 480px) {
+  .register-page {
+    padding: 1rem 0.75rem;
+  }
+
+  .register-logo {
+    margin-bottom: 1.25rem;
+  }
+
+  .logo-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .logo-text {
+    font-size: 1.5rem;
+  }
+
+  .register-card {
+    padding: 1.25rem;
+  }
+
+  .steps-indicator {
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .step-number {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.75rem;
+  }
+
+  .step-label {
+    font-size: 0.625rem;
+  }
+
+  .step-line {
+    max-width: 2.5rem;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+  }
+
+  .register-footer {
+    margin-top: 1.25rem;
+  }
+}

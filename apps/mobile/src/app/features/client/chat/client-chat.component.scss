@@ -534,3 +534,18 @@
   font-size: 0.875rem;
   font-weight: 500;
 }
+
+/* Mobile adaptive */
+@media (max-width: 480px) {
+  .chat-sidebar {
+    max-height: 12rem;
+  }
+
+  .message-bubble {
+    max-width: 85%;
+  }
+
+  .chat-page {
+    height: calc(100vh - 120px);
+  }
+}
