@@ -126,7 +126,7 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         duration = master_service.actual_duration
         end_time = (datetime.combine(attrs["date"], start_time) + timedelta(minutes=duration)).time()
 
-        existing = Appointment.objects.select_for_update().filter(
+        existing = Appointment.objects.filter(
             master=master,
             date=attrs["date"],
             status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED]
