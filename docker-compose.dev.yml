@@ -114,7 +114,7 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: beautystyle_celery_beat_dev
-    command: celery -A config beat -l INFO
+    command: celery -A config beat -l INFO --schedule=/tmp/celerybeat-schedule
     env_file:
       - .env
     environment:
