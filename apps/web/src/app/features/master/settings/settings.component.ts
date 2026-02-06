@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -6,6 +6,8 @@ import { AuthService, DataService, NotificationService, ThemeService, ApiService
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
 import { PhoneMaskDirective } from '../../../shared/directives/phone-mask.directive';
+
+declare const ymaps: any;
 
 interface BackendSchedule {
   id: string;
@@ -22,7 +24,7 @@ interface BackendSchedule {
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss'
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
   private fb = inject(FormBuilder);
   private authService = inject(AuthService);
   private dataService = inject(DataService);
@@ -33,7 +35,12 @@ export class SettingsComponent implements OnInit {
 
   isLoading = signal(true);
   isSaving = signal(false);
+  mapLoaded = signal(false);
+  mapError = signal('');
   categories = SERVICE_CATEGORIES;
+
+  private map: any = null;
+  private placemark: any = null;
 
   // Backend schedules storage for tracking changes
   private backendSchedules: BackendSchedule[] = [];
@@ -111,6 +118,8 @@ export class SettingsComponent implements OnInit {
       phone: ['', [Validators.maxLength(20)]], // Phone is optional
       specialization: ['', [Validators.maxLength(100)]],
       address: ['', [Validators.maxLength(200)]],
+      latitude: [null as number | null],
+      longitude: [null as number | null],
       description: ['', [Validators.maxLength(1000)]],
       // Social links
       telegram: ['', [Validators.maxLength(100)]],
@@ -181,12 +190,17 @@ export class SettingsComponent implements OnInit {
       phone: master.phone || '',
       specialization: master.specialization,
       address: master.address,
+      latitude: master.coordinates?.lat ?? null,
+      longitude: master.coordinates?.lng ?? null,
       description: master.description,
       telegram: master.socialLinks?.telegram || '',
       instagram: master.socialLinks?.instagram || '',
       vk: master.socialLinks?.vk || '',
       whatsapp: master.socialLinks?.whatsapp || ''
     });
+
+    // Init address map after DOM renders
+    setTimeout(() => this.initAddressMap(), 200);
 
     // Load schedule from backend API
     this.loadScheduleFromApi();
@@ -438,6 +452,8 @@ export class SettingsComponent implements OnInit {
         specialization: this.profileForm.get('specialization')?.value || '',
         bio: this.profileForm.get('description')?.value || '',
         address_write: this.profileForm.get('address')?.value || '',
+        latitude_write: this.profileForm.get('latitude')?.value ?? null,
+        longitude_write: this.profileForm.get('longitude')?.value ?? null,
         // Social links
         telegram: this.profileForm.get('telegram')?.value || '',
         instagram: this.profileForm.get('instagram')?.value || '',
@@ -458,12 +474,15 @@ export class SettingsComponent implements OnInit {
       }).toPromise();
 
       // Step 3: Update local state only (API already called in step 2)
+      const lat = this.profileForm.get('latitude')?.value;
+      const lng = this.profileForm.get('longitude')?.value;
       this.authService.updateMasterProfile({
         name: this.profileForm.get('name')?.value,
         email: this.profileForm.get('email')?.value,
         phone: this.profileForm.get('phone')?.value || undefined,
         specialization: this.profileForm.get('specialization')?.value,
         address: this.profileForm.get('address')?.value,
+        coordinates: lat && lng ? { lat, lng } : undefined,
         description: this.profileForm.get('description')?.value,
         avatar: this.avatarPreview() || undefined,
         workSchedule,
@@ -650,5 +669,98 @@ export class SettingsComponent implements OnInit {
   getUsagePercent(used: number, limit: number | null): number {
     if (!limit) return 0;
     return Math.min(100, (used / limit) * 100);
+  }
+
+  // Address Map methods
+  private initAddressMap(retryCount = 0): void {
+    if (typeof ymaps === 'undefined') {
+      if (retryCount < 20) {
+        setTimeout(() => this.initAddressMap(retryCount + 1), 500);
+      } else {
+        this.mapError.set('Не удалось загрузить карту');
+      }
+      return;
+    }
+
+    const container = document.getElementById('address-map');
+    if (!container) return;
+
+    ymaps.ready(() => {
+      try {
+        const lat = this.profileForm.get('latitude')?.value;
+        const lng = this.profileForm.get('longitude')?.value;
+        const center = lat && lng ? [lat, lng] : [55.76, 37.64];
+        const zoom = lat && lng ? 15 : 10;
+
+        this.map = new ymaps.Map('address-map', {
+          center,
+          zoom,
+          controls: ['zoomControl', 'geolocationControl']
+        });
+
+        this.placemark = new ymaps.Placemark(
+          center,
+          {},
+          { preset: 'islands#pinkDotIcon', draggable: true }
+        );
+        this.map.geoObjects.add(this.placemark);
+
+        // Click on map → move marker + reverse geocode
+        this.map.events.add('click', (e: any) => {
+          const coords = e.get('coords');
+          this.placemark.geometry.setCoordinates(coords);
+          this.reverseGeocode(coords);
+        });
+
+        // Drag marker → reverse geocode
+        this.placemark.events.add('dragend', () => {
+          const coords = this.placemark.geometry.getCoordinates();
+          this.reverseGeocode(coords);
+        });
+
+        this.mapLoaded.set(true);
+      } catch (e) {
+        this.mapError.set('Ошибка инициализации карты');
+      }
+    });
+  }
+
+  private reverseGeocode(coords: number[]): void {
+    ymaps.geocode(coords).then((res: any) => {
+      const firstGeoObject = res.geoObjects.get(0);
+      if (firstGeoObject) {
+        const address = firstGeoObject.getAddressLine();
+        this.profileForm.patchValue({
+          address,
+          latitude: coords[0],
+          longitude: coords[1]
+        });
+      }
+    });
+  }
+
+  geocodeAddress(): void {
+    const address = this.profileForm.get('address')?.value;
+    if (!address || !this.map) return;
+
+    ymaps.geocode(address).then((res: any) => {
+      const firstGeoObject = res.geoObjects.get(0);
+      if (firstGeoObject) {
+        const coords = firstGeoObject.geometry.getCoordinates();
+        this.map.setCenter(coords, 15);
+        this.placemark.geometry.setCoordinates(coords);
+        this.profileForm.patchValue({
+          latitude: coords[0],
+          longitude: coords[1]
+        });
+      }
+    });
+  }
+
+  ngOnDestroy(): void {
+    if (this.map) {
+      this.map.destroy();
+      this.map = null;
+    }
   }
 }

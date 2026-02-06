@@ -203,17 +203,46 @@
                 }
               </div>
             </div>
-            <div class="form-group">
+            <div class="form-group address-picker">
               <label class="label">Адрес</label>
-              <input
-                type="text"
-                formControlName="address"
-                class="input"
-                [class.error]="profileForm.get('address')?.invalid && profileForm.get('address')?.touched"
-                placeholder="Город, улица, дом"
-              />
+              <div class="address-input-row">
+                <input
+                  type="text"
+                  formControlName="address"
+                  class="input"
+                  [class.error]="profileForm.get('address')?.invalid && profileForm.get('address')?.touched"
+                  placeholder="Город, улица, дом"
+                  (keydown.enter)="$event.preventDefault(); geocodeAddress()"
+                />
+                <button type="button" class="btn btn-ghost btn-sm address-search-btn" (click)="geocodeAddress()" title="Найти на карте">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  </svg>
+                </button>
+              </div>
               @if (profileForm.get('address')?.invalid && profileForm.get('address')?.touched) {
                 <span class="error-text">Некорректный адрес</span>
+              }
+              <div class="address-map-container">
+                @if (mapError()) {
+                  <div class="map-placeholder map-error">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4.5c-.77-.833-2.694-.833-3.464 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                    </svg>
+                    <span>{{ mapError() }}</span>
+                  </div>
+                } @else if (!mapLoaded()) {
+                  <div class="map-placeholder">
+                    <div class="spinner spinner-sm"></div>
+                    <span>Загрузка карты...</span>
+                  </div>
+                }
+                <div id="address-map" [style.display]="mapLoaded() ? 'block' : 'none'" style="width: 100%; height: 100%;"></div>
+              </div>
+              @if (profileForm.get('latitude')?.value && profileForm.get('longitude')?.value) {
+                <span class="coordinates-hint">
+                  {{ profileForm.get('latitude')?.value | number:'1.4-4' }}, {{ profileForm.get('longitude')?.value | number:'1.4-4' }}
+                </span>
               }
             </div>
             <div class="form-group">

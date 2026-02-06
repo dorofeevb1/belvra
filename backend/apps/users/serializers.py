@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
@@ -26,6 +28,12 @@ class UserSerializer(serializers.ModelSerializer):
     specialization = serializers.CharField(write_only=True, required=False, allow_blank=True)
     bio = serializers.CharField(write_only=True, required=False, allow_blank=True)
     address_write = serializers.CharField(write_only=True, required=False, allow_blank=True, source='address')
+    latitude_write = serializers.DecimalField(
+        max_digits=9, decimal_places=6, write_only=True, required=False, allow_null=True
+    )
+    longitude_write = serializers.DecimalField(
+        max_digits=9, decimal_places=6, write_only=True, required=False, allow_null=True
+    )
     # Social links write fields
     telegram = serializers.CharField(write_only=True, required=False, allow_blank=True)
     instagram = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -50,7 +58,8 @@ class UserSerializer(serializers.ModelSerializer):
             "id", "email", "phone", "first_name", "last_name",
             "full_name", "avatar", "role", "is_verified", "created_at",
             "master_profile_id", "has_master_profile", "specialization", "bio",
-            "address", "address_write", "latitude", "longitude", "rating", "reviews_count",
+            "address", "address_write", "latitude", "latitude_write",
+            "longitude", "longitude_write", "rating", "reviews_count",
             "social_links", "notification_settings", "payment_settings",
             "telegram", "instagram", "vk", "whatsapp",
             "email_notifications", "sms_notifications", "push_notifications", "reminder_hours",
@@ -152,6 +161,8 @@ class UserSerializer(serializers.ModelSerializer):
         specialization = validated_data.pop('specialization', None)
         bio = validated_data.pop('bio', None)
         address = validated_data.pop('address', None)
+        latitude = validated_data.pop('latitude_write', None)
+        longitude = validated_data.pop('longitude_write', None)
         # Social links
         telegram = validated_data.pop('telegram', None)
         instagram = validated_data.pop('instagram', None)
@@ -182,6 +193,13 @@ class UserSerializer(serializers.ModelSerializer):
                 master_profile.bio = bio
             if address is not None:
                 master_profile.address = address
+                if not address:
+                    master_profile.latitude = None
+                    master_profile.longitude = None
+            if latitude is not None:
+                master_profile.latitude = Decimal(str(latitude))
+            if longitude is not None:
+                master_profile.longitude = Decimal(str(longitude))
             # Social links
             if telegram is not None:
                 master_profile.telegram = telegram
