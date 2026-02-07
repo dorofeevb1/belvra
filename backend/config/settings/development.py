@@ -18,8 +18,7 @@ try:
 except ImportError:
     pass
 
-# Email backend for development
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+# Email backend — controlled via .env (base.py reads EMAIL_BACKEND from env)
 
 # CORS - allow all in development
 CORS_ALLOW_ALL_ORIGINS = True
