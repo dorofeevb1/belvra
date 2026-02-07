@@ -52,6 +52,10 @@ app.conf.beat_schedule = {
         "task": "apps.payments.tasks.generate_daily_report",
         "schedule": crontab(hour=1, minute=0),  # Daily at 1 AM
     },
+    "cleanup-unverified-accounts": {
+        "task": "apps.core.tasks.cleanup_unverified_accounts",
+        "schedule": crontab(minute="*/1"),  # Every minute
+    },
 }
 
 

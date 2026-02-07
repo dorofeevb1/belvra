@@ -3,12 +3,32 @@ Celery tasks for core functionality like email sending.
 """
 
 import logging
+from datetime import timedelta
 
 from celery import shared_task
+from django.utils import timezone
 
 from .email import EmailService
 
 logger = logging.getLogger(__name__)
+
+
+@shared_task
+def cleanup_unverified_accounts():
+    """Delete accounts that were not verified within 5 minutes."""
+    from apps.users.models import User
+
+    cutoff = timezone.now() - timedelta(minutes=5)
+    unverified = User.objects.filter(
+        is_verified=False,
+        is_staff=False,
+        created_at__lt=cutoff,
+    )
+    count = unverified.count()
+    if count:
+        unverified.delete()
+        logger.info(f"Deleted {count} unverified accounts older than 5 minutes")
+    return count
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
