@@ -10,6 +10,7 @@ export interface User {
   phone?: string;
   avatar?: string;
   hasMasterProfile?: boolean;
+  isVerified?: boolean;
   createdAt: Date;
 }
 

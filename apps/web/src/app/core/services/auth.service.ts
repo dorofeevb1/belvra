@@ -89,6 +89,7 @@ export class AuthService {
       phone: backendUser.phone || '',
       avatar: backendUser.avatar,
       hasMasterProfile: backendUser.has_master_profile || false,
+      isVerified: backendUser.is_verified ?? false,
       createdAt: new Date(backendUser.created_at)
     };
 
@@ -406,6 +407,6 @@ export class AuthService {
   // Check if current user is verified
   readonly isEmailVerified = computed(() => {
     const user = this.currentUserSignal();
-    return user ? (user as any).isVerified === true : false;
+    return user?.isVerified === true;
   });
 }

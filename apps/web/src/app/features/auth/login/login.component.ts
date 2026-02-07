@@ -43,10 +43,16 @@ export class LoginComponent {
       );
 
       if (success) {
-        this.notificationService.success('Добро пожаловать в BeautyBook!');
         const user = this.authService.currentUser();
-        const route = user?.role === 'master' ? '/master' : '/client';
-        this.router.navigate([route]);
+        if (!user?.isVerified) {
+          this.router.navigate(['/verify-email'], {
+            queryParams: { email: user?.email }
+          });
+        } else {
+          this.notificationService.success('Добро пожаловать в BeautyBook!');
+          const route = user?.role === 'master' ? '/master' : '/client';
+          this.router.navigate([route]);
+        }
       } else {
         this.errorMessage.set('Неверный email или пароль');
       }
