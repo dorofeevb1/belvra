@@ -353,9 +353,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 
 class EmailVerificationSerializer(serializers.Serializer):
-    """Serializer for email verification."""
+    """Serializer for email verification with 6-digit code."""
 
-    token = serializers.CharField()
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6, min_length=6)
 
 
 class FavoriteMasterSerializer(serializers.ModelSerializer):

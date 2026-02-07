@@ -1,4 +1,5 @@
 import math
+import random
 import secrets
 from datetime import timedelta
 
@@ -19,7 +20,7 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.core.tasks import (
-    send_email_verification_task,
+    send_email_verification_code_task,
     send_password_reset_email_task,
     send_welcome_email_task,
 )
@@ -67,19 +68,19 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Generate email verification token
-        verification_token = secrets.token_urlsafe(32)
-        cache_key = f"email_verification_{verification_token}"
-        cache.set(cache_key, str(user.id), timeout=86400)  # 24 hours
+        # Generate 6-digit verification code
+        code = f"{random.randint(100000, 999999)}"
+        cache_key = f"email_verify_code_{user.id}"
+        cache.set(cache_key, code, timeout=600)  # 10 minutes
 
-        # Build verification URL
-        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
-
-        # Send verification email asynchronously (includes welcome message)
-        send_email_verification_task.delay(str(user.id), verification_url)
+        # Send verification code via email
+        send_email_verification_code_task.delay(str(user.id), code)
 
         token_data = TokenSerializer.get_token(user)
-        return Response(token_data, status=status.HTTP_201_CREATED)
+        return Response({
+            **token_data,
+            "verification_email": user.email,
+        }, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
@@ -440,7 +441,7 @@ class PasswordResetValidateTokenView(APIView):
     description="Подтверждение email адреса с использованием токена"
 )
 class VerifyEmailView(APIView):
-    """Verify email address with token."""
+    """Verify email address with 6-digit code."""
 
     permission_classes = [AllowAny]
 
@@ -448,35 +449,34 @@ class VerifyEmailView(APIView):
         serializer = EmailVerificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        token = serializer.validated_data["token"]
-        cache_key = f"email_verification_{token}"
-        user_id = cache.get(cache_key)
-
-        if not user_id:
-            return Response(
-                {"detail": "Недействительный или истёкший токен верификации"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        code = serializer.validated_data["code"]
+        email = serializer.validated_data["email"]
 
         try:
-            user = User.objects.get(id=user_id)
-
-            if user.is_verified:
-                return Response({"detail": "Email уже подтверждён"})
-
-            user.is_verified = True
-            user.save()
-
-            # Invalidate token
-            cache.delete(cache_key)
-
-            return Response({"detail": "Email успешно подтверждён"})
-
+            user = User.objects.get(email=email)
         except User.DoesNotExist:
             return Response(
                 {"detail": "Пользователь не найден"},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        if user.is_verified:
+            return Response({"detail": "Email уже подтверждён"})
+
+        cache_key = f"email_verify_code_{user.id}"
+        stored_code = cache.get(cache_key)
+
+        if not stored_code or stored_code != code:
+            return Response(
+                {"detail": "Неверный или истёкший код"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user.is_verified = True
+        user.save()
+        cache.delete(cache_key)
+
+        return Response({"detail": "Email успешно подтверждён"})
 
 
 @extend_schema(
@@ -485,7 +485,7 @@ class VerifyEmailView(APIView):
     description="Повторная отправка письма для подтверждения email"
 )
 class ResendVerificationEmailView(APIView):
-    """Resend verification email."""
+    """Resend verification email with new code."""
 
     permission_classes = [IsAuthenticated]
 
@@ -498,18 +498,15 @@ class ResendVerificationEmailView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Generate new verification token
-        verification_token = secrets.token_urlsafe(32)
-        cache_key = f"email_verification_{verification_token}"
-        cache.set(cache_key, str(user.id), timeout=86400)  # 24 hours
+        # Generate new 6-digit verification code
+        code = f"{random.randint(100000, 999999)}"
+        cache_key = f"email_verify_code_{user.id}"
+        cache.set(cache_key, code, timeout=600)  # 10 minutes
 
-        # Build verification URL
-        verification_url = f"{settings.FRONTEND_URL}/verify-email?token={verification_token}"
+        # Send verification code via email
+        send_email_verification_code_task.delay(str(user.id), code)
 
-        # Send verification email
-        send_email_verification_task.delay(str(user.id), verification_url)
-
-        return Response({"detail": "Письмо для подтверждения отправлено"})
+        return Response({"detail": "Код подтверждения отправлен"})
 
 
 @extend_schema(

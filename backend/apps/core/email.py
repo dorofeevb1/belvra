@@ -78,15 +78,15 @@ class EmailService:
         )
 
     @classmethod
-    def send_email_verification(cls, user, verification_url: str) -> bool:
-        """Send email verification link."""
+    def send_email_verification_code(cls, user, code: str) -> bool:
+        """Send email verification code."""
         return cls.send_email(
-            subject="Подтвердите ваш email - BeautyBook",
-            template_name="email_verification",
+            subject="Код подтверждения - BeautyBook",
+            template_name="email_verification_code",
             context={
                 'user': user,
                 'name': user.first_name or user.email.split('@')[0],
-                'verification_url': verification_url,
+                'code': code,
             },
             to_emails=[user.email]
         )

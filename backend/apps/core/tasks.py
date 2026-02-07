@@ -28,14 +28,14 @@ def send_welcome_email_task(self, user_id: str):
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_email_verification_task(self, user_id: str, verification_url: str):
-    """Send email verification link."""
+def send_email_verification_code_task(self, user_id: str, code: str):
+    """Send email verification code."""
     from apps.users.models import User
 
     try:
         user = User.objects.get(id=user_id)
-        EmailService.send_email_verification(user, verification_url)
-        logger.info(f"Verification email sent to {user.email}")
+        EmailService.send_email_verification_code(user, code)
+        logger.info(f"Verification code sent to {user.email}")
     except User.DoesNotExist:
         logger.error(f"User {user_id} not found for verification email")
     except Exception as exc:

@@ -132,9 +132,10 @@ export class RegisterComponent {
       );
 
       if (success) {
-        this.notificationService.success('Регистрация успешна! Добро пожаловать в BeautyBook!');
-        const route = this.selectedRole() === 'master' ? '/master' : '/client';
-        this.router.navigate([route]);
+        this.notificationService.success('Регистрация успешна! Подтвердите email.');
+        this.router.navigate(['/verify-email'], {
+          queryParams: { email: this.form.email.trim() }
+        });
       } else {
         this.errorMessage.set('Ошибка регистрации. Возможно, email уже используется.');
       }

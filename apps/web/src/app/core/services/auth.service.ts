@@ -385,8 +385,8 @@ export class AuthService {
   }
 
   // Email verification
-  verifyEmail(token: string): Observable<{ detail: string }> {
-    return this.api.verifyEmail(token).pipe(
+  verifyEmail(email: string, code: string): Observable<{ detail: string }> {
+    return this.api.verifyEmail(email, code).pipe(
       tap(() => {
         // Update user's verified status locally
         const user = this.currentUserSignal();
