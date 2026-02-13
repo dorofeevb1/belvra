@@ -404,7 +404,7 @@ class TransactionListView(views.APIView):
         appointments = Appointment.objects.filter(
             master=master,
             status=Appointment.Status.COMPLETED
-        ).select_related("client", "service").order_by("-date", "-end_time")
+        ).select_related("client", "service", "master_service").order_by("-date", "-end_time")
 
         # Calculate transactions
         transactions = []
@@ -434,7 +434,7 @@ class TransactionListView(views.APIView):
                 "master_id": str(master.id),
                 "appointment_id": str(apt.id),
                 "client_name": apt.client.full_name if apt.client else "Клиент",
-                "service_name": apt.service.name if apt.service else "Услуга",
+                "service_name": apt.master_service.name if apt.master_service else (apt.service.name if apt.service else "Услуга"),
                 "date": apt.date.isoformat(),
                 "income": float(price),
                 "materials_cost": float(materials_cost),

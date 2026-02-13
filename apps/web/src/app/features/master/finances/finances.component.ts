@@ -1,10 +1,10 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, DataService } from '../../../core/services';
+import { SubscriptionService } from '../../../core/services/subscription.service';
 import {
   Transaction,
-  TRANSACTION_STATUS_LABELS,
-  PLATFORM_FEE_PERCENT
+  TRANSACTION_STATUS_LABELS
 } from '../../../core/models';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
@@ -19,10 +19,11 @@ import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 export class FinancesComponent implements OnInit {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
+  private subscriptionService = inject(SubscriptionService);
 
   isLoading = signal(true);
   transactions = signal<Transaction[]>([]);
-  platformFee = PLATFORM_FEE_PERCENT;
+  platformFee = computed(() => this.subscriptionService.limits().commissionPercent);
 
   /** Общая прибыль считается только по выплаченным транзакциям, pending отображаются отдельно */
   summary = computed(() => {

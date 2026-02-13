@@ -863,7 +863,7 @@ export class DataService {
           a => a.date >= today && (a.status === 'confirmed' || a.status === 'pending')
         ).length;
 
-        const completedAppointments = appointments.filter(a => a.status === 'completed');
+        const completedAppointments = appointments.filter(a => a.status === 'completed' && a.paymentStatus === 'paid');
         const totalProfit = completedAppointments.reduce((sum, a) => {
           const { netProfit } = calculateNetProfit(a.price, a.materialsCost || 0);
           return sum + netProfit;
