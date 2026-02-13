@@ -22,7 +22,8 @@ export interface FinancialSummary {
   lastPayoutDate?: string;
 }
 
-export const PLATFORM_FEE_PERCENT = 10;
+/** Комиссия платформы — должна совпадать с PLATFORM_COMMISSION_RATE на бэкенде (5%) */
+export const PLATFORM_FEE_PERCENT = 5;
 
 export function calculateNetProfit(income: number, materialsCost: number): {
   platformFee: number;

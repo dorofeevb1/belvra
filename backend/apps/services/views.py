@@ -137,11 +137,21 @@ class MasterServiceViewSet(viewsets.ModelViewSet):
         return queryset
 
     def perform_create(self, serializer):
-        # Automatically set master to current user's master profile
-        if hasattr(self.request.user, 'master_profile'):
-            serializer.save(master=self.request.user.master_profile)
-        else:
+        """Создание услуги с проверкой лимита подписки."""
+        if not hasattr(self.request.user, 'master_profile'):
             raise PermissionDenied("User must have a master profile")
+
+        master = self.request.user.master_profile
+        current_count = MasterService.objects.filter(master=master).count()
+
+        # Проверяем лимит услуг по подписке
+        subscription = getattr(master, 'subscription', None)
+        if subscription and not subscription.can_add_service(current_count):
+            raise PermissionDenied(
+                "Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг."
+            )
+
+        serializer.save(master=master)
 
     @extend_schema(
         tags=["Услуги мастеров"],

@@ -84,6 +84,9 @@ export class ChatComponent implements OnInit, AfterViewChecked {
       this.messages.set(data);
       this.shouldScroll = true;
 
+      // Принудительный скролл после рендеринга DOM
+      setTimeout(() => this.scrollToBottom(), 50);
+
       const lastClientMsg = [...data].reverse().find(m => m.senderRole === 'client');
       if (lastClientMsg && !lastClientMsg.isRead) {
         this.generateAISuggestions(data, lastClientMsg.content);

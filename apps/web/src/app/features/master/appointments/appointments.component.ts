@@ -148,13 +148,14 @@ export class AppointmentsComponent implements OnInit {
     });
   }
 
+  /** Сохраняет материалы, мержит частичный ответ с существующей записью */
   onSaveMaterials(event: { materials: any[]; totalCost: number }): void {
     const apt = this.selectedAppointment();
     if (!apt) return;
 
     this.dataService.updateAppointmentMaterials(apt.id, event.materials, event.totalCost).subscribe(updated => {
       this.appointments.update(list =>
-        list.map(a => a.id === apt.id ? updated : a)
+        list.map(a => a.id === apt.id ? { ...a, ...updated } : a)
       );
       this.showMaterialsModal.set(false);
       this.notificationService.success('Материалы сохранены');

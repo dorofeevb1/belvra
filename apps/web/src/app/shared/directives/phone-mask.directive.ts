@@ -1,6 +1,11 @@
 import { Directive, ElementRef, HostListener, forwardRef } from '@angular/core';
 import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 
+/**
+ * Маска ввода телефона в формате +7 (XXX) XXX-XX-XX.
+ * Автоматически форматирует ввод, обрабатывает вставку из буфера
+ * и корректно управляет позицией курсора при удалении.
+ */
 @Directive({
   selector: '[appPhoneMask]',
   standalone: true,
@@ -36,52 +41,61 @@ export class PhoneMaskDirective implements ControlValueAccessor {
 
   @HostListener('input')
   onInput(): void {
-    const value = this.el.nativeElement.value;
+    const input = this.el.nativeElement;
+    const value = input.value;
     const formatted = this.formatPhone(value);
-    this.el.nativeElement.value = formatted;
-    // Store clean number for the form
+    input.value = formatted;
+
+    // Ставим курсор в конец после форматирования
+    const cursorPos = formatted.length;
+    input.setSelectionRange(cursorPos, cursorPos);
+
     this.onChange(this.cleanPhone(formatted));
   }
 
   @HostListener('blur')
   onBlur(): void {
+    const input = this.el.nativeElement;
+    // Если осталось только "+7" или "+7 (" — очищаем поле
+    const digits = input.value.replace(/\D/g, '');
+    if (digits.length <= 1) {
+      input.value = '';
+      this.onChange('');
+    }
     this.onTouched();
   }
 
   @HostListener('focus')
   onFocus(): void {
-    // If empty, pre-fill with +7
-    if (!this.el.nativeElement.value) {
-      this.el.nativeElement.value = '+7 (';
+    const input = this.el.nativeElement;
+    if (!input.value) {
+      input.value = '+7 (';
       this.onChange('+7');
+      // Курсор после скобки
+      setTimeout(() => input.setSelectionRange(4, 4));
     }
   }
 
   private formatPhone(value: string): string {
     if (!value) return '';
 
-    // Remove all non-digits
     let digits = value.replace(/\D/g, '');
 
-    // If starts with 8, replace with 7
     if (digits.startsWith('8') && digits.length > 1) {
       digits = '7' + digits.slice(1);
     }
 
-    // If starts with 9 (user typed 9...), prepend 7
     if (digits.startsWith('9')) {
       digits = '7' + digits;
     }
 
-    // If doesn't start with 7, prepend it
     if (digits.length > 0 && !digits.startsWith('7')) {
       digits = '7' + digits;
     }
 
-    // Limit to 11 digits (7 + 10 digits)
     digits = digits.slice(0, 11);
 
-    // Format: +7 (XXX) XXX-XX-XX
+    // Формат: +7 (XXX) XXX-XX-XX
     let formatted = '';
     if (digits.length > 0) {
       formatted = '+' + digits[0];
@@ -106,7 +120,6 @@ export class PhoneMaskDirective implements ControlValueAccessor {
   }
 
   private cleanPhone(formatted: string): string {
-    // Return just the digits with + prefix
     const digits = formatted.replace(/\D/g, '');
     return digits ? '+' + digits : '';
   }

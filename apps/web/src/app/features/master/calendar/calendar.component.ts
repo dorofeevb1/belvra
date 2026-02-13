@@ -147,8 +147,12 @@ export class CalendarComponent implements OnInit, OnDestroy {
     const masterId = this.authService.masterData()?.id;
     if (!masterId) return;
 
+    /** Показываем все активные записи: pending, confirmed, in_progress и completed */
     this.dataService.getAppointments(masterId).subscribe(data => {
-      this.appointments.set(data.filter(a => a.status === 'confirmed' || a.status === 'in_progress'));
+      this.appointments.set(data.filter(a =>
+        a.status === 'pending' || a.status === 'confirmed' ||
+        a.status === 'in_progress' || a.status === 'completed'
+      ));
     });
 
     this.dataService.getTodos(masterId).subscribe(data => {

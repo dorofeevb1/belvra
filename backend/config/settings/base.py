@@ -262,6 +262,16 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.subscriptions.tasks.notify_past_due_subscriptions",
         "schedule": crontab(hour=11, minute=0),  # Every day at 11:00
     },
+    # Todo tasks
+    "close-overdue-todos": {
+        "task": "apps.todo.tasks.close_overdue_todos",
+        "schedule": crontab(hour=0, minute=15),  # Every day at 00:15
+    },
+    # Notification cleanup
+    "cleanup-old-notifications": {
+        "task": "apps.todo.tasks.cleanup_old_notifications",
+        "schedule": crontab(hour=4, minute=0, day_of_week=0),  # Every Sunday at 4:00
+    },
 }
 
 # API Documentation

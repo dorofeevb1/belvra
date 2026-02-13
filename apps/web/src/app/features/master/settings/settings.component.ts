@@ -319,6 +319,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
       defaultMaterialsCost: [service?.defaultMaterialsCost || 0, [Validators.min(0), Validators.max(100000)]]
     });
     this.servicesArray.push(group);
+
+    // Прокрутка к новой услуге, если она добавлена пользователем (а не при загрузке)
+    if (!service) {
+      setTimeout(() => {
+        const elements = document.querySelectorAll('.service-item');
+        const lastElement = elements[elements.length - 1];
+        lastElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   }
 
   confirmDeleteService(index: number): void {

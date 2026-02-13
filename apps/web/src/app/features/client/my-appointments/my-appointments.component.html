@@ -134,7 +134,7 @@
                       }
                     </div>
                   </div>
-                  <p class="appointment-date">{{ apt.date | dateFormat:'full' }}</p>
+                  <p class="appointment-date">{{ apt.date | dateFormat:'full' }} в {{ apt.startTime }}</p>
                 </div>
                 <div class="appointment-actions">
                   <p class="appointment-price past">{{ apt.price | currencyRub }}</p>

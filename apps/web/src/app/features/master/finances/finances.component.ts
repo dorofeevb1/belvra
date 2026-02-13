@@ -24,13 +24,14 @@ export class FinancesComponent implements OnInit {
   transactions = signal<Transaction[]>([]);
   platformFee = PLATFORM_FEE_PERCENT;
 
+  /** Общая прибыль считается только по выплаченным транзакциям, pending отображаются отдельно */
   summary = computed(() => {
     const txs = this.transactions();
-    const totalProfit = txs.reduce((sum, t) => sum + t.netProfit, 0);
+    const paidTxs = txs.filter(t => t.status === 'paid');
+    const totalProfit = paidTxs.reduce((sum, t) => sum + t.netProfit, 0);
     const pendingAmount = txs
       .filter(t => t.status === 'pending')
       .reduce((sum, t) => sum + t.netProfit, 0);
-    const paidTxs = txs.filter(t => t.status === 'paid');
     const lastPayout = paidTxs.length > 0
       ? paidTxs[paidTxs.length - 1].netProfit
       : 0;

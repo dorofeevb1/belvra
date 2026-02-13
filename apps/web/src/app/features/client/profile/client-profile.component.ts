@@ -202,12 +202,37 @@ export class ClientProfileComponent implements OnInit {
     if (!this.canAddCard()) return;
 
     const cardNum = this.newCardNumber.replace(/\s/g, '');
+    const last4 = cardNum.slice(-4);
+    const expMonth = parseInt(this.newCardExpiry.split('/')[0]);
+    const expYear = 2000 + parseInt(this.newCardExpiry.split('/')[1]);
+
+    // Валидация месяца (01-12)
+    if (expMonth < 1 || expMonth > 12) {
+      this.notificationService.error('Некорректный месяц истечения');
+      return;
+    }
+
+    // Проверка что карта не просрочена
+    const now = new Date();
+    const currentMonth = now.getMonth() + 1;
+    const currentYear = now.getFullYear();
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+      this.notificationService.error('Срок действия карты истёк');
+      return;
+    }
+
+    // Проверка на дубликат по последним 4 цифрам
+    if (this.savedCards().some(c => c.last4 === last4)) {
+      this.notificationService.error('Карта с такими последними цифрами уже добавлена');
+      return;
+    }
+
     const newCard: SavedCard = {
       id: 'card_' + Date.now(),
-      last4: cardNum.slice(-4),
+      last4,
       brand: this.detectCardBrand(cardNum),
-      expMonth: parseInt(this.newCardExpiry.split('/')[0]),
-      expYear: 2000 + parseInt(this.newCardExpiry.split('/')[1]),
+      expMonth,
+      expYear,
       isDefault: this.savedCards().length === 0
     };
 

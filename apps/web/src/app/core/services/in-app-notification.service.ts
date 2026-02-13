@@ -35,8 +35,8 @@ export class InAppNotificationService {
   startPolling(): void {
     if (this.pollingSubscription) return;
 
-    // Poll every 30 seconds
-    this.pollingSubscription = interval(30000).pipe(
+    // Опрос каждые 10 секунд для более быстрого обновления уведомлений
+    this.pollingSubscription = interval(10000).pipe(
       switchMap(() => {
         if (this.auth.isAuthenticated()) {
           return this.fetchUnreadCount();

@@ -77,30 +77,41 @@ def cleanup_old_appointments():
 
 @shared_task
 def mark_no_show_appointments():
-    """Mark appointments as no-show if not completed after end time."""
+    """Auto-complete past confirmed appointments or mark as no-show."""
     from .models import Appointment
 
     now = timezone.now()
     today = now.date()
     current_time = now.time()
 
-    # Past days - any CONFIRMED appointments
-    past_days_count = Appointment.objects.filter(
+    # Подтверждённые записи на прошлые даты — автозавершение
+    # (мастер подтвердил = клиент скорее всего пришёл)
+    completed_count = Appointment.objects.filter(
         date__lt=today,
         status=Appointment.Status.CONFIRMED,
         is_archived=False
-    ).update(status=Appointment.Status.NO_SHOW)
+    ).update(status=Appointment.Status.COMPLETED)
 
-    # Today - only if end_time has passed
-    today_count = Appointment.objects.filter(
+    # Сегодняшние записи с истёкшим временем — автозавершение
+    today_completed = Appointment.objects.filter(
         date=today,
         end_time__lt=current_time,
         status=Appointment.Status.CONFIRMED,
         is_archived=False
+    ).update(status=Appointment.Status.COMPLETED)
+
+    # PENDING записи на прошлые даты — не явился (не подтверждено)
+    no_show_count = Appointment.objects.filter(
+        date__lt=today,
+        status=Appointment.Status.PENDING,
+        is_archived=False
     ).update(status=Appointment.Status.NO_SHOW)
 
-    total_count = past_days_count + today_count
-    return f"Marked {total_count} appointments as no-show (past days: {past_days_count}, today: {today_count})"
+    total = completed_count + today_completed + no_show_count
+    return (
+        f"Auto-completed: {completed_count + today_completed}, "
+        f"No-show: {no_show_count}, Total: {total}"
+    )
 
 
 @shared_task

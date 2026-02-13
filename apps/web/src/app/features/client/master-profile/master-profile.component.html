@@ -102,6 +102,9 @@
           <div class="service-card card">
             <div class="service-info">
               <h3 class="service-name">{{ service.name }}</h3>
+              @if (service.description) {
+                <p class="service-description">{{ service.description }}</p>
+              }
               <p class="service-duration">{{ service.duration }} мин</p>
             </div>
             <div class="service-action">

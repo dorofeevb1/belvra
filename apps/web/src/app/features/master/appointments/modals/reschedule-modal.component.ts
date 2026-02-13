@@ -331,9 +331,7 @@ import { Appointment } from '../../../../core/models';
       gap: 0.75rem;
       padding: 1rem 1.5rem;
       border-top: 1px solid var(--color-border-secondary);
-      background: var(--color-bg-secondary);
-      margin: 0 -1.5rem -1.5rem -1.5rem;
-      border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+      flex-shrink: 0;
     }
   `]
 })
@@ -377,6 +375,7 @@ export class RescheduleModalComponent implements OnChanges {
     this.loadSlots(date);
   }
 
+  /** Загружает доступные слоты и фильтрует прошедшие, если выбран сегодняшний день */
   private loadSlots(date: string): void {
     const apt = this.appointment();
     const masterId = this.authService.masterData()?.id;
@@ -384,7 +383,8 @@ export class RescheduleModalComponent implements OnChanges {
 
     this.isLoadingSlots.set(true);
     this.dataService.getAvailableSlots(masterId, date, apt.duration).subscribe(slots => {
-      this.availableSlots.set(slots);
+      const filtered = this.dateService.filterPastSlots(date, slots);
+      this.availableSlots.set(filtered);
       this.isLoadingSlots.set(false);
     });
   }

@@ -42,23 +42,25 @@ import { CommonModule } from '@angular/common';
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 1rem;
+      padding: 2rem 1rem;
       background: var(--color-bg-overlay);
       backdrop-filter: blur(4px);
       -webkit-backdrop-filter: blur(4px);
       animation: fadeIn 0.15s ease-out;
+      overflow-y: auto;
     }
 
     .modal {
       position: relative;
       width: 100%;
-      max-height: calc(100vh - 2rem);
+      max-height: calc(100vh - 4rem);
       display: flex;
       flex-direction: column;
       background: var(--color-bg-elevated);
       border-radius: var(--radius-2xl);
       box-shadow: var(--shadow-2xl);
       animation: scaleIn 0.2s ease-out;
+      margin: auto;
     }
 
     .modal-sm { max-width: 24rem; }

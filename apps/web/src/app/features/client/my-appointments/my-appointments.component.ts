@@ -194,6 +194,8 @@ export class MyAppointmentsComponent implements OnInit {
       this.reviewedAppointments.update(set => new Set([...set, apt.id]));
       this.showReviewModal.set(false);
       this.notificationService.success('Отзыв отправлен!');
+      // Перезагружаем записи чтобы обновить рейтинг мастера
+      this.loadData();
     });
   }
 

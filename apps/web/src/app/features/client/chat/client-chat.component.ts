@@ -119,6 +119,9 @@ export class ClientChatComponent implements OnInit, AfterViewChecked {
     this.dataService.getMessages(chatId).subscribe(data => {
       this.messages.set(data);
       this.shouldScroll = true;
+
+      // Принудительный скролл после рендеринга DOM
+      setTimeout(() => this.scrollToBottom(), 50);
     });
   }
 

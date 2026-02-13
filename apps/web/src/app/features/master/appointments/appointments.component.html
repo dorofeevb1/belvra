@@ -77,7 +77,7 @@
                   <td class="text-right font-medium">{{ apt.price | currencyRub }}</td>
                   <td>
                     <div class="actions">
-                      <button type="button" (click)="confirmAppointment(apt)" class="btn btn-success btn-sm">
+                      <button type="button" (click)="confirmAppointment(apt)" class="btn btn-primary btn-sm">
                         Подтвердить
                       </button>
                       <button type="button" (click)="openReschedule(apt)" class="btn btn-secondary btn-sm">
@@ -150,7 +150,12 @@
                 <tr>
                   <td class="font-medium">{{ apt.clientName }}</td>
                   <td>{{ apt.serviceName }}</td>
-                  <td>{{ apt.date | dateFormat:'full' }}</td>
+                  <td>
+                    <div class="date-time">
+                      <span class="date">{{ apt.date | dateFormat:'full' }}</span>
+                      <span class="time">{{ apt.startTime }} - {{ apt.endTime }}</span>
+                    </div>
+                  </td>
                   <td>
                     <span class="badge" [ngClass]="getStatusColor(apt.status)">
                       {{ getStatusLabel(apt.status) }}
@@ -159,7 +164,7 @@
                   <td class="text-right font-medium">{{ apt.price | currencyRub }}</td>
                   <td class="text-right">
                     @if (apt.status === 'confirmed') {
-                      <button type="button" (click)="completeAppointment(apt)" class="btn btn-success btn-sm">
+                      <button type="button" (click)="completeAppointment(apt)" class="btn btn-primary btn-sm">
                         Завершить
                       </button>
                     }
