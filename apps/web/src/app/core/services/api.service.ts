@@ -305,6 +305,18 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/appointments/reviews/`, data);
   }
 
+  updateReview(id: string, data: { rating?: number; comment?: string }): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/appointments/reviews/${id}/`, data);
+  }
+
+  deleteReview(id: string): Observable<any> {
+    return this.http.delete(`${this.baseUrl}/appointments/reviews/${id}/`);
+  }
+
+  getMyReviews(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/appointments/reviews/`, { params: { my: 'true' } });
+  }
+
   // ============ Payments endpoints ============
 
   // Wallet

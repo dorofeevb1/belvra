@@ -20,11 +20,14 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
 export class PhoneMaskDirective implements ControlValueAccessor {
   private onChange: (value: string) => void = () => {};
   private onTouched: () => void = () => {};
+  private previousValue: string = '';
 
   constructor(private el: ElementRef<HTMLInputElement>) {}
 
   writeValue(value: string): void {
-    this.el.nativeElement.value = this.formatPhone(value || '');
+    const formatted = this.formatPhone(value || '');
+    this.el.nativeElement.value = formatted;
+    this.previousValue = formatted;
   }
 
   registerOnChange(fn: (value: string) => void): void {
@@ -39,27 +42,60 @@ export class PhoneMaskDirective implements ControlValueAccessor {
     this.el.nativeElement.disabled = isDisabled;
   }
 
-  @HostListener('input')
-  onInput(): void {
+  @HostListener('input', ['$event'])
+  onInput(event: Event): void {
     const input = this.el.nativeElement;
-    const value = input.value;
-    const formatted = this.formatPhone(value);
+    const cursorPosition = input.selectionStart || 0;
+    const oldValue = this.previousValue;
+    const newValue = input.value;
+
+    const isDeleting = newValue.length < oldValue.length;
+
+    if (!newValue || newValue.replace(/\D/g, '') === '') {
+      input.value = '';
+      this.previousValue = '';
+      this.onChange('');
+      return;
+    }
+
+    const formatted = this.formatPhone(newValue);
     input.value = formatted;
+    this.previousValue = formatted;
 
-    // Ставим курсор в конец после форматирования
-    const cursorPos = formatted.length;
-    input.setSelectionRange(cursorPos, cursorPos);
+    let newCursorPosition = cursorPosition;
 
+    if (isDeleting) {
+      const charAtCursor = formatted[cursorPosition - 1];
+      if (charAtCursor && /[\s()-]/.test(charAtCursor)) {
+        newCursorPosition = cursorPosition - 1;
+      } else {
+        newCursorPosition = cursorPosition;
+      }
+    } else {
+      const digitsBeforeCursor = newValue.slice(0, cursorPosition).replace(/\D/g, '').length;
+      let digitCount = 0;
+      for (let i = 0; i < formatted.length; i++) {
+        if (/\d/.test(formatted[i])) {
+          digitCount++;
+        }
+        if (digitCount === digitsBeforeCursor) {
+          newCursorPosition = i + 1;
+          break;
+        }
+      }
+    }
+
+    input.setSelectionRange(newCursorPosition, newCursorPosition);
     this.onChange(this.cleanPhone(formatted));
   }
 
   @HostListener('blur')
   onBlur(): void {
     const input = this.el.nativeElement;
-    // Если осталось только "+7" или "+7 (" — очищаем поле
     const digits = input.value.replace(/\D/g, '');
     if (digits.length <= 1) {
       input.value = '';
+      this.previousValue = '';
       this.onChange('');
     }
     this.onTouched();
@@ -70,9 +106,38 @@ export class PhoneMaskDirective implements ControlValueAccessor {
     const input = this.el.nativeElement;
     if (!input.value) {
       input.value = '+7 (';
+      this.previousValue = '+7 (';
       this.onChange('+7');
-      // Курсор после скобки
       setTimeout(() => input.setSelectionRange(4, 4));
+    }
+  }
+
+  @HostListener('keydown', ['$event'])
+  onKeyDown(event: KeyboardEvent): void {
+    const input = this.el.nativeElement;
+    const cursorPosition = input.selectionStart || 0;
+    const value = input.value;
+
+    if (event.key === 'Backspace' && cursorPosition > 0) {
+      const charBefore = value[cursorPosition - 1];
+      if (/[\s()-]/.test(charBefore)) {
+        event.preventDefault();
+        const newValue = value.slice(0, cursorPosition - 1) + value.slice(cursorPosition);
+        this.el.nativeElement.value = newValue;
+        const inputEvent = new Event('input', { bubbles: true });
+        this.el.nativeElement.dispatchEvent(inputEvent);
+      }
+    }
+
+    if (event.key === 'Delete' && cursorPosition < value.length) {
+      const charAfter = value[cursorPosition];
+      if (/[\s()-]/.test(charAfter)) {
+        event.preventDefault();
+        const newValue = value.slice(0, cursorPosition) + value.slice(cursorPosition + 1);
+        this.el.nativeElement.value = newValue;
+        const inputEvent = new Event('input', { bubbles: true });
+        this.el.nativeElement.dispatchEvent(inputEvent);
+      }
     }
   }
 

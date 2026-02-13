@@ -585,6 +585,15 @@ export class CalendarComponent implements OnInit, OnDestroy {
     });
   }
 
+  isOverdue(todo: TodoItem): boolean {
+    if (todo.status === 'done') return false;
+    const now = dayjs();
+    if (todo.time) {
+      return dayjs(`${todo.date} ${todo.time}`).isBefore(now);
+    }
+    return dayjs(todo.date).endOf('day').isBefore(now);
+  }
+
   onTodoUpdated(event: { id: string; status: string }): void {
     this.dataService.updateTodoStatus(event.id, event.status as any).subscribe(() => {
       this.allTodos.update(todos =>

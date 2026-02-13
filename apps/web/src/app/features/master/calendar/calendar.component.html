@@ -120,6 +120,7 @@
                         <div
                           class="reminder-block"
                           [class.done]="reminder.status === 'done'"
+                          [class.overdue]="isOverdue(reminder)"
                           [class.priority-low]="reminder.priority === 'low'"
                           [class.priority-medium]="reminder.priority === 'medium'"
                           [class.priority-high]="reminder.priority === 'high'"
@@ -225,6 +226,7 @@
           <div
             class="mobile-reminder"
             [class.done]="reminder.status === 'done'"
+            [class.overdue]="isOverdue(reminder)"
             [class.priority-low]="reminder.priority === 'low'"
             [class.priority-medium]="reminder.priority === 'medium'"
             [class.priority-high]="reminder.priority === 'high'"
@@ -303,7 +305,7 @@
 
         <div class="todo-list">
           @for (todo of todayTodos(); track todo.id) {
-            <div class="todo-item" [class.completed]="todo.status === 'done'" [class.priority-high]="todo.priority === 'high'" [class.priority-low]="todo.priority === 'low'">
+            <div class="todo-item" [class.completed]="todo.status === 'done'" [class.overdue]="isOverdue(todo)" [class.priority-high]="todo.priority === 'high'" [class.priority-low]="todo.priority === 'low'">
               <button
                 type="button"
                 (click)="toggleTodo(todo)"

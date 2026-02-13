@@ -391,6 +391,17 @@
       text-decoration: line-through;
     }
   }
+
+  &.overdue {
+    opacity: 0.6;
+    border-color: var(--color-error);
+    background: var(--color-error-bg);
+    color: var(--color-error);
+
+    .reminder-title {
+      text-decoration: line-through;
+    }
+  }
 }
 
 .reminder-time {
@@ -689,6 +700,17 @@
 
   &.completed {
     opacity: 0.6;
+  }
+
+  &.overdue {
+    opacity: 0.6;
+    border-left: 3px solid var(--color-error);
+    background: var(--color-error-bg);
+
+    .todo-text {
+      text-decoration: line-through;
+      color: var(--color-error);
+    }
   }
 
   &.priority-high {
@@ -1013,6 +1035,18 @@
     opacity: 0.5;
 
     .mobile-reminder-title {
+      text-decoration: line-through;
+    }
+  }
+
+  &.overdue {
+    opacity: 0.6;
+    border-color: var(--color-error);
+    background: var(--color-error-bg);
+
+    .mobile-reminder-time { color: var(--color-error); }
+    .mobile-reminder-title {
+      color: var(--color-error);
       text-decoration: line-through;
     }
   }

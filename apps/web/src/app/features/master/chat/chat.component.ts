@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService, DataService, AIService } from '../../../core/services';
@@ -12,7 +12,7 @@ import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
   templateUrl: './chat.component.html',
   styleUrl: './chat.component.scss'
 })
-export class ChatComponent implements OnInit, AfterViewChecked {
+export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
 
   private authService = inject(AuthService);
@@ -28,6 +28,7 @@ export class ChatComponent implements OnInit, AfterViewChecked {
   searchQuery = '';
   newMessage = '';
   private shouldScroll = false;
+  private chatPollInterval: ReturnType<typeof setInterval> | null = null;
 
   filteredChats = computed(() => {
     const query = this.searchQuery.toLowerCase().trim();
@@ -46,6 +47,13 @@ export class ChatComponent implements OnInit, AfterViewChecked {
 
   ngOnInit(): void {
     this.loadChats();
+    this.chatPollInterval = setInterval(() => this.loadChats(), 30000);
+  }
+
+  ngOnDestroy(): void {
+    if (this.chatPollInterval) {
+      clearInterval(this.chatPollInterval);
+    }
   }
 
   ngAfterViewChecked(): void {

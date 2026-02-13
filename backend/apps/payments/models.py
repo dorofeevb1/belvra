@@ -235,8 +235,15 @@ class Payment(BaseModel):
         return f"Платёж #{self.id} - {self.amount} ₽ ({self.get_status_display()})"
 
     def calculate_commission(self):
-        """Calculate platform commission (5%)."""
+        """Calculate platform commission based on master's subscription plan."""
+        # Use plan-specific commission rate (10% for free, 5% for pro)
         commission_rate = getattr(settings, "PLATFORM_COMMISSION_RATE", Decimal("0.05"))
+        try:
+            subscription = self.master.user.subscription
+            if subscription and subscription.plan:
+                commission_rate = subscription.plan.commission_percent / Decimal("100")
+        except Exception:
+            pass
         min_commission = getattr(settings, "MIN_COMMISSION", Decimal("10.00"))
 
         commission = self.amount * commission_rate

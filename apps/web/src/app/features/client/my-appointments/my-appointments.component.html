@@ -138,14 +138,50 @@
                 </div>
                 <div class="appointment-actions">
                   <p class="appointment-price past">{{ apt.price | currencyRub }}</p>
-                  @if (apt.status === 'completed' && !hasReview(apt.id)) {
-                    <button
-                      type="button"
-                      (click)="openReviewModal(apt)"
-                      class="review-btn btn btn-primary btn-sm"
-                    >
-                      Оставить отзыв
-                    </button>
+                  @if (apt.status === 'completed') {
+                    @if (getReview(apt.id); as review) {
+                      <div class="existing-review">
+                        <div class="existing-review-stars">
+                          @for (star of [1,2,3,4,5]; track star) {
+                            <svg
+                              class="star-icon-sm"
+                              [class.filled]="star <= review.rating"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                            </svg>
+                          }
+                        </div>
+                        @if (review.comment) {
+                          <p class="existing-review-comment">{{ review.comment }}</p>
+                        }
+                        <div class="existing-review-actions">
+                          <button
+                            type="button"
+                            (click)="editReview(apt)"
+                            class="btn btn-ghost btn-xs"
+                          >
+                            Редактировать
+                          </button>
+                          <button
+                            type="button"
+                            (click)="deleteReview(apt)"
+                            class="btn btn-ghost btn-xs text-error"
+                          >
+                            Удалить
+                          </button>
+                        </div>
+                      </div>
+                    } @else if (!hasReview(apt.id)) {
+                      <button
+                        type="button"
+                        (click)="openReviewModal(apt)"
+                        class="review-btn btn btn-primary btn-sm"
+                      >
+                        Оставить отзыв
+                      </button>
+                    }
                   }
                 </div>
               </div>
@@ -377,7 +413,7 @@
     <div class="modal-overlay" (click)="showReviewModal.set(false)">
       <div class="modal-content card" (click)="$event.stopPropagation()">
         <div class="modal-header">
-          <h2 class="modal-title">Оставить отзыв</h2>
+          <h2 class="modal-title">{{ isEditingReview() ? 'Редактировать отзыв' : 'Оставить отзыв' }}</h2>
           <button type="button" class="modal-close" (click)="showReviewModal.set(false)">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -433,7 +469,7 @@
             [disabled]="reviewRating() === 0"
             class="btn btn-primary"
           >
-            Отправить
+            {{ isEditingReview() ? 'Сохранить' : 'Отправить' }}
           </button>
         </div>
       </div>

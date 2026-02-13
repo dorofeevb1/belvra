@@ -570,10 +570,14 @@ class ReviewViewSet(viewsets.ModelViewSet):
     ordering = ["-created_at"]
 
     def get_queryset(self):
-        return Review.objects.select_related(
+        qs = Review.objects.select_related(
             "appointment__client",
             "appointment__master__user"
         )
+        # Filter to only client's own reviews when ?my=true
+        if self.request.query_params.get("my") == "true" and self.request.user.is_authenticated:
+            qs = qs.filter(appointment__client=self.request.user)
+        return qs
 
     def get_permissions(self):
         if self.action in ["list", "by_master"]:

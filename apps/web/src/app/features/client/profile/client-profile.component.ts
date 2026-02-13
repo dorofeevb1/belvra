@@ -195,7 +195,7 @@ export class ClientProfileComponent implements OnInit {
 
   canAddCard(): boolean {
     const cardNum = this.newCardNumber.replace(/\s/g, '');
-    return cardNum.length === 16 && this.newCardExpiry.length === 5 && this.newCardCvv.length >= 3;
+    return cardNum.length === 16 && this.newCardExpiry.length === 5 && this.newCardCvv.length === 3;
   }
 
   addCard(): void {

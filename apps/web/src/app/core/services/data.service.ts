@@ -424,6 +424,30 @@ export class DataService {
     );
   }
 
+  getClientReviews(): Observable<Review[]> {
+    return this.api.getMyReviews().pipe(
+      map((response: any) => {
+        const results = response.results || response;
+        return (Array.isArray(results) ? results : []).map((r: any) => this.mapBackendReview(r));
+      }),
+      catchError(() => of([]))
+    );
+  }
+
+  updateReview(id: string, data: { rating?: number; comment?: string }): Observable<Review> {
+    return this.api.updateReview(id, data).pipe(
+      map((response: any) => this.mapBackendReview(response)),
+      catchError(() => of({ id, ...data } as Review))
+    );
+  }
+
+  deleteReview(id: string): Observable<void> {
+    return this.api.deleteReview(id).pipe(
+      map(() => void 0),
+      catchError(() => of(void 0))
+    );
+  }
+
   addReview(review: Omit<Review, 'id' | 'createdAt'>): Observable<Review> {
     return this.api.createReview({
       appointment: review.appointmentId,

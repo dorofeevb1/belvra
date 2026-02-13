@@ -335,6 +335,52 @@
   white-space: nowrap;
 }
 
+/* Existing Review Display */
+.existing-review {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin-top: 0.5rem;
+}
+
+.existing-review-stars {
+  display: flex;
+  gap: 0.125rem;
+}
+
+.star-icon-sm {
+  width: 1rem;
+  height: 1rem;
+  color: var(--color-border-primary);
+
+  &.filled {
+    color: #f59e0b;
+  }
+}
+
+.existing-review-comment {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.existing-review-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.text-error {
+  color: var(--color-error) !important;
+
+  &:hover {
+    background: var(--color-error-bg) !important;
+  }
+}
+
 /* Badge */
 .badge {
   display: inline-flex;

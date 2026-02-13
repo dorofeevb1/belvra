@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService, DataService, NotificationService, WalletService } from '../../../core/services';
-import { Appointment, APPOINTMENT_STATUS_LABELS, PaymentType } from '../../../core/models';
+import { Appointment, APPOINTMENT_STATUS_LABELS, PaymentType, Review } from '../../../core/models';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 import { environment } from '../../../../environments/environment';
@@ -33,6 +33,11 @@ export class MyAppointmentsComponent implements OnInit {
   selectedAppointment = signal<Appointment | null>(null);
   reviewRating = signal(0);
   reviewComment = '';
+  isEditingReview = signal(false);
+  editingReviewId = signal<string | null>(null);
+
+  // Client reviews map: appointmentId -> Review
+  clientReviews = signal<Map<string, Review>>(new Map());
 
   // Payment modal
   showPaymentModal = signal(false);
@@ -111,6 +116,12 @@ export class MyAppointmentsComponent implements OnInit {
       this.appointments.set(data);
       this.isLoading.set(false);
     });
+
+    this.dataService.getClientReviews().subscribe(reviews => {
+      const reviewMap = new Map<string, Review>();
+      reviews.forEach(r => reviewMap.set(r.appointmentId, r));
+      this.clientReviews.set(reviewMap);
+    });
   }
 
   getStatusLabel(status: string): string {
@@ -154,7 +165,11 @@ export class MyAppointmentsComponent implements OnInit {
   }
 
   hasReview(appointmentId: string): boolean {
-    return this.reviewedAppointments().has(appointmentId);
+    return this.reviewedAppointments().has(appointmentId) || this.clientReviews().has(appointmentId);
+  }
+
+  getReview(appointmentId: string): Review | undefined {
+    return this.clientReviews().get(appointmentId);
   }
 
   cancelAppointment(apt: Appointment): void {
@@ -174,6 +189,8 @@ export class MyAppointmentsComponent implements OnInit {
     this.selectedAppointment.set(apt);
     this.reviewRating.set(0);
     this.reviewComment = '';
+    this.isEditingReview.set(false);
+    this.editingReviewId.set(null);
     this.showReviewModal.set(true);
   }
 
@@ -181,6 +198,20 @@ export class MyAppointmentsComponent implements OnInit {
     const apt = this.selectedAppointment();
     const client = this.authService.clientData();
     if (!apt || !client || this.reviewRating() === 0) return;
+
+    if (this.isEditingReview() && this.editingReviewId()) {
+      this.dataService.updateReview(this.editingReviewId()!, {
+        rating: this.reviewRating(),
+        comment: this.reviewComment.trim()
+      }).subscribe(() => {
+        this.showReviewModal.set(false);
+        this.isEditingReview.set(false);
+        this.editingReviewId.set(null);
+        this.notificationService.success('Отзыв обновлён!');
+        this.loadData();
+      });
+      return;
+    }
 
     this.dataService.addReview({
       masterId: apt.masterId,
@@ -194,8 +225,34 @@ export class MyAppointmentsComponent implements OnInit {
       this.reviewedAppointments.update(set => new Set([...set, apt.id]));
       this.showReviewModal.set(false);
       this.notificationService.success('Отзыв отправлен!');
-      // Перезагружаем записи чтобы обновить рейтинг мастера
       this.loadData();
+    });
+  }
+
+  editReview(apt: Appointment): void {
+    const review = this.getReview(apt.id);
+    if (!review) return;
+
+    this.selectedAppointment.set(apt);
+    this.reviewRating.set(review.rating);
+    this.reviewComment = review.comment;
+    this.isEditingReview.set(true);
+    this.editingReviewId.set(review.id);
+    this.showReviewModal.set(true);
+  }
+
+  deleteReview(apt: Appointment): void {
+    const review = this.getReview(apt.id);
+    if (!review) return;
+    if (!confirm('Удалить отзыв?')) return;
+
+    this.dataService.deleteReview(review.id).subscribe(() => {
+      this.clientReviews.update(map => {
+        const newMap = new Map(map);
+        newMap.delete(apt.id);
+        return newMap;
+      });
+      this.notificationService.success('Отзыв удалён');
     });
   }
 
