@@ -389,41 +389,7 @@
   bottom: calc(100% + 0.5rem);
   left: 0.5rem;
   z-index: 20;
-  border-radius: 16px;
-  overflow: hidden;
   filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.15)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
-
-  emoji-mart {
-    font-family: inherit !important;
-    border: 1px solid #f0e6f0 !important;
-    border-radius: 16px !important;
-
-    .emoji-mart-search input {
-      border-radius: 999px !important;
-      border-color: #f9a8d4 !important;
-      font-size: 0.875rem;
-
-      &:focus {
-        border-color: #ec4899 !important;
-        outline: none;
-        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.15) !important;
-      }
-    }
-
-    .emoji-mart-anchor-selected {
-      color: #ec4899 !important;
-    }
-
-    .emoji-mart-anchor-bar {
-      background: #ec4899 !important;
-    }
-
-    .emoji-mart-category-label span {
-      font-size: 0.75rem;
-      color: #9d174d;
-      font-weight: 600;
-    }
-  }
 }
 
 .attach-btn {

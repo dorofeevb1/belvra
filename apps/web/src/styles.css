@@ -1934,3 +1934,28 @@
   width: 24px;
   height: 24px;
 }
+
+/* ── Emoji Mart ─────────────────────────────────────────────────────────── */
+.emoji-mart {
+  border: 1px solid #f0e6f0 !important;
+  border-radius: 16px !important;
+  font-family: inherit !important;
+}
+.emoji-mart-search input {
+  border-radius: 999px !important;
+  border: 1.5px solid #f9a8d4 !important;
+  font-size: 0.875rem !important;
+}
+.emoji-mart-search input:focus {
+  border-color: #ec4899 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(236,72,153,.15) !important;
+}
+.emoji-mart-anchor-selected { color: #ec4899 !important; }
+.emoji-mart-anchor-bar { background: #ec4899 !important; }
+.emoji-mart-category-label span {
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: #9d174d !important;
+}
+.emoji-mart-title-label { font-size: 0.9rem !important; }

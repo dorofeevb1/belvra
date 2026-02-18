@@ -141,11 +141,11 @@
         @if (showEmojiPanel()) {
           <div class="emoji-panel-wrapper">
             <emoji-mart
-              set="apple"
-              [sheetSize]="32"
+              [isNative]="true"
               [showPreview]="false"
               [emojiTooltip]="false"
               [darkMode]="false"
+              [perLine]="9"
               title="Эмодзи"
               (emojiClick)="onEmojiClick($event)"
             ></emoji-mart>
