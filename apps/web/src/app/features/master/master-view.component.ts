@@ -1,4 +1,5 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent, SidebarComponent, NavItem } from '../../shared/components';
@@ -56,10 +57,11 @@ import { AuthService, DataService } from '../../core/services';
     }
   `]
 })
-export class MasterViewComponent implements OnInit {
+export class MasterViewComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   sidebarOpen = signal(false);
+  private subs = new Subscription();
 
   navItems: NavItem[] = [
     {
@@ -106,6 +108,13 @@ export class MasterViewComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUnreadCount();
+    this.subs.add(
+      this.dataService.chatRead$.subscribe(() => this.loadUnreadCount())
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
   }
 
   private loadUnreadCount(): void {
