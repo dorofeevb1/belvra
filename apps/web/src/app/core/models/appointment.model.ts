@@ -1,7 +1,7 @@
 import { UsedMaterial } from './service.model';
 import { PaymentMethodType } from './wallet.model';
 
-export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled';
+export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show';
 
 export interface Appointment {
   id: string;
@@ -44,7 +44,8 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   in_progress: 'В процессе',
   completed: 'Завершена',
   cancelled: 'Отменена',
-  rescheduled: 'Перенесена'
+  rescheduled: 'Перенесена',
+  no_show: 'Клиент не пришёл'
 };
 
 export const APPOINTMENT_STATUS_COLORS: Record<AppointmentStatus, string> = {
@@ -53,5 +54,6 @@ export const APPOINTMENT_STATUS_COLORS: Record<AppointmentStatus, string> = {
   in_progress: 'bg-purple-100 text-purple-800',
   completed: 'bg-green-100 text-green-800',
   cancelled: 'bg-red-100 text-red-800',
-  rescheduled: 'bg-orange-100 text-orange-800'
+  rescheduled: 'bg-orange-100 text-orange-800',
+  no_show: 'bg-gray-100 text-gray-800'
 };

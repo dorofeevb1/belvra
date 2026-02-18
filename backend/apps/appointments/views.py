@@ -7,6 +7,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, generics, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
@@ -18,6 +19,7 @@ from apps.core.tasks import (
     send_review_notification_task,
 )
 from apps.services.models import MasterService
+from apps.subscriptions.services import SubscriptionService
 from apps.users.models import MasterProfile
 
 from .models import Appointment, Review, WorkSchedule
@@ -141,7 +143,9 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         queryset = Appointment.objects.select_related(
-            "client", "master__user", "service"
+            "client", "master__user", "service", "master_service"
+        ).prefetch_related(
+            "payments"
         ).filter(is_archived=False)
 
         if user.is_staff:
@@ -162,6 +166,20 @@ class AppointmentViewSet(viewsets.ModelViewSet):
     @transaction.atomic
     def perform_create(self, serializer):
         """Create appointment and send email to master."""
+        # Check subscription limit for the master
+        master_id = serializer.validated_data.get("master_id")
+        if master_id:
+            try:
+                master_profile = MasterProfile.objects.get(id=master_id)
+                subscription_service = SubscriptionService()
+                subscription = subscription_service.get_or_create_free_subscription(master_profile.user)
+                if not subscription.can_create_appointment():
+                    raise ValidationError(
+                        {"detail": "Превышен месячный лимит записей для данного мастера."}
+                    )
+            except MasterProfile.DoesNotExist:
+                pass
+
         appointment = serializer.save()
 
         # Send email notification to master

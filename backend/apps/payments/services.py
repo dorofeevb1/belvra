@@ -300,7 +300,7 @@ class PaymentService:
         # Calculate amount
         if amount is None:
             if payment_type == Payment.PaymentType.PREPAYMENT:
-                prepayment_percent = getattr(settings, "PREPAYMENT_PERCENT", Decimal("0.20"))
+                prepayment_percent = Decimal(str(getattr(settings, "PREPAYMENT_PERCENT", "0.20")))
                 amount = appointment.price * prepayment_percent
             else:
                 amount = appointment.price
@@ -395,7 +395,9 @@ class PaymentService:
         if payment.available_at and payment.available_at > timezone.now():
             return
 
-        wallet = payment.master.wallet
+        wallet = getattr(payment.master, "wallet", None)
+        if not wallet:
+            return
         wallet.pending_balance -= payment.net_amount
         wallet.available_balance += payment.net_amount
         wallet.save()
@@ -455,8 +457,9 @@ class WithdrawalService:
     """Service for processing withdrawals."""
 
     def __init__(self):
-        Configuration.account_id = settings.YOOKASSA_SHOP_ID
-        Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+        if settings.YOOKASSA_SHOP_ID and settings.YOOKASSA_SECRET_KEY:
+            Configuration.account_id = settings.YOOKASSA_SHOP_ID
+            Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
 
     @transaction.atomic
     def create_withdrawal(

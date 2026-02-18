@@ -156,7 +156,13 @@ class PaymentViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        appointment = Appointment.objects.get(id=data["appointment_id"])
+        try:
+            appointment = Appointment.objects.get(id=data["appointment_id"])
+        except Appointment.DoesNotExist:
+            return Response(
+                {"detail": "Запись не найдена."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         payment_service = PaymentService()
         payment = payment_service.create_appointment_payment(
@@ -355,7 +361,7 @@ class WithdrawalViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        wallet = request.user.master_profile.wallet
+        wallet, _ = Wallet.objects.get_or_create(master=request.user.master_profile)
         destination = PayoutDestination.objects.get(id=data["destination_id"])
 
         withdrawal_service = WithdrawalService()

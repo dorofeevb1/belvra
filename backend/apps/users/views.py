@@ -1,5 +1,4 @@
 import math
-import random
 import secrets
 from datetime import timedelta
 
@@ -69,7 +68,7 @@ class RegisterView(generics.CreateAPIView):
         user = serializer.save()
 
         # Generate 6-digit verification code
-        code = f"{random.randint(100000, 999999)}"
+        code = f"{secrets.randbelow(900000) + 100000}"
         cache_key = f"email_verify_code_{user.id}"
         cache.set(cache_key, code, timeout=600)  # 10 minutes
 
@@ -499,7 +498,7 @@ class ResendVerificationEmailView(APIView):
             )
 
         # Generate new 6-digit verification code
-        code = f"{random.randint(100000, 999999)}"
+        code = f"{secrets.randbelow(900000) + 100000}"
         cache_key = f"email_verify_code_{user.id}"
         cache.set(cache_key, code, timeout=600)  # 10 minutes
 

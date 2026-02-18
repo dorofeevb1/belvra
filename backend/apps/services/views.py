@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import F
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets, status
@@ -269,6 +270,6 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
     def like(self, request, pk=None):
         """Like a portfolio item."""
         item = self.get_object()
-        item.likes_count += 1
-        item.save(update_fields=["likes_count"])
+        PortfolioItem.objects.filter(pk=item.pk).update(likes_count=F("likes_count") + 1)
+        item.refresh_from_db(fields=["likes_count"])
         return Response({"likes_count": item.likes_count})

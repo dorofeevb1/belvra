@@ -93,7 +93,7 @@ export class DataService {
       'confirmed': 'confirmed',
       'cancelled': 'cancelled',
       'completed': 'completed',
-      'no_show': 'cancelled'
+      'no_show': 'no_show'
     };
 
     return {

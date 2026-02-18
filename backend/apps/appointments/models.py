@@ -177,8 +177,9 @@ class Review(BaseModel):
 
     def _update_master_rating(self):
         master = self.appointment.master
-        reviews = Review.objects.filter(appointment__master=master)
-        avg_rating = reviews.aggregate(models.Avg("rating"))["rating__avg"] or 0
-        master.rating = round(avg_rating, 2)
-        master.reviews_count = reviews.count()
+        result = Review.objects.filter(appointment__master=master).aggregate(
+            avg=models.Avg("rating"), count=models.Count("id")
+        )
+        master.rating = round(result["avg"] or 0, 2)
+        master.reviews_count = result["count"]
         master.save(update_fields=["rating", "reviews_count"])

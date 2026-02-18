@@ -78,7 +78,7 @@ class SubscriptionUsageView(APIView):
         subscription = service.get_or_create_free_subscription(request.user)
         usage = service.get_usage_stats(subscription)
         serializer = SubscriptionUsageSerializer(data=usage)
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
 
@@ -289,7 +289,7 @@ class CheckLimitView(APIView):
         result = service.check_limit(subscription, limit_type)
 
         serializer = CheckLimitSerializer(data=result)
-        serializer.is_valid()
+        serializer.is_valid(raise_exception=True)
         return Response(serializer.data)
 
 

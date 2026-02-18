@@ -1,4 +1,8 @@
+import logging
+
 from django.db.models import Q
+
+logger = logging.getLogger(__name__)
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -107,7 +111,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 chat_id=str(chat.id)
             )
         except Exception:
-            pass  # Don't fail message sending if notification fails
+            logger.exception("Notification failed for chat message")  # Don't fail message sending if notification fails
 
         return Response(
             ChatMessageSerializer(message).data,
