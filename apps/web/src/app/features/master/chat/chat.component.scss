@@ -391,10 +391,60 @@
   z-index: 20;
 
   emoji-picker {
-    --border-radius: 12px;
-    --shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
-    height: 350px;
+    // Layout
+    height: 320px;
+    --num-columns: 9;
+    --border-radius: 16px;
+    --border-size: 1px;
+
+    // Colors — light
+    --background: #ffffff;
+    --border-color: #f0e6f0;
+    --button-hover-background: #fce7f3;
+    --button-active-background: #fbcfe8;
+    --indicator-color: #ec4899;
+    --indicator-height: 2px;
+    --category-font-color: #9d174d;
+    --category-font-size: 0.8rem;
+
+    // Emoji
+    --emoji-size: 1.25rem;
+    --emoji-padding: 0.35rem;
+
+    // Input
+    --input-border-radius: 999px;
+    --input-border-color: #f9a8d4;
+    --input-border-size: 1.5px;
+    --input-font-color: #1f2937;
+    --input-placeholder-color: #d1a8bf;
+    --input-padding: 0.35rem 0.75rem;
+    --input-font-size: 0.875rem;
+
+    // Outline
+    --outline-color: #f9a8d4;
+    --outline-size: 2px;
+
+    // Skintone
+    --skintone-border-radius: 999px;
+
+    // Shadow (via filter trick — not official var, applied via wrapper)
+
+    // Dark mode overrides
+    :host-context(.dark) & {
+      --background: #1e1b2e;
+      --border-color: #3b1f3b;
+      --button-hover-background: rgba(236, 72, 153, 0.15);
+      --button-active-background: rgba(236, 72, 153, 0.25);
+      --indicator-color: #f472b6;
+      --category-font-color: #f9a8d4;
+      --input-border-color: #6b21a8;
+      --input-font-color: #f3e8ff;
+      --input-placeholder-color: #9d4edd;
+      --outline-color: #a855f7;
+    }
   }
+
+  filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.15)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
 }
 
 .attach-btn {

@@ -191,6 +191,18 @@ class ChatViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         count = unread.update(is_read=True, read_at=timezone.now())
 
+        # Also mark related chat_message notifications as read for this user
+        try:
+            from apps.core.models import Notification
+            Notification.objects.filter(
+                user=user,
+                notification_type=Notification.NotificationType.CHAT_MESSAGE,
+                link__contains=str(chat.id),
+                is_read=False
+            ).update(is_read=True, read_at=timezone.now())
+        except Exception:
+            pass
+
         return Response({"marked_read": count})
 
     @extend_schema(

@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService, DataService } from '../../../core/services';
+import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, Master } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 
@@ -22,6 +23,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private route = inject(ActivatedRoute);
+  private inAppNotifications = inject(InAppNotificationService);
 
   isLoading = signal(true);
   chats = signal<Chat[]>([]);
@@ -132,6 +134,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
         this.chats.update(list =>
           list.map(c => c.id === chat.id ? { ...c, unreadCount: 0 } : c)
         );
+        this.inAppNotifications.fetchUnreadCount().subscribe();
       });
     }
   }

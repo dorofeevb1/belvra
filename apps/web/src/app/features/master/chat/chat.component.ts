@@ -3,6 +3,7 @@ import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, Elem
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuthService, DataService, AIService } from '../../../core/services';
+import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, AISuggestion } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 
@@ -21,6 +22,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private aiService = inject(AIService);
+  private inAppNotifications = inject(InAppNotificationService);
 
   isLoading = signal(true);
   chats = signal<Chat[]>([]);
@@ -96,6 +98,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         this.chats.update(list =>
           list.map(c => c.id === chat.id ? { ...c, unreadCount: 0 } : c)
         );
+        this.inAppNotifications.fetchUnreadCount().subscribe();
       });
     }
   }

@@ -8,6 +8,9 @@ env = Env()
 
 DEBUG = False
 
+# Trust X-Forwarded-Proto from nginx so build_absolute_uri returns https://
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Security
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
