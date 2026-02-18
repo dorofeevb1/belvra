@@ -88,7 +88,17 @@
           }
           <div class="message" [class.outgoing]="message.senderRole === 'master'">
             <div class="message-bubble" [class.outgoing]="message.senderRole === 'master'">
-              <p class="message-text">{{ message.content }}</p>
+              @if (message.content) {
+                <p class="message-text">{{ message.content }}</p>
+              }
+              @if (message.messageType === 'image' && message.fileUrl) {
+                <img [src]="message.fileUrl" class="message-image" (click)="openImageFullscreen(message.fileUrl)" alt="Изображение" />
+              }
+              @if (message.messageType === 'file' && message.fileUrl) {
+                <a [href]="message.fileUrl" target="_blank" class="message-file">
+                  📄 Скачать файл
+                </a>
+              }
               <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
             </div>
           </div>
@@ -114,24 +124,49 @@
       }
 
       <!-- Input -->
-      <div class="chat-input">
-        <input
-          type="text"
-          [(ngModel)]="newMessage"
-          (keyup.enter)="sendMessage()"
-          placeholder="Введите сообщение..."
-          class="input message-input"
-        />
-        <button
-          type="button"
-          (click)="sendMessage()"
-          [disabled]="!newMessage.trim()"
-          class="btn btn-primary btn-icon send-btn"
-        >
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-          </svg>
-        </button>
+      <div class="chat-input-wrapper">
+        @if (selectedFile()) {
+          <div class="file-preview">
+            @if (selectedFilePreview()) {
+              <img [src]="selectedFilePreview()" class="preview-image" alt="Превью" />
+            } @else {
+              <span class="file-name">📄 {{ selectedFile()!.name }}</span>
+            }
+            <button type="button" class="remove-file-btn" (click)="removeSelectedFile()">✕</button>
+          </div>
+        }
+        @if (showEmojiPanel()) {
+          <div class="emoji-panel-wrapper">
+            <emoji-picker (emoji-click)="onEmojiClick($event)"></emoji-picker>
+          </div>
+        }
+        <div class="chat-input">
+          <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx"
+            (change)="onFileSelect($event)" class="hidden" />
+          <button type="button" (click)="fileInput.click()" class="btn-icon attach-btn" title="Прикрепить файл">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+            </svg>
+          </button>
+          <button type="button" class="emoji-btn" (click)="toggleEmojiPanel()" title="Эмодзи">😊</button>
+          <input
+            type="text"
+            [(ngModel)]="newMessage"
+            (keyup.enter)="sendMessage()"
+            placeholder="Введите сообщение..."
+            class="input message-input"
+          />
+          <button
+            type="button"
+            (click)="sendMessage()"
+            [disabled]="!newMessage.trim() && !selectedFile()"
+            class="btn btn-primary btn-icon send-btn"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+            </svg>
+          </button>
+        </div>
       </div>
     } @else {
       <div class="empty-chat">

@@ -7,6 +7,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     """Serializer for chat messages."""
 
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
@@ -17,18 +18,27 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "sender_name",
             "sender_role",
             "content",
+            "message_type",
+            "file_url",
             "is_read",
             "created_at",
         ]
         read_only_fields = ["id", "sender", "sender_name", "is_read", "created_at"]
 
+    def get_file_url(self, obj):
+        if not obj.file:
+            return None
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.file.url)
+        return obj.file.url
 
-class ChatMessageCreateSerializer(serializers.ModelSerializer):
+
+class ChatMessageCreateSerializer(serializers.Serializer):
     """Serializer for creating chat messages."""
 
-    class Meta:
-        model = ChatMessage
-        fields = ["content"]
+    content = serializers.CharField(required=False, allow_blank=True, default="")
+    file = serializers.FileField(required=False, allow_null=True)
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -64,7 +74,9 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def get_last_message(self, obj):
         last_msg = obj.last_message
-        return last_msg.content if last_msg else None
+        if not last_msg:
+            return None
+        return last_msg.content or "📎 Файл"
 
     def get_last_message_time(self, obj):
         last_msg = obj.last_message

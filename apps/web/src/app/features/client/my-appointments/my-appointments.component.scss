@@ -570,6 +570,20 @@
   flex-wrap: wrap;
 }
 
+.cash-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-secondary);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+}
+
 .pay-btn {
   display: inline-flex;
   align-items: center;

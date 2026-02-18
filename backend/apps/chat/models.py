@@ -60,6 +60,11 @@ class ChatMessage(BaseModel):
         MASTER = "master", "Мастер"
         CLIENT = "client", "Клиент"
 
+    class MessageType(models.TextChoices):
+        TEXT = "text", "Текст"
+        IMAGE = "image", "Изображение"
+        FILE = "file", "Файл"
+
     chat = models.ForeignKey(
         Chat,
         on_delete=models.CASCADE,
@@ -77,7 +82,19 @@ class ChatMessage(BaseModel):
         choices=SenderRole.choices,
         verbose_name="Роль отправителя"
     )
-    content = models.TextField(verbose_name="Содержание")
+    content = models.TextField(blank=True, verbose_name="Содержание")
+    message_type = models.CharField(
+        max_length=10,
+        choices=MessageType.choices,
+        default=MessageType.TEXT,
+        verbose_name="Тип сообщения"
+    )
+    file = models.FileField(
+        upload_to="chat/files/%Y/%m/",
+        null=True,
+        blank=True,
+        verbose_name="Файл"
+    )
     is_read = models.BooleanField(default=False, verbose_name="Прочитано")
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="Время прочтения")
 
@@ -91,7 +108,7 @@ class ChatMessage(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.sender.full_name}: {self.content[:50]}"
+        return f"{self.sender.full_name}: {self.content[:50] or '[файл]'}"
 
     def mark_as_read(self):
         """Mark message as read."""

@@ -616,7 +616,13 @@ export class ApiService {
     return this.http.get(`${this.baseUrl}/chats/${chatId}/messages/`);
   }
 
-  sendMessage(chatId: string, content: string): Observable<any> {
+  sendMessage(chatId: string, content: string, file?: File): Observable<any> {
+    if (file) {
+      const formData = new FormData();
+      if (content) formData.append('content', content);
+      formData.append('file', file, file.name);
+      return this.http.post(`${this.baseUrl}/chats/${chatId}/send_message/`, formData);
+    }
     return this.http.post(`${this.baseUrl}/chats/${chatId}/send_message/`, { content });
   }
 

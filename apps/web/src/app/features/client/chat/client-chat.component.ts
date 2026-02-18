@@ -1,4 +1,5 @@
-import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
+import 'emoji-picker-element';
+import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -10,11 +11,13 @@ import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
   selector: 'app-client-chat',
   standalone: true,
   imports: [CommonModule, FormsModule, DateFormatPipe],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './client-chat.component.html',
   styleUrls: ['./client-chat.component.scss']
 })
 export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   @ViewChild('messagesContainer') messagesContainer!: ElementRef;
+  @ViewChild('fileInput') fileInput!: ElementRef<HTMLInputElement>;
 
   private authService = inject(AuthService);
   private dataService = inject(DataService);
@@ -27,6 +30,9 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   searchQuery = '';
   newMessage = '';
   currentUserId = computed(() => this.authService.currentUser()?.id || '');
+  selectedFile = signal<File | null>(null);
+  selectedFilePreview = signal<string | null>(null);
+  showEmojiPanel = signal(false);
   private shouldScroll = false;
 
   // New chat modal
@@ -133,9 +139,34 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     });
   }
 
+  onFileSelect(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      alert('Файл слишком большой (макс. 10 МБ)');
+      return;
+    }
+    this.selectedFile.set(file);
+    if (file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = e => this.selectedFilePreview.set(e.target?.result as string);
+      reader.readAsDataURL(file);
+    } else {
+      this.selectedFilePreview.set(null);
+    }
+  }
+
+  removeSelectedFile(): void {
+    this.selectedFile.set(null);
+    this.selectedFilePreview.set(null);
+    if (this.fileInput) this.fileInput.nativeElement.value = '';
+  }
+
   sendMessage(): void {
     const chat = this.selectedChat();
-    if (!chat || !this.newMessage.trim()) return;
+    const file = this.selectedFile();
+    if (!chat || (!this.newMessage.trim() && !file)) return;
 
     const userId = this.authService.currentUser()?.id;
     if (!userId) return;
@@ -145,19 +176,36 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
       senderId: userId,
       senderRole: 'client',
       content: this.newMessage.trim()
-    }).subscribe(message => {
+    }, file ?? undefined).subscribe(message => {
       this.messages.update(list => [...list, message]);
       this.newMessage = '';
+      this.selectedFile.set(null);
+      this.selectedFilePreview.set(null);
+      if (this.fileInput) this.fileInput.nativeElement.value = '';
       this.shouldScroll = true;
 
       this.chats.update(list =>
         list.map(c => c.id === chat.id ? {
           ...c,
-          lastMessage: message.content,
+          lastMessage: message.content || '📎 Файл',
           lastMessageTime: message.timestamp || new Date()
         } : c)
       );
     });
+  }
+
+  openImageFullscreen(url: string): void {
+    window.open(url, '_blank');
+  }
+
+  toggleEmojiPanel(): void {
+    this.showEmojiPanel.update(v => !v);
+  }
+
+  onEmojiClick(event: Event): void {
+    const detail = (event as CustomEvent).detail;
+    this.newMessage += detail?.unicode ?? '';
+    this.showEmojiPanel.set(false);
   }
 
   private scrollToBottom(): void {

@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -29,6 +30,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     """ViewSet for chats."""
 
     permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     http_method_names = ["get", "post"]
 
     def get_queryset(self):
@@ -87,11 +89,31 @@ class ChatViewSet(viewsets.ModelViewSet):
         serializer = ChatMessageCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+        content = serializer.validated_data.get("content", "")
+        file = serializer.validated_data.get("file") or request.FILES.get("file")
+
+        # Determine message type
+        if file:
+            if file.content_type and file.content_type.startswith("image/"):
+                message_type = ChatMessage.MessageType.IMAGE
+            else:
+                message_type = ChatMessage.MessageType.FILE
+        else:
+            message_type = ChatMessage.MessageType.TEXT
+
+        if not content and not file:
+            return Response(
+                {"detail": "Необходимо передать текст или файл"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         message = ChatMessage.objects.create(
             chat=chat,
             sender=user,
             sender_role=sender_role,
-            content=serializer.validated_data["content"]
+            content=content,
+            message_type=message_type,
+            file=file,
         )
 
         # Update chat timestamp
@@ -107,14 +129,14 @@ class ChatViewSet(viewsets.ModelViewSet):
             NotificationService.notify_chat_message(
                 recipient_user=recipient,
                 sender_name=user.full_name,
-                message_preview=serializer.validated_data["content"],
+                message_preview=content or "📎 Файл",
                 chat_id=str(chat.id)
             )
         except Exception:
             logger.exception("Notification failed for chat message")  # Don't fail message sending if notification fails
 
         return Response(
-            ChatMessageSerializer(message).data,
+            ChatMessageSerializer(message, context={"request": request}).data,
             status=status.HTTP_201_CREATED
         )
 
@@ -132,7 +154,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         paginator = LimitOffsetPagination()
         paginator.default_limit = 50
         page = paginator.paginate_queryset(messages, request)
-        serializer = ChatMessageSerializer(page, many=True)
+        serializer = ChatMessageSerializer(page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
     @extend_schema(

@@ -670,9 +670,11 @@ export class DataService {
       chatId: msg.chat,
       senderId: msg.sender,
       senderRole: msg.sender_role as 'master' | 'client',
-      content: msg.content,
+      content: msg.content || '',
       timestamp: new Date(msg.created_at),
-      isRead: msg.is_read
+      isRead: msg.is_read,
+      fileUrl: msg.file_url ? this.getFullMediaUrl(msg.file_url) : undefined,
+      messageType: msg.message_type as 'text' | 'image' | 'file' | undefined,
     };
   }
 
@@ -720,8 +722,8 @@ export class DataService {
     );
   }
 
-  sendMessage(message: Omit<ChatMessage, 'id' | 'timestamp' | 'isRead'>): Observable<ChatMessage> {
-    return this.api.sendMessage(message.chatId, message.content).pipe(
+  sendMessage(message: Omit<ChatMessage, 'id' | 'timestamp' | 'isRead'>, file?: File): Observable<ChatMessage> {
+    return this.api.sendMessage(message.chatId, message.content, file).pipe(
       map((response: any) => this.mapBackendMessage(response)),
       catchError(() => of({
         ...message,
