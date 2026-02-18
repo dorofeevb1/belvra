@@ -33,6 +33,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   selectedFile = signal<File | null>(null);
   selectedFilePreview = signal<string | null>(null);
   showEmojiPanel = signal(false);
+  readonly isRecordingSupported = typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices;
   isRecording = signal(false);
   recordingSeconds = signal(0);
   private mediaRecorder: MediaRecorder | null = null;
