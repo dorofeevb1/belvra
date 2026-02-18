@@ -267,7 +267,7 @@ class Payment(BaseModel):
         return self.net_amount
 
     def save(self, *args, **kwargs):
-        if not self.pk:
+        if self._state.adding:
             self.calculate_net_amount()
         super().save(*args, **kwargs)
 
@@ -388,7 +388,7 @@ class Withdrawal(BaseModel):
         return self.fee
 
     def save(self, *args, **kwargs):
-        if not self.pk:
+        if self._state.adding:
             self.calculate_fee()
         super().save(*args, **kwargs)
 
