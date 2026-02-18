@@ -389,62 +389,41 @@
   bottom: calc(100% + 0.5rem);
   left: 0.5rem;
   z-index: 20;
+  border-radius: 16px;
+  overflow: hidden;
+  filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.15)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
 
-  emoji-picker {
-    // Layout
-    height: 320px;
-    --num-columns: 9;
-    --border-radius: 16px;
-    --border-size: 1px;
+  emoji-mart {
+    font-family: inherit !important;
+    border: 1px solid #f0e6f0 !important;
+    border-radius: 16px !important;
 
-    // Colors — light
-    --background: #ffffff;
-    --border-color: #f0e6f0;
-    --button-hover-background: #fce7f3;
-    --button-active-background: #fbcfe8;
-    --indicator-color: #ec4899;
-    --indicator-height: 2px;
-    --category-font-color: #9d174d;
-    --category-font-size: 0.8rem;
+    .emoji-mart-search input {
+      border-radius: 999px !important;
+      border-color: #f9a8d4 !important;
+      font-size: 0.875rem;
 
-    // Emoji
-    --emoji-size: 1.25rem;
-    --emoji-padding: 0.35rem;
+      &:focus {
+        border-color: #ec4899 !important;
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.15) !important;
+      }
+    }
 
-    // Input
-    --input-border-radius: 999px;
-    --input-border-color: #f9a8d4;
-    --input-border-size: 1.5px;
-    --input-font-color: #1f2937;
-    --input-placeholder-color: #d1a8bf;
-    --input-padding: 0.35rem 0.75rem;
-    --input-font-size: 0.875rem;
+    .emoji-mart-anchor-selected {
+      color: #ec4899 !important;
+    }
 
-    // Outline
-    --outline-color: #f9a8d4;
-    --outline-size: 2px;
+    .emoji-mart-anchor-bar {
+      background: #ec4899 !important;
+    }
 
-    // Skintone
-    --skintone-border-radius: 999px;
-
-    // Shadow (via filter trick — not official var, applied via wrapper)
-
-    // Dark mode overrides
-    :host-context(.dark) & {
-      --background: #1e1b2e;
-      --border-color: #3b1f3b;
-      --button-hover-background: rgba(236, 72, 153, 0.15);
-      --button-active-background: rgba(236, 72, 153, 0.25);
-      --indicator-color: #f472b6;
-      --category-font-color: #f9a8d4;
-      --input-border-color: #6b21a8;
-      --input-font-color: #f3e8ff;
-      --input-placeholder-color: #9d4edd;
-      --outline-color: #a855f7;
+    .emoji-mart-category-label span {
+      font-size: 0.75rem;
+      color: #9d174d;
+      font-weight: 600;
     }
   }
-
-  filter: drop-shadow(0 8px 24px rgba(236, 72, 153, 0.15)) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
 }
 
 .attach-btn {

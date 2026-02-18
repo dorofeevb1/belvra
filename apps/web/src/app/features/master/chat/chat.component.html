@@ -140,7 +140,15 @@
         }
         @if (showEmojiPanel()) {
           <div class="emoji-panel-wrapper">
-            <emoji-picker (emoji-click)="onEmojiClick($event)"></emoji-picker>
+            <emoji-mart
+              set="apple"
+              [sheetSize]="32"
+              [showPreview]="false"
+              [emojiTooltip]="false"
+              [darkMode]="false"
+              title="Эмодзи"
+              (emojiClick)="onEmojiClick($event)"
+            ></emoji-mart>
           </div>
         }
         @if (isRecording()) {

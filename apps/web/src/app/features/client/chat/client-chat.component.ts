@@ -1,7 +1,7 @@
-import 'emoji-picker-element';
-import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, computed, ViewChild, ElementRef, AfterViewChecked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { PickerComponent } from '@ctrl/ngx-emoji-mart';
 import { ActivatedRoute } from '@angular/router';
 import { AuthService, DataService } from '../../../core/services';
 import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
@@ -11,8 +11,7 @@ import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 @Component({
   selector: 'app-client-chat',
   standalone: true,
-  imports: [CommonModule, FormsModule, DateFormatPipe],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  imports: [CommonModule, FormsModule, DateFormatPipe, PickerComponent],
   templateUrl: './client-chat.component.html',
   styleUrls: ['./client-chat.component.scss']
 })
@@ -292,9 +291,8 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.showEmojiPanel.update(v => !v);
   }
 
-  onEmojiClick(event: Event): void {
-    const detail = (event as CustomEvent).detail;
-    this.newMessage += detail?.unicode ?? '';
+  onEmojiClick(event: any): void {
+    this.newMessage += event?.emoji?.native ?? '';
     this.showEmojiPanel.set(false);
   }
 
