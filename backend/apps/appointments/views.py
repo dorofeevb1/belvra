@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
@@ -151,7 +152,14 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return queryset
 
+        role = self.request.query_params.get("role")
+
         if hasattr(user, "master_profile"):
+            if role == "master":
+                return queryset.filter(master=user.master_profile)
+            if role == "client":
+                return queryset.filter(client=user)
+            # No role: return both
             return queryset.filter(
                 Q(client=user) | Q(master=user.master_profile)
             )
@@ -234,7 +242,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         serializer = AppointmentCancelSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        appointment.transition_to(Appointment.Status.CANCELLED)
+        try:
+            appointment.transition_to(Appointment.Status.CANCELLED)
+        except DjangoValidationError as e:
+            return Response({"error": str(e.message)}, status=status.HTTP_400_BAD_REQUEST)
         appointment.cancelled_at = timezone.now()
         appointment.cancellation_reason = serializer.validated_data.get("reason", "")
         appointment.save()
@@ -316,7 +327,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        appointment.transition_to(Appointment.Status.CONFIRMED)
+        try:
+            appointment.transition_to(Appointment.Status.CONFIRMED)
+        except DjangoValidationError as e:
+            return Response({"error": str(e.message)}, status=status.HTTP_400_BAD_REQUEST)
         appointment.save()
 
         # Send confirmation email to client
@@ -378,7 +392,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        appointment.transition_to(Appointment.Status.COMPLETED)
+        try:
+            appointment.transition_to(Appointment.Status.COMPLETED)
+        except DjangoValidationError as e:
+            return Response({"error": str(e.message)}, status=status.HTTP_400_BAD_REQUEST)
         appointment.save()
 
         return Response(AppointmentSerializer(appointment).data)

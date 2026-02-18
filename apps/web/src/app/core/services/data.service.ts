@@ -266,8 +266,9 @@ export class DataService {
 
   // ==================== APPOINTMENTS (from backend) ====================
 
-  getAppointments(_masterId?: string): Observable<Appointment[]> {
-    return this.api.getAppointments().pipe(
+  getAppointments(_masterId?: string, role?: 'master' | 'client'): Observable<Appointment[]> {
+    const params = role ? { role } : undefined;
+    return this.api.getAppointments(params).pipe(
       map((response: any) => {
         const results = response.results || response;
         return results.map((apt: any) => this.mapBackendAppointment(apt));
@@ -277,7 +278,7 @@ export class DataService {
   }
 
   getClientAppointments(clientId: string): Observable<Appointment[]> {
-    return this.api.getAppointments().pipe(
+    return this.api.getAppointments({ role: 'client' }).pipe(
       map((response: any) => {
         const results = response.results || response;
         return results
@@ -316,8 +317,7 @@ export class DataService {
     }
 
     return apiCall.pipe(
-      map((response: any) => this.mapBackendAppointment(response)),
-      catchError(() => of({ id, status } as Appointment))
+      map((response: any) => this.mapBackendAppointment(response))
     );
   }
 

@@ -77,7 +77,7 @@ export class AppointmentsComponent implements OnInit {
   }
 
   private loadData(): void {
-    this.dataService.getAppointments().subscribe(data => {
+    this.dataService.getAppointments(undefined, 'master').subscribe(data => {
       this.appointments.set(data);
       this.isLoading.set(false);
     });
@@ -99,11 +99,16 @@ export class AppointmentsComponent implements OnInit {
   }
 
   confirmAppointment(apt: Appointment): void {
-    this.dataService.updateAppointmentStatus(apt.id, 'confirmed').subscribe(() => {
-      this.appointments.update(list =>
-        list.map(a => a.id === apt.id ? { ...a, status: 'confirmed' } : a)
-      );
-      this.notificationService.success('Запись подтверждена');
+    this.dataService.updateAppointmentStatus(apt.id, 'confirmed').subscribe({
+      next: () => {
+        this.appointments.update(list =>
+          list.map(a => a.id === apt.id ? { ...a, status: 'confirmed' } : a)
+        );
+        this.notificationService.success('Запись подтверждена');
+      },
+      error: () => {
+        this.notificationService.error('Ошибка при подтверждении записи');
+      }
     });
   }
 
