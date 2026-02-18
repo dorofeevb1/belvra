@@ -612,22 +612,37 @@ export class ApiService {
     return this.http.post(`${this.baseUrl}/chats/`, { master_id: masterId });
   }
 
-  getChatMessages(chatId: string): Observable<any> {
-    return this.http.get(`${this.baseUrl}/chats/${chatId}/messages/`);
+  getChatMessages(chatId: string, params?: { limit?: number; offset?: number; search?: string }): Observable<any> {
+    let httpParams = new HttpParams();
+    if (params?.limit != null) httpParams = httpParams.set('limit', params.limit);
+    if (params?.offset != null) httpParams = httpParams.set('offset', params.offset);
+    if (params?.search) httpParams = httpParams.set('search', params.search);
+    return this.http.get(`${this.baseUrl}/chats/${chatId}/messages/`, { params: httpParams });
   }
 
-  sendMessage(chatId: string, content: string, file?: File): Observable<any> {
+  sendMessage(chatId: string, content: string, file?: File, replyToId?: string): Observable<any> {
     if (file) {
       const formData = new FormData();
       if (content) formData.append('content', content);
       formData.append('file', file, file.name);
+      if (replyToId) formData.append('reply_to_id', replyToId);
       return this.http.post(`${this.baseUrl}/chats/${chatId}/send_message/`, formData);
     }
-    return this.http.post(`${this.baseUrl}/chats/${chatId}/send_message/`, { content });
+    const body: any = { content };
+    if (replyToId) body['reply_to_id'] = replyToId;
+    return this.http.post(`${this.baseUrl}/chats/${chatId}/send_message/`, body);
   }
 
   markChatRead(chatId: string): Observable<any> {
     return this.http.post(`${this.baseUrl}/chats/${chatId}/mark_read/`, {});
+  }
+
+  sendTyping(chatId: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/chats/${chatId}/typing/`, {});
+  }
+
+  getWhoIsTyping(chatId: string): Observable<any> {
+    return this.http.get(`${this.baseUrl}/chats/${chatId}/who_is_typing/`);
   }
 
   // ============ Todo endpoints ============

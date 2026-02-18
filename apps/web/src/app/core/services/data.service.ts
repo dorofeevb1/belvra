@@ -677,6 +677,12 @@ export class DataService {
       isRead: msg.is_read,
       fileUrl: msg.file_url ? this.getFullMediaUrl(msg.file_url) : undefined,
       messageType: msg.message_type as 'text' | 'image' | 'file' | undefined,
+      replyTo: msg.reply_to ? {
+        id: msg.reply_to.id,
+        content: msg.reply_to.content || '',
+        senderRole: msg.reply_to.sender_role,
+        messageType: msg.reply_to.message_type,
+      } : undefined,
     };
   }
 
@@ -714,18 +720,19 @@ export class DataService {
     );
   }
 
-  getMessages(chatId: string): Observable<ChatMessage[]> {
-    return this.api.getChatMessages(chatId).pipe(
+  getMessages(chatId: string, params?: { limit?: number; offset?: number; search?: string }): Observable<{ messages: ChatMessage[]; count: number }> {
+    return this.api.getChatMessages(chatId, params).pipe(
       map((response: any) => {
-        const messages = Array.isArray(response) ? response : (response.results || []);
-        return messages.map((m: any) => this.mapBackendMessage(m)).reverse();
+        const raw = Array.isArray(response) ? response : (response.results || []);
+        const count = response.count ?? raw.length;
+        return { messages: raw.map((m: any) => this.mapBackendMessage(m)).reverse(), count };
       }),
-      catchError(() => of([]))
+      catchError(() => of({ messages: [], count: 0 }))
     );
   }
 
-  sendMessage(message: Omit<ChatMessage, 'id' | 'timestamp' | 'isRead'>, file?: File): Observable<ChatMessage> {
-    return this.api.sendMessage(message.chatId, message.content, file).pipe(
+  sendMessage(message: Omit<ChatMessage, 'id' | 'timestamp' | 'isRead'>, file?: File, replyToId?: string): Observable<ChatMessage> {
+    return this.api.sendMessage(message.chatId, message.content, file, replyToId).pipe(
       map((response: any) => this.mapBackendMessage(response)),
       catchError(() => of({
         ...message,
@@ -733,6 +740,20 @@ export class DataService {
         timestamp: new Date(),
         isRead: false
       } as ChatMessage))
+    );
+  }
+
+  sendTyping(chatId: string): Observable<void> {
+    return this.api.sendTyping(chatId).pipe(
+      map(() => void 0),
+      catchError(() => of(void 0))
+    );
+  }
+
+  getWhoIsTyping(chatId: string): Observable<boolean> {
+    return this.api.getWhoIsTyping(chatId).pipe(
+      map((r: any) => !!r.typing),
+      catchError(() => of(false))
     );
   }
 

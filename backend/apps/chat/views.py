@@ -1,5 +1,6 @@
 import logging
 
+from django.core.cache import cache
 from django.db.models import Q
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,8 @@ from .serializers import (
     ChatMessageSerializer,
     ChatSerializer,
 )
+
+TYPING_TTL = 6  # seconds
 
 
 @extend_schema_view(
@@ -47,7 +50,6 @@ class ChatViewSet(viewsets.ModelViewSet):
                 master=user.master_profile
             ).select_related("master__user", "client").prefetch_related("messages")
 
-        # No role filter: show all chats for this user
         if hasattr(user, "master_profile"):
             return Chat.objects.filter(
                 Q(master=user.master_profile) | Q(client=user)
@@ -75,7 +77,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         chat = self.get_object()
         user = request.user
 
-        # Determine sender role
         if hasattr(user, "master_profile") and chat.master == user.master_profile:
             sender_role = ChatMessage.SenderRole.MASTER
         elif chat.client == user:
@@ -91,8 +92,8 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         content = serializer.validated_data.get("content", "")
         file = serializer.validated_data.get("file") or request.FILES.get("file")
+        reply_to_id = serializer.validated_data.get("reply_to_id")
 
-        # Determine message type
         if file:
             if file.content_type and file.content_type.startswith("image/"):
                 message_type = ChatMessage.MessageType.IMAGE
@@ -109,6 +110,14 @@ class ChatViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Resolve reply_to
+        reply_to = None
+        if reply_to_id:
+            try:
+                reply_to = ChatMessage.objects.get(id=reply_to_id, chat=chat)
+            except ChatMessage.DoesNotExist:
+                pass
+
         message = ChatMessage.objects.create(
             chat=chat,
             sender=user,
@@ -116,18 +125,17 @@ class ChatViewSet(viewsets.ModelViewSet):
             content=content,
             message_type=message_type,
             file=file,
+            reply_to=reply_to,
         )
 
-        # Update chat timestamp
         chat.save(update_fields=["updated_at"])
 
-        # Send notification to recipient
+        # Clear typing indicator after sending
+        cache.delete(f"chat_typing:{chat.id}:{user.id}")
+
         try:
             from apps.core.notifications import NotificationService
-            if sender_role == ChatMessage.SenderRole.MASTER:
-                recipient = chat.client
-            else:
-                recipient = chat.master.user
+            recipient = chat.client if sender_role == ChatMessage.SenderRole.MASTER else chat.master.user
             NotificationService.notify_chat_message(
                 recipient_user=recipient,
                 sender_name=user.full_name,
@@ -135,7 +143,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 chat_id=str(chat.id)
             )
         except Exception:
-            logger.exception("Notification failed for chat message")  # Don't fail message sending if notification fails
+            logger.exception("Notification failed for chat message")
 
         return Response(
             ChatMessageSerializer(message, context={"request": request}).data,
@@ -149,39 +157,31 @@ class ChatViewSet(viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["get"])
     def messages(self, request, pk=None):
-        """Get messages in a chat with pagination."""
+        """Get messages with pagination and optional search."""
         chat = self.get_object()
-        messages = chat.messages.select_related("sender").order_by("-created_at")
+        qs = chat.messages.select_related("sender", "reply_to").order_by("-created_at")
+
+        search = request.query_params.get("search", "").strip()
+        if search:
+            qs = qs.filter(content__icontains=search)
 
         paginator = LimitOffsetPagination()
-        paginator.default_limit = 50
-        page = paginator.paginate_queryset(messages, request)
+        paginator.default_limit = 40
+        page = paginator.paginate_queryset(qs, request)
         serializer = ChatMessageSerializer(page, many=True, context={"request": request})
         return paginator.get_paginated_response(serializer.data)
 
-    @extend_schema(
-        tags=["Чат"],
-        summary="Отметить сообщения как прочитанные"
-    )
+    @extend_schema(tags=["Чат"], summary="Отметить сообщения как прочитанные")
     @action(detail=True, methods=["post"])
     def mark_read(self, request, pk=None):
         """Mark all unread messages in chat as read."""
         chat = self.get_object()
         user = request.user
 
-        # Determine which messages to mark as read
         if hasattr(user, "master_profile") and chat.master == user.master_profile:
-            # Master reads client messages
-            unread = chat.messages.filter(
-                sender_role=ChatMessage.SenderRole.CLIENT,
-                is_read=False
-            )
+            unread = chat.messages.filter(sender_role=ChatMessage.SenderRole.CLIENT, is_read=False)
         elif chat.client == user:
-            # Client reads master messages
-            unread = chat.messages.filter(
-                sender_role=ChatMessage.SenderRole.MASTER,
-                is_read=False
-            )
+            unread = chat.messages.filter(sender_role=ChatMessage.SenderRole.MASTER, is_read=False)
         else:
             return Response(
                 {"detail": "Вы не являетесь участником этого чата"},
@@ -191,7 +191,6 @@ class ChatViewSet(viewsets.ModelViewSet):
         from django.utils import timezone
         count = unread.update(is_read=True, read_at=timezone.now())
 
-        # Also mark related chat_message notifications as read for this user
         try:
             from apps.core.models import Notification
             Notification.objects.filter(
@@ -204,6 +203,47 @@ class ChatViewSet(viewsets.ModelViewSet):
             pass
 
         return Response({"marked_read": count})
+
+    @extend_schema(tags=["Чат"], summary="Уведомить о наборе текста")
+    @action(detail=True, methods=["post"])
+    def typing(self, request, pk=None):
+        """Set typing status for current user (TTL 6s)."""
+        chat = self.get_object()
+        user = request.user
+
+        if not (
+            (hasattr(user, "master_profile") and chat.master == user.master_profile)
+            or chat.client == user
+        ):
+            return Response(status=status.HTTP_403_FORBIDDEN)
+
+        role = (
+            "master"
+            if hasattr(user, "master_profile") and chat.master == user.master_profile
+            else "client"
+        )
+        cache.set(
+            f"chat_typing:{chat.id}:{user.id}",
+            {"role": role, "name": user.full_name},
+            timeout=TYPING_TTL,
+        )
+        return Response({"status": "ok"})
+
+    @extend_schema(tags=["Чат"], summary="Кто сейчас печатает")
+    @action(detail=True, methods=["get"], url_path="who_is_typing")
+    def who_is_typing(self, request, pk=None):
+        """Return whether the other chat participant is currently typing."""
+        chat = self.get_object()
+        user = request.user
+
+        # Determine the other participant's ID
+        if hasattr(user, "master_profile") and chat.master == user.master_profile:
+            other_id = chat.client_id
+        else:
+            other_id = chat.master.user_id
+
+        data = cache.get(f"chat_typing:{chat.id}:{other_id}")
+        return Response({"typing": data is not None})
 
     @extend_schema(
         tags=["Чат"],
@@ -218,10 +258,7 @@ class ChatViewSet(viewsets.ModelViewSet):
         try:
             master = MasterProfile.objects.get(id=master_id)
         except MasterProfile.DoesNotExist:
-            return Response(
-                {"detail": "Мастер не найден"},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return Response({"detail": "Мастер не найден"}, status=status.HTTP_404_NOT_FOUND)
 
         chat, created = Chat.objects.get_or_create(
             master=master,

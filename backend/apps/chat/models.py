@@ -98,6 +98,14 @@ class ChatMessage(BaseModel):
     )
     is_read = models.BooleanField(default=False, verbose_name="Прочитано")
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="Время прочтения")
+    reply_to = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='replies',
+        verbose_name="Ответ на сообщение"
+    )
 
     class Meta:
         verbose_name = "Сообщение"

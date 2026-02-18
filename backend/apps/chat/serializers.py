@@ -3,11 +3,20 @@ from rest_framework import serializers
 from .models import Chat, ChatMessage
 
 
+class ReplyMessageSerializer(serializers.ModelSerializer):
+    """Minimal serializer for the replied-to message preview."""
+
+    class Meta:
+        model = ChatMessage
+        fields = ["id", "content", "sender_role", "message_type"]
+
+
 class ChatMessageSerializer(serializers.ModelSerializer):
     """Serializer for chat messages."""
 
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
     file_url = serializers.SerializerMethodField()
+    reply_to = ReplyMessageSerializer(read_only=True)
 
     class Meta:
         model = ChatMessage
@@ -21,6 +30,7 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "message_type",
             "file_url",
             "is_read",
+            "reply_to",
             "created_at",
         ]
         read_only_fields = ["id", "sender", "sender_name", "is_read", "created_at"]
@@ -39,6 +49,7 @@ class ChatMessageCreateSerializer(serializers.Serializer):
 
     content = serializers.CharField(required=False, allow_blank=True, default="")
     file = serializers.FileField(required=False, allow_null=True)
+    reply_to_id = serializers.UUIDField(required=False, allow_null=True)
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -123,7 +134,6 @@ class ChatCreateSerializer(serializers.ModelSerializer):
         master = MasterProfile.objects.get(id=validated_data["master_id"])
         client = self.context["request"].user
 
-        # Get or create chat
         chat, created = Chat.objects.get_or_create(
             master=master,
             client=client,

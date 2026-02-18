@@ -1,3 +1,10 @@
+export interface ReplyPreview {
+  id: string;
+  content: string;
+  senderRole: 'master' | 'client';
+  messageType?: string;
+}
+
 export interface ChatMessage {
   id: string;
   chatId: string;
@@ -8,6 +15,7 @@ export interface ChatMessage {
   isRead: boolean;
   fileUrl?: string;
   messageType?: 'text' | 'image' | 'file' | 'audio';
+  replyTo?: ReplyPreview;
 }
 
 export interface Chat {
