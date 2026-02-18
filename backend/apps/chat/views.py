@@ -96,6 +96,8 @@ class ChatViewSet(viewsets.ModelViewSet):
         if file:
             if file.content_type and file.content_type.startswith("image/"):
                 message_type = ChatMessage.MessageType.IMAGE
+            elif file.content_type and file.content_type.startswith("audio/"):
+                message_type = ChatMessage.MessageType.AUDIO
             else:
                 message_type = ChatMessage.MessageType.FILE
         else:
@@ -129,7 +131,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             NotificationService.notify_chat_message(
                 recipient_user=recipient,
                 sender_name=user.full_name,
-                message_preview=content or "📎 Файл",
+                message_preview=content or ("🎵 Голосовое" if message_type == ChatMessage.MessageType.AUDIO else "📎 Файл"),
                 chat_id=str(chat.id)
             )
         except Exception:

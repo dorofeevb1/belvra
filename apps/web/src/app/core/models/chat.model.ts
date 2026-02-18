@@ -7,7 +7,7 @@ export interface ChatMessage {
   timestamp: Date;
   isRead: boolean;
   fileUrl?: string;
-  messageType?: 'text' | 'image' | 'file';
+  messageType?: 'text' | 'image' | 'file' | 'audio';
 }
 
 export interface Chat {

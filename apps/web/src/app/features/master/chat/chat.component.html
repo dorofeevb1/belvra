@@ -99,6 +99,9 @@
                   📄 Скачать файл
                 </a>
               }
+              @if (message.messageType === 'audio' && message.fileUrl) {
+                <audio controls [src]="message.fileUrl" class="message-audio"></audio>
+              }
               <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
             </div>
           </div>
@@ -140,33 +143,45 @@
             <emoji-picker (emoji-click)="onEmojiClick($event)"></emoji-picker>
           </div>
         }
-        <div class="chat-input">
-          <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx"
-            (change)="onFileSelect($event)" class="hidden" />
-          <button type="button" (click)="fileInput.click()" class="btn-icon attach-btn" title="Прикрепить файл">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
-            </svg>
-          </button>
-          <button type="button" class="emoji-btn" (click)="toggleEmojiPanel()" title="Эмодзи">😊</button>
-          <input
-            type="text"
-            [(ngModel)]="newMessage"
-            (keyup.enter)="sendMessage()"
-            placeholder="Введите сообщение..."
-            class="input message-input"
-          />
-          <button
-            type="button"
-            (click)="sendMessage()"
-            [disabled]="!newMessage.trim() && !selectedFile()"
-            class="btn btn-primary btn-icon send-btn"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-            </svg>
-          </button>
-        </div>
+        @if (isRecording()) {
+          <div class="recording-bar">
+            <span class="rec-dot"></span>
+            <span class="rec-timer">{{ formatRecordTime(recordingSeconds()) }}</span>
+            <button type="button" (click)="cancelRecording()" class="cancel-rec-btn" title="Отменить">✕</button>
+            <button type="button" (click)="stopRecording()" class="stop-rec-btn">Отправить</button>
+          </div>
+        } @else {
+          <div class="chat-input">
+            <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx,audio/*"
+              (change)="onFileSelect($event)" style="display:none" />
+            <button type="button" (click)="fileInput.click()" class="btn-icon attach-btn" title="Прикрепить файл">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+              </svg>
+            </button>
+            <button type="button" class="emoji-btn" (click)="toggleEmojiPanel()" title="Эмодзи">😊</button>
+            <input
+              type="text"
+              [(ngModel)]="newMessage"
+              (keyup.enter)="sendMessage()"
+              placeholder="Введите сообщение..."
+              class="input message-input"
+            />
+            @if (newMessage.trim() || selectedFile()) {
+              <button type="button" (click)="sendMessage()" class="btn btn-primary btn-icon send-btn">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                </svg>
+              </button>
+            } @else {
+              <button type="button" (click)="startRecording()" class="btn-icon mic-btn" title="Голосовое сообщение">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+                </svg>
+              </button>
+            }
+          </div>
+        }
       </div>
     } @else {
       <div class="empty-chat">

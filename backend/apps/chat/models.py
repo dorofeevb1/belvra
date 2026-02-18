@@ -64,6 +64,7 @@ class ChatMessage(BaseModel):
         TEXT = "text", "Текст"
         IMAGE = "image", "Изображение"
         FILE = "file", "Файл"
+        AUDIO = "audio", "Аудио"
 
     chat = models.ForeignKey(
         Chat,

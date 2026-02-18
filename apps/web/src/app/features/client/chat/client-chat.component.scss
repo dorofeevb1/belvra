@@ -507,6 +507,97 @@
   margin-top: 1rem;
 }
 
+// Audio message
+.message-audio {
+  max-width: 240px;
+  width: 100%;
+  border-radius: var(--radius-lg);
+  margin-top: 0.25rem;
+  display: block;
+}
+
+// Mic button
+.mic-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-full);
+  color: var(--color-text-tertiary);
+  flex-shrink: 0;
+  transition: color 150ms ease, background 150ms ease;
+
+  &:hover {
+    color: var(--color-brand-500);
+    background: var(--color-brand-50);
+
+    :host-context(.dark) & {
+      background: rgba(236, 72, 153, 0.1);
+    }
+  }
+}
+
+// Recording bar
+.recording-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(239, 68, 68, 0.05);
+  border-top: 2px solid rgba(239, 68, 68, 0.3);
+}
+
+.rec-dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  animation: rec-blink 1s ease-in-out infinite;
+}
+
+@keyframes rec-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.rec-timer {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #ef4444;
+  font-variant-numeric: tabular-nums;
+  min-width: 2.5rem;
+}
+
+.cancel-rec-btn {
+  margin-left: auto;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  border-radius: var(--radius-lg);
+  transition: background 150ms ease, color 150ms ease;
+
+  &:hover {
+    background: var(--color-surface-hover);
+    color: var(--color-text-primary);
+  }
+}
+
+.stop-rec-btn {
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #ef4444;
+  color: white;
+  border-radius: var(--radius-lg);
+  transition: background 150ms ease;
+
+  &:hover {
+    background: #dc2626;
+  }
+}
+
 // Utils
 .loading-sm {
   display: flex;

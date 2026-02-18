@@ -33,6 +33,11 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   selectedFile = signal<File | null>(null);
   selectedFilePreview = signal<string | null>(null);
   showEmojiPanel = signal(false);
+  isRecording = signal(false);
+  recordingSeconds = signal(0);
+  private mediaRecorder: MediaRecorder | null = null;
+  private audioChunks: Blob[] = [];
+  private recordingTimer: ReturnType<typeof setInterval> | null = null;
   private shouldScroll = false;
   private chatPollInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -60,6 +65,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.chatPollInterval) {
       clearInterval(this.chatPollInterval);
     }
+    this.cancelRecording();
   }
 
   ngAfterViewChecked(): void {
@@ -173,6 +179,86 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
         list.map(c => c.id === chat.id ? {
           ...c,
           lastMessage: message.content || '📎 Файл',
+          lastMessageTime: message.timestamp || new Date()
+        } : c)
+      );
+    });
+  }
+
+  async startRecording(): Promise<void> {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.mediaRecorder = new MediaRecorder(stream);
+      this.audioChunks = [];
+      this.mediaRecorder.ondataavailable = e => this.audioChunks.push(e.data);
+      this.mediaRecorder.onstop = () => this.onRecordingStopped();
+      this.mediaRecorder.start();
+      this.isRecording.set(true);
+      this.recordingSeconds.set(0);
+      this.recordingTimer = setInterval(() => this.recordingSeconds.update(s => s + 1), 1000);
+    } catch {
+      alert('Нет доступа к микрофону');
+    }
+  }
+
+  stopRecording(): void {
+    this.mediaRecorder?.stop();
+    this.clearRecordingTimer();
+  }
+
+  cancelRecording(): void {
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.ondataavailable = null;
+      this.mediaRecorder.onstop = null;
+      this.mediaRecorder.stop();
+      this.mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    }
+    this.mediaRecorder = null;
+    this.audioChunks = [];
+    this.isRecording.set(false);
+    this.clearRecordingTimer();
+  }
+
+  private onRecordingStopped(): void {
+    const blob = new Blob(this.audioChunks, { type: 'audio/webm' });
+    const file = new File([blob], 'voice.webm', { type: 'audio/webm' });
+    this.mediaRecorder?.stream.getTracks().forEach(t => t.stop());
+    this.mediaRecorder = null;
+    this.isRecording.set(false);
+    this.sendMessageWithFile(file);
+  }
+
+  private clearRecordingTimer(): void {
+    if (this.recordingTimer) {
+      clearInterval(this.recordingTimer);
+      this.recordingTimer = null;
+    }
+  }
+
+  formatRecordTime(seconds: number): string {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  }
+
+  private sendMessageWithFile(file: File): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    const masterId = this.authService.masterApiId();
+    if (!masterId) return;
+
+    this.dataService.sendMessage({
+      chatId: chat.id,
+      senderId: masterId,
+      senderRole: 'master',
+      content: ''
+    }, file).subscribe(message => {
+      this.messages.update(list => [...list, message]);
+      this.shouldScroll = true;
+      this.chats.update(list =>
+        list.map(c => c.id === chat.id ? {
+          ...c,
+          lastMessage: '🎵 Голосовое',
           lastMessageTime: message.timestamp || new Date()
         } : c)
       );
