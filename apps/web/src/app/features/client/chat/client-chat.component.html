@@ -1,93 +1,152 @@
 <div class="chat-page animate-fadeInUp">
-  <!-- Chat List -->
-  <div class="chat-sidebar card">
+
+  <!-- ===== SIDEBAR ===== -->
+  <div class="chat-sidebar">
     <div class="sidebar-header">
       <div class="sidebar-title-row">
-        <h2 class="sidebar-title">Чаты</h2>
-        <button type="button" (click)="openNewChatModal()" class="new-chat-btn" title="Новый чат">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+        <h2 class="sidebar-title">Сообщения</h2>
+        <button type="button" class="new-chat-btn" (click)="openNewChatModal()" title="Новый чат">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
           </svg>
         </button>
       </div>
       <div class="search-box">
-        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
-        <input
-          type="text"
-          [(ngModel)]="searchQuery"
-          placeholder="Поиск мастера..."
-          class="search-input"
-        />
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Поиск..." class="search-input" />
       </div>
     </div>
 
     <div class="chat-list">
       @if (isLoading()) {
-        <div class="loading-sm">
-          <div class="spinner spinner-sm"></div>
-        </div>
+        @for (i of [1,2,3,4]; track i) {
+          <div class="skeleton-item">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-line skeleton-name"></div>
+              <div class="skeleton-line skeleton-preview"></div>
+            </div>
+          </div>
+        }
       } @else {
         @for (chat of filteredChats(); track chat.id) {
-          <button
-            type="button"
-            (click)="selectChat(chat)"
-            class="chat-item"
-            [class.active]="selectedChat()?.id === chat.id"
-          >
+          <button type="button" (click)="selectChat(chat)" class="chat-item" [class.active]="selectedChat()?.id === chat.id">
             <div class="chat-avatar">
               @if (chat.masterAvatar) {
                 <img [src]="chat.masterAvatar" [alt]="chat.masterName" />
               } @else {
-                <span>{{ chat.masterName?.charAt(0) || 'M' }}</span>
+                <span>{{ (chat.masterName || '?').charAt(0).toUpperCase() }}</span>
               }
             </div>
             <div class="chat-info">
               <div class="chat-row">
-                <span class="chat-name">{{ chat.masterName }}</span>
+                <span class="chat-name">{{ chat.masterName || 'Мастер' }}</span>
                 @if (chat.lastMessageTime) {
                   <span class="chat-time">{{ chat.lastMessageTime | dateFormat:'relative' }}</span>
                 }
               </div>
-              @if (chat.lastMessage) {
-                <p class="chat-preview">{{ chat.lastMessage }}</p>
-              }
+              <div class="chat-bottom-row">
+                <p class="chat-preview" [class.chat-preview--empty]="!chat.lastMessage">
+                  {{ chat.lastMessage || 'Нет сообщений' }}
+                </p>
+                @if (chat.unreadCount > 0) {
+                  <span class="chat-unread">{{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}</span>
+                }
+              </div>
             </div>
-            @if (chat.unreadCount > 0) {
-              <span class="chat-unread">{{ chat.unreadCount }}</span>
-            }
           </button>
         } @empty {
-          <div class="empty-sm">
+          <div class="empty-list">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
             <p>Нет чатов</p>
-            <p class="empty-hint">Начните диалог с мастером из его профиля</p>
+            <button type="button" class="empty-new-btn" (click)="openNewChatModal()">Написать мастеру</button>
           </div>
         }
       }
     </div>
   </div>
 
-  <!-- Chat Messages -->
-  <div class="chat-main card">
+  <!-- ===== MAIN ===== -->
+  <div class="chat-main">
     @if (selectedChat()) {
+
       <!-- Header -->
       <div class="chat-header">
         <div class="header-avatar">
           @if (selectedChat()!.masterAvatar) {
             <img [src]="selectedChat()!.masterAvatar" [alt]="selectedChat()!.masterName" />
           } @else {
-            <span>{{ selectedChat()!.masterName?.charAt(0) || 'M' }}</span>
+            <span>{{ (selectedChat()!.masterName || '?').charAt(0).toUpperCase() }}</span>
           }
         </div>
         <div class="header-info">
-          <p class="header-name">{{ selectedChat()!.masterName }}</p>
-          <p class="header-role">Мастер</p>
+          <p class="header-name">{{ selectedChat()!.masterName || 'Мастер' }}</p>
+          <p class="header-status">
+            @if (isTypingOther()) {
+              <span class="typing-dots"><span></span><span></span><span></span></span>
+              <span>печатает...</span>
+            } @else {
+              <span class="status-dot"></span>
+              <span>Мастер</span>
+            }
+          </p>
+        </div>
+        <div class="header-actions">
+          <button type="button" class="hdr-btn" [class.active]="showSearch()" (click)="toggleSearch()" title="Поиск по сообщениям">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </button>
         </div>
       </div>
 
+      <!-- Search bar -->
+      @if (showSearch()) {
+        <div class="search-bar">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Поиск по сообщениям..."
+            class="search-bar-input"
+            [ngModel]="messageSearchQuery()"
+            (ngModelChange)="onMessageSearch($event)"
+            autofocus
+          />
+          @if (messageSearchQuery()) {
+            <button type="button" class="search-clear" (click)="onMessageSearch('')">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          }
+        </div>
+      }
+
       <!-- Messages -->
-      <div #messagesContainer class="messages-container">
+      <div #messagesContainer class="messages-container" (scroll)="onScroll($event)">
+
+        <!-- Load more -->
+        @if (hasMore()) {
+          <div class="load-more-wrap">
+            <button type="button" class="load-more-btn" (click)="loadMore()" [disabled]="isLoadingMore()">
+              @if (isLoadingMore()) {
+                <span class="spinner spinner-sm"></span>
+              } @else {
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>
+                </svg>
+                Загрузить старые сообщения
+              }
+            </button>
+          </div>
+        }
+
         @for (message of messages(); track message.id; let i = $index) {
           @if (shouldShowDateSeparator(i)) {
             <div class="date-separator">
@@ -95,167 +154,316 @@
             </div>
           }
           <div class="message" [class.outgoing]="message.senderRole === 'client'">
-            <div class="message-bubble" [class.outgoing]="message.senderRole === 'client'">
-              @if (message.content) {
-                <p class="message-text">{{ message.content }}</p>
+            @if (message.senderRole !== 'client') {
+              <div class="msg-avatar">
+                @if (selectedChat()!.masterAvatar) {
+                  <img [src]="selectedChat()!.masterAvatar" [alt]="selectedChat()!.masterName" />
+                } @else {
+                  <span>{{ (selectedChat()!.masterName || '?').charAt(0).toUpperCase() }}</span>
+                }
+              </div>
+            }
+            <div class="message-bubble-wrap" [class.outgoing]="message.senderRole === 'client'">
+              @if (message.replyTo) {
+                <div class="reply-preview reply-preview--inline" [class.outgoing]="message.senderRole === 'client'">
+                  <span class="reply-bar"></span>
+                  <span class="reply-text">{{ replyLabel(message.replyTo) }}</span>
+                </div>
               }
-              @if (message.messageType === 'image' && message.fileUrl) {
-                <img [src]="message.fileUrl" class="message-image" (click)="openImageFullscreen(message.fileUrl)" alt="Изображение" />
-              }
-              @if (message.messageType === 'file' && message.fileUrl) {
-                <a [href]="message.fileUrl" target="_blank" class="message-file">
-                  📄 Скачать файл
-                </a>
-              }
-              @if (message.messageType === 'audio' && message.fileUrl) {
-                <audio controls [src]="message.fileUrl" class="message-audio"></audio>
-              }
-              <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
+              <div class="message-bubble" [class.outgoing]="message.senderRole === 'client'">
+                @if (message.content) {
+                  <p class="message-text">{{ message.content }}</p>
+                }
+                @if (message.messageType === 'image' && message.fileUrl) {
+                  <img [src]="message.fileUrl" class="message-image" (click)="openLightbox(message.fileUrl)" alt="Изображение" />
+                }
+                @if (message.messageType === 'file' && message.fileUrl) {
+                  <a [href]="message.fileUrl" target="_blank" class="message-file">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <span>Скачать файл</span>
+                  </a>
+                }
+                @if (message.messageType === 'audio' && message.fileUrl) {
+                  <audio controls [src]="message.fileUrl" class="message-audio"></audio>
+                }
+                <div class="message-meta">
+                  <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
+                  @if (message.senderRole === 'client') {
+                    <svg class="read-tick" [class.read]="message.isRead" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  }
+                </div>
+              </div>
+              <button type="button" class="reply-action-btn" (click)="setReply(message)" title="Ответить">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
+                </svg>
+              </button>
             </div>
           </div>
         } @empty {
           <div class="empty-messages">
-            <p>Начните диалог</p>
+            <div class="empty-messages-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            </div>
+            @if (messageSearchQuery()) {
+              <p class="empty-messages-text">Ничего не найдено</p>
+            } @else {
+              <p class="empty-messages-text">Начните диалог с мастером</p>
+            }
           </div>
         }
       </div>
 
+      <!-- Scroll to bottom -->
+      @if (showScrollBtn()) {
+        <button type="button" class="scroll-btn" (click)="scrollToBottom()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+      }
+
+      <!-- Templates panel -->
+      @if (showTemplates()) {
+        <div class="templates-panel">
+          <div class="templates-header">
+            <span>Быстрые фразы</span>
+            <button type="button" class="templates-close" (click)="toggleTemplates()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="templates-grid">
+            @for (t of templates; track t.label) {
+              <button type="button" class="template-item" (click)="useTemplate(t.text)">
+                <span class="template-label">{{ t.label }}</span>
+                <span class="template-preview">{{ t.text }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      }
+
       <!-- Input -->
       <div class="chat-input-wrapper">
-        @if (selectedFile()) {
-          <div class="file-preview">
-            @if (selectedFilePreview()) {
-              <img [src]="selectedFilePreview()" class="preview-image" alt="Превью" />
-            } @else {
-              <span class="file-name">📄 {{ selectedFile()!.name }}</span>
-            }
-            <button type="button" class="remove-file-btn" (click)="removeSelectedFile()">✕</button>
+        <!-- Reply compose bar -->
+        @if (replyToMessage()) {
+          <div class="reply-compose-bar">
+            <span class="reply-bar-accent"></span>
+            <div class="reply-compose-content">
+              <span class="reply-compose-label">Ответ</span>
+              <span class="reply-compose-text">{{ replyLabel(replyToMessage()!) }}</span>
+            </div>
+            <button type="button" class="reply-cancel-btn" (click)="cancelReply()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
         }
+
+        <!-- File preview -->
+        @if (selectedFile()) {
+          <div class="file-preview-bar">
+            @if (selectedFilePreview()) {
+              <img [src]="selectedFilePreview()" class="preview-thumb" alt="Превью" />
+            } @else {
+              <div class="file-icon-wrap">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="file-preview-name">{{ selectedFile()!.name }}</span>
+            }
+            <button type="button" class="remove-file-btn" (click)="removeSelectedFile()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        }
+
+        <!-- Emoji panel -->
         @if (showEmojiPanel()) {
           <div class="emoji-panel-wrapper">
-            <emoji-mart
-              [isNative]="true"
-              [showPreview]="false"
-              [emojiTooltip]="false"
-              [darkMode]="false"
-              [perLine]="9"
-              title="Эмодзи"
-              (emojiClick)="onEmojiClick($event)"
-            ></emoji-mart>
+            <emoji-mart [isNative]="true" [showPreview]="false" [emojiTooltip]="false" [darkMode]="false" [perLine]="9" title="Эмодзи" (emojiClick)="onEmojiClick($event)"></emoji-mart>
           </div>
         }
+
+        <!-- Recording bar -->
         @if (isRecording()) {
           <div class="recording-bar">
             <span class="rec-dot"></span>
             <span class="rec-timer">{{ formatRecordTime(recordingSeconds()) }}</span>
-            <button type="button" (click)="cancelRecording()" class="cancel-rec-btn" title="Отменить">✕</button>
-            <button type="button" (click)="stopRecording()" class="stop-rec-btn">Отправить</button>
+            <div class="rec-wave"><span></span><span></span><span></span><span></span><span></span></div>
+            <button type="button" (click)="cancelRecording()" class="cancel-rec-btn">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <button type="button" (click)="stopRecording()" class="send-rec-btn">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+            </button>
           </div>
         } @else {
           <div class="chat-input">
-            <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx,audio/*"
-              (change)="onFileSelect($event)" style="display:none" />
-            <button type="button" (click)="fileInput.click()" class="btn-icon attach-btn" title="Прикрепить файл">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+            <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx,audio/*" (change)="onFileSelect($event)" style="display:none" />
+            <button type="button" (click)="fileInput.click()" class="input-action-btn" title="Прикрепить файл">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
               </svg>
             </button>
-            <button type="button" class="emoji-btn" (click)="toggleEmojiPanel()" title="Эмодзи">😊</button>
+            <button type="button" class="input-action-btn" (click)="toggleEmojiPanel()" title="Эмодзи">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
+            <button type="button" class="input-action-btn" [class.active]="showTemplates()" (click)="toggleTemplates()" title="Быстрые фразы">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h10"/>
+              </svg>
+            </button>
             <input
+              #msgInput
               type="text"
               [(ngModel)]="newMessage"
               (keyup.enter)="sendMessage()"
-              placeholder="Введите сообщение..."
-              class="input message-input"
+              (keydown)="onInputKeydown()"
+              placeholder="Напишите сообщение..."
+              class="message-input"
             />
             @if (newMessage.trim() || selectedFile()) {
-              <button type="button" (click)="sendMessage()" class="btn btn-primary btn-icon send-btn">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+              <button type="button" (click)="sendMessage()" class="send-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                 </svg>
               </button>
             } @else if (isRecordingSupported) {
-              <button type="button" (click)="startRecording()" class="btn-icon mic-btn" title="Голосовое сообщение">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              <button type="button" (click)="startRecording()" class="input-action-btn" title="Голосовое сообщение">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                 </svg>
               </button>
             }
           </div>
         }
       </div>
+
     } @else {
+      <!-- Empty state -->
       <div class="empty-chat">
-        <div class="empty-icon">
-          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        <div class="empty-chat-illustration">
+          <div class="empty-bubble empty-bubble--1"></div>
+          <div class="empty-bubble empty-bubble--2"></div>
+          <div class="empty-bubble empty-bubble--3"></div>
+          <svg class="empty-chat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
         </div>
-        <h3 class="empty-title">Выберите чат</h3>
-        <p class="empty-desc">Выберите диалог из списка слева или начните новый</p>
-        <button type="button" (click)="openNewChatModal()" class="btn btn-primary new-chat-action">
-          Начать новый чат
+        <h3 class="empty-chat-title">Выберите диалог</h3>
+        <p class="empty-chat-desc">Откройте чат или напишите мастеру первым</p>
+        <button type="button" class="empty-new-chat-btn" (click)="openNewChatModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+          </svg>
+          Новый чат
         </button>
       </div>
     }
   </div>
+
 </div>
 
-<!-- New Chat Modal -->
+<!-- ===== LIGHTBOX ===== -->
+@if (lightboxUrl()) {
+  <div class="lightbox-overlay" (click)="closeLightbox()">
+    <button type="button" class="lightbox-close" (click)="closeLightbox()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+    <img [src]="lightboxUrl()" class="lightbox-img" (click)="$event.stopPropagation()" alt="Изображение" />
+  </div>
+}
+
+<!-- ===== NEW CHAT MODAL ===== -->
 @if (showNewChatModal()) {
   <div class="modal-overlay" (click)="closeNewChatModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="new-chat-modal" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">Новый чат</h3>
-        <button type="button" (click)="closeNewChatModal()" class="modal-close">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+        <div class="modal-title-wrap">
+          <div class="modal-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+          </div>
+          <h3 class="modal-title">Написать мастеру</h3>
+        </div>
+        <button type="button" class="modal-close" (click)="closeNewChatModal()">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
           </svg>
         </button>
       </div>
 
-      <div class="modal-search">
-        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      <div class="master-search-wrap">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
           type="text"
           [(ngModel)]="masterSearchQuery"
           placeholder="Поиск мастера..."
-          class="search-input"
+          class="master-search-input"
           autofocus
         />
       </div>
 
-      <div class="modal-list">
+      <div class="master-list">
         @if (mastersLoading()) {
-          <div class="loading-sm">
-            <div class="spinner spinner-sm"></div>
-          </div>
+          @for (i of [1,2,3]; track i) {
+            <div class="skeleton-item">
+              <div class="skeleton-avatar"></div>
+              <div class="skeleton-content">
+                <div class="skeleton-line skeleton-name"></div>
+                <div class="skeleton-line skeleton-preview"></div>
+              </div>
+            </div>
+          }
         } @else {
           @for (master of filteredMasters(); track master.id) {
-            <button type="button" (click)="selectMaster(master)" class="master-item">
-              <div class="master-avatar">
+            <button type="button" class="master-item" (click)="selectMaster(master)">
+              <div class="chat-avatar">
                 @if (master.avatar) {
                   <img [src]="master.avatar" [alt]="master.name" />
                 } @else {
-                  <span>{{ master.name.charAt(0) }}</span>
+                  <span>{{ master.name.charAt(0).toUpperCase() }}</span>
                 }
               </div>
               <div class="master-info">
-                <p class="master-name">{{ master.name }}</p>
-                <p class="master-spec">{{ master.specialization }}</p>
+                <span class="master-name">{{ master.name }}</span>
+                @if (master.specialization) {
+                  <span class="master-spec">{{ master.specialization }}</span>
+                }
               </div>
-              <div class="master-rating">
-                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                </svg>
-                <span>{{ master.rating }}</span>
-              </div>
+              <svg class="master-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
             </button>
           } @empty {
-            <div class="empty-sm">
+            <div class="empty-list">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
               <p>Мастера не найдены</p>
             </div>
           }
