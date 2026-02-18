@@ -144,6 +144,7 @@ deploy-prod:
       --exclude=.env.prod
       --exclude=.env.dev
       --exclude=celerybeat-schedule
+      --exclude=ssl
       -e ssh ./ ${DEPLOY_SERVER}:${REMOTE_DIR_PROD}/
 
     # 3. Восстанавливаем .env
