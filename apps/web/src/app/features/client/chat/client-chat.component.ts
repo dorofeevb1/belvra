@@ -139,7 +139,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   private loadMessages(chatId: string): void {
-    this.dataService.getMessages(chatId).subscribe(data => {
+    this.dataService.getMessages(chatId).subscribe(({ messages: data }) => {
       this.messages.set(data);
       this.shouldScroll = true;
 
