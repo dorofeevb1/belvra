@@ -1,3 +1,4 @@
+from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, viewsets, status
@@ -142,16 +143,20 @@ class MasterServiceViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("User must have a master profile")
 
         master = self.request.user.master_profile
-        current_count = MasterService.objects.filter(master=master).count()
 
-        # Проверяем лимит услуг по подписке
-        subscription = getattr(master, 'subscription', None)
-        if subscription and not subscription.can_add_service(current_count):
-            raise PermissionDenied(
-                "Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг."
-            )
+        with transaction.atomic():
+            # Lock master row to prevent race conditions with concurrent requests
+            master.__class__.objects.select_for_update().get(pk=master.pk)
+            current_count = MasterService.objects.filter(master=master).count()
 
-        serializer.save(master=master)
+            # Проверяем лимит услуг по подписке
+            subscription = getattr(master, 'subscription', None)
+            if subscription and not subscription.can_add_service(current_count):
+                raise PermissionDenied(
+                    "Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг."
+                )
+
+            serializer.save(master=master)
 
     @extend_schema(
         tags=["Услуги мастеров"],

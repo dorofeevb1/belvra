@@ -69,6 +69,7 @@ interface MaterialInput {
                           min="0.1"
                           step="0.1"
                           class="input input-sm"
+                          (focus)="$any($event.target).select()"
                         />
                       </div>
                       <div class="field-group">
@@ -78,6 +79,7 @@ interface MaterialInput {
                           [(ngModel)]="material.pricePerUnit"
                           min="0"
                           class="input input-sm"
+                          (focus)="$any($event.target).select()"
                         />
                       </div>
                       <div class="field-group">

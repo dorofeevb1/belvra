@@ -303,9 +303,13 @@ export class SettingsComponent implements OnInit, OnDestroy {
   // Service methods
   addService(service?: BeautyService): void {
     // Check limit only for new services (not when loading existing ones)
-    if (!service && !this.subscriptionService.canAddService()) {
-      this.notificationService.warning('Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг.');
-      return;
+    // Use servicesArray.length to account for unsaved services already in the form
+    if (!service) {
+      const limits = this.subscriptionService.limits();
+      if (limits.maxServicesCount !== null && this.servicesArray.length >= limits.maxServicesCount) {
+        this.notificationService.warning('Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг.');
+        return;
+      }
     }
 
     const group = this.fb.group({

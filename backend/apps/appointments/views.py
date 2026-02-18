@@ -292,6 +292,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
+        if appointment.is_past:
+            return Response(
+                {"error": "Нельзя подтвердить запись на прошедшую дату"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         appointment.transition_to(Appointment.Status.CONFIRMED)
         appointment.save()
 
