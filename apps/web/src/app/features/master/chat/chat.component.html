@@ -1,16 +1,17 @@
 <div class="chat-page animate-fadeInUp">
-  <!-- Chat List -->
-  <div class="chat-sidebar card">
+
+  <!-- ===== SIDEBAR ===== -->
+  <div class="chat-sidebar">
     <div class="sidebar-header">
-      <h2 class="sidebar-title">Чаты</h2>
+      <h2 class="sidebar-title">Сообщения</h2>
       <div class="search-box">
-        <svg class="search-icon w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
         </svg>
         <input
           type="text"
           [(ngModel)]="searchQuery"
-          placeholder="Поиск по имени..."
+          placeholder="Поиск..."
           class="search-input"
         />
       </div>
@@ -18,9 +19,15 @@
 
     <div class="chat-list">
       @if (isLoading()) {
-        <div class="loading-sm">
-          <div class="spinner spinner-sm"></div>
-        </div>
+        @for (i of [1,2,3,4]; track i) {
+          <div class="skeleton-item">
+            <div class="skeleton-avatar"></div>
+            <div class="skeleton-content">
+              <div class="skeleton-line skeleton-name"></div>
+              <div class="skeleton-line skeleton-preview"></div>
+            </div>
+          </div>
+        }
       } @else {
         @for (chat of filteredChats(); track chat.id) {
           <button
@@ -29,12 +36,14 @@
             class="chat-item"
             [class.active]="selectedChat()?.id === chat.id"
           >
-            <div class="chat-avatar">
-              @if (chat.clientAvatar) {
-                <img [src]="chat.clientAvatar" [alt]="chat.clientName" />
-              } @else {
-                <span>{{ chat.clientName.charAt(0) }}</span>
-              }
+            <div class="chat-avatar-wrap">
+              <div class="chat-avatar">
+                @if (chat.clientAvatar) {
+                  <img [src]="chat.clientAvatar" [alt]="chat.clientName" />
+                } @else {
+                  <span>{{ chat.clientName.charAt(0).toUpperCase() }}</span>
+                }
+              </div>
             </div>
             <div class="chat-info">
               <div class="chat-row">
@@ -43,38 +52,49 @@
                   <span class="chat-time">{{ chat.lastMessageTime | dateFormat:'relative' }}</span>
                 }
               </div>
-              @if (chat.lastMessage) {
-                <p class="chat-preview">{{ chat.lastMessage }}</p>
-              }
+              <div class="chat-bottom-row">
+                @if (chat.lastMessage) {
+                  <p class="chat-preview">{{ chat.lastMessage }}</p>
+                } @else {
+                  <p class="chat-preview chat-preview--empty">Нет сообщений</p>
+                }
+                @if (chat.unreadCount > 0) {
+                  <span class="chat-unread">{{ chat.unreadCount > 99 ? '99+' : chat.unreadCount }}</span>
+                }
+              </div>
             </div>
-            @if (chat.unreadCount > 0) {
-              <span class="chat-unread">{{ chat.unreadCount }}</span>
-            }
           </button>
         } @empty {
-          <div class="empty-sm">
-            <p>Нет чатов</p>
+          <div class="empty-list">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+            </svg>
+            <p>Чатов пока нет</p>
           </div>
         }
       }
     </div>
   </div>
 
-  <!-- Chat Messages -->
-  <div class="chat-main card">
+  <!-- ===== MAIN ===== -->
+  <div class="chat-main">
     @if (selectedChat()) {
+
       <!-- Header -->
       <div class="chat-header">
         <div class="header-avatar">
           @if (selectedChat()!.clientAvatar) {
             <img [src]="selectedChat()!.clientAvatar" [alt]="selectedChat()!.clientName" />
           } @else {
-            <span>{{ selectedChat()!.clientName.charAt(0) }}</span>
+            <span>{{ selectedChat()!.clientName.charAt(0).toUpperCase() }}</span>
           }
         </div>
         <div class="header-info">
           <p class="header-name">{{ selectedChat()!.clientName }}</p>
-          <p class="header-role">Клиент</p>
+          <p class="header-status">
+            <span class="status-dot"></span>
+            Клиент
+          </p>
         </div>
       </div>
 
@@ -87,6 +107,15 @@
             </div>
           }
           <div class="message" [class.outgoing]="message.senderRole === 'master'">
+            @if (message.senderRole !== 'master') {
+              <div class="msg-avatar">
+                @if (selectedChat()!.clientAvatar) {
+                  <img [src]="selectedChat()!.clientAvatar" [alt]="selectedChat()!.clientName" />
+                } @else {
+                  <span>{{ selectedChat()!.clientName.charAt(0).toUpperCase() }}</span>
+                }
+              </div>
+            }
             <div class="message-bubble" [class.outgoing]="message.senderRole === 'master'">
               @if (message.content) {
                 <p class="message-text">{{ message.content }}</p>
@@ -96,18 +125,33 @@
               }
               @if (message.messageType === 'file' && message.fileUrl) {
                 <a [href]="message.fileUrl" target="_blank" class="message-file">
-                  📄 Скачать файл
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  <span>Скачать файл</span>
                 </a>
               }
               @if (message.messageType === 'audio' && message.fileUrl) {
                 <audio controls [src]="message.fileUrl" class="message-audio"></audio>
               }
-              <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
+              <div class="message-meta">
+                <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
+                @if (message.senderRole === 'master') {
+                  <svg class="read-tick" [class.read]="message.isRead" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                  </svg>
+                }
+              </div>
             </div>
           </div>
         } @empty {
           <div class="empty-messages">
-            <p>Начните диалог</p>
+            <div class="empty-messages-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+              </svg>
+            </div>
+            <p class="empty-messages-text">Начните диалог с клиентом</p>
           </div>
         }
       </div>
@@ -115,10 +159,15 @@
       <!-- AI Suggestions -->
       @if (aiSuggestions().length > 0) {
         <div class="suggestions">
-          <p class="suggestions-label">Быстрые ответы от ИИ:</p>
+          <div class="suggestions-header">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+            </svg>
+            <span>Быстрые ответы</span>
+          </div>
           <div class="suggestions-list">
             @for (suggestion of aiSuggestions(); track suggestion.id) {
-              <button type="button" (click)="useSuggestion(suggestion.text)" class="suggestion-btn">
+              <button type="button" (click)="useSuggestion(suggestion.text)" class="suggestion-chip">
                 {{ suggestion.text }}
               </button>
             }
@@ -129,13 +178,22 @@
       <!-- Input -->
       <div class="chat-input-wrapper">
         @if (selectedFile()) {
-          <div class="file-preview">
+          <div class="file-preview-bar">
             @if (selectedFilePreview()) {
-              <img [src]="selectedFilePreview()" class="preview-image" alt="Превью" />
+              <img [src]="selectedFilePreview()" class="preview-thumb" alt="Превью" />
             } @else {
-              <span class="file-name">📄 {{ selectedFile()!.name }}</span>
+              <div class="file-icon-wrap">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                </svg>
+              </div>
+              <span class="file-preview-name">{{ selectedFile()!.name }}</span>
             }
-            <button type="button" class="remove-file-btn" (click)="removeSelectedFile()">✕</button>
+            <button type="button" class="remove-file-btn" (click)="removeSelectedFile()">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
           </div>
         }
         @if (showEmojiPanel()) {
@@ -155,52 +213,73 @@
           <div class="recording-bar">
             <span class="rec-dot"></span>
             <span class="rec-timer">{{ formatRecordTime(recordingSeconds()) }}</span>
-            <button type="button" (click)="cancelRecording()" class="cancel-rec-btn" title="Отменить">✕</button>
-            <button type="button" (click)="stopRecording()" class="stop-rec-btn">Отправить</button>
+            <div class="rec-wave">
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <button type="button" (click)="cancelRecording()" class="cancel-rec-btn" title="Отменить">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+            <button type="button" (click)="stopRecording()" class="send-rec-btn">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+            </button>
           </div>
         } @else {
           <div class="chat-input">
             <input #fileInput type="file" accept="image/*,.pdf,.doc,.docx,audio/*"
               (change)="onFileSelect($event)" style="display:none" />
-            <button type="button" (click)="fileInput.click()" class="btn-icon attach-btn" title="Прикрепить файл">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path>
+            <button type="button" (click)="fileInput.click()" class="input-action-btn" title="Прикрепить файл">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
               </svg>
             </button>
-            <button type="button" class="emoji-btn" (click)="toggleEmojiPanel()" title="Эмодзи">😊</button>
+            <button type="button" class="input-action-btn" (click)="toggleEmojiPanel()" title="Эмодзи">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </button>
             <input
               type="text"
               [(ngModel)]="newMessage"
               (keyup.enter)="sendMessage()"
               placeholder="Введите сообщение..."
-              class="input message-input"
+              class="message-input"
             />
             @if (newMessage.trim() || selectedFile()) {
-              <button type="button" (click)="sendMessage()" class="btn btn-primary btn-icon send-btn">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+              <button type="button" (click)="sendMessage()" class="send-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
                 </svg>
               </button>
             } @else if (isRecordingSupported) {
-              <button type="button" (click)="startRecording()" class="btn-icon mic-btn" title="Голосовое сообщение">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              <button type="button" (click)="startRecording()" class="input-action-btn" title="Голосовое сообщение">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
                 </svg>
               </button>
             }
           </div>
         }
       </div>
+
     } @else {
+      <!-- Empty state -->
       <div class="empty-chat">
-        <div class="empty-icon">
-          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+        <div class="empty-chat-illustration">
+          <div class="empty-bubble empty-bubble--1"></div>
+          <div class="empty-bubble empty-bubble--2"></div>
+          <div class="empty-bubble empty-bubble--3"></div>
+          <svg class="empty-chat-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
           </svg>
         </div>
-        <h3 class="empty-title">Выберите чат</h3>
-        <p class="empty-desc">Выберите диалог из списка слева</p>
+        <h3 class="empty-chat-title">Выберите диалог</h3>
+        <p class="empty-chat-desc">Откройте чат из списка слева, чтобы начать общение с клиентом</p>
       </div>
     }
   </div>
+
 </div>
