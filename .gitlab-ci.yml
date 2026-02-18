@@ -42,7 +42,7 @@ frontend-build:
   image: node:20-alpine
   before_script:
     - cd apps/web
-    - npm ci --prefer-offline || npm install
+    - npm install
   script:
     - npx ng build --configuration=production
   artifacts:
