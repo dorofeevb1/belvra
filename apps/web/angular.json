@@ -53,7 +53,7 @@
             ],
             "styles": [
               "src/styles.css",
-              "@ctrl/ngx-emoji-mart/picker.css"
+              "@ctrl/ngx-emoji-mart/picker"
             ]
           },
           "configurations": {
