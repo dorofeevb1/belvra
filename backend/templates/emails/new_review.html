@@ -1,32 +1,27 @@
 {% extends "emails/base.html" %}
 {% block title %}Новый отзыв - BeautyBook{% endblock %}
-
 {% block content %}
-<h2>Новый отзыв!</h2>
-
+<h2>Новый отзыв</h2>
 <p>Здравствуйте, {{ master_name }}!</p>
-
-<p>Клиент {{ client_name }} оставил отзыв о вашей работе:</p>
-
-<div class="info-box">
-    <div style="margin-bottom: 10px;">
-        <span class="info-label">Оценка:</span>
-        <span class="rating-stars">
-            {% for i in "12345" %}
-                {% if forloop.counter <= rating %}&#9733;{% else %}&#9734;{% endif %}
-            {% endfor %}
-        </span>
-        <span class="info-value">({{ rating }}/5)</span>
-    </div>
-    {% if comment %}
-    <div>
-        <span class="info-label">Комментарий:</span>
-        <p style="margin-top: 5px; font-style: italic;">"{{ comment }}"</p>
-    </div>
-    {% endif %}
+<p>Клиент <strong>{{ client_name }}</strong> оставил вам отзыв.</p>
+<div class="info-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; width: 120px;">Оценка:</td>
+            <td style="padding: 6px 0; color: #333333;">
+                {% for i in "12345" %}{% if forloop.counter <= rating %}&#9733;{% else %}&#9734;{% endif %}{% endfor %}
+                ({{ rating }}/5)
+            </td>
+        </tr>
+        {% if comment %}
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; vertical-align: top;">Комментарий:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ comment }}</td>
+        </tr>
+        {% endif %}
+    </table>
 </div>
-
-<div style="text-align: center;">
-    <a href="{{ frontend_url }}/master/dashboard" class="btn">Посмотреть статистику</a>
-</div>
+<p style="text-align: center;">
+    <a href="{{ frontend_url }}/master/reviews" class="btn">Посмотреть отзывы</a>
+</p>
 {% endblock %}

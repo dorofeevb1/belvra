@@ -306,16 +306,23 @@ export class BookingCalendarComponent implements OnInit {
       status: 'pending',
       prepaid: isPaid ? this.prepaymentAmount() : 0,
       paymentMethod: isPaid ? this.selectedPaymentMethod() : undefined
-    }).subscribe(() => {
-      this.isSubmitting.set(false);
+    }).subscribe({
+      next: () => {
+        this.isSubmitting.set(false);
 
-      if (isPaid) {
-        this.notificationService.success(`Оплачено ${this.prepaymentAmount()} ₽. Запись отправлена!`);
-      } else {
-        this.notificationService.success('Заявка на запись отправлена!');
+        if (isPaid) {
+          this.notificationService.success(`Оплачено ${this.prepaymentAmount()} ₽. Запись отправлена!`);
+        } else {
+          this.notificationService.success('Заявка на запись отправлена!');
+        }
+
+        this.router.navigate(['/client/my-appointments']);
+      },
+      error: (err) => {
+        this.isSubmitting.set(false);
+        const detail = err.error?.detail || err.error?.non_field_errors?.[0] || 'Не удалось создать запись';
+        this.notificationService.error(typeof detail === 'string' ? detail : 'Не удалось создать запись');
       }
-
-      this.router.navigate(['/client/my-appointments']);
     });
   }
 }

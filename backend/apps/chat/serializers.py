@@ -51,6 +51,13 @@ class ChatMessageCreateSerializer(serializers.Serializer):
     file = serializers.FileField(required=False, allow_null=True)
     reply_to_id = serializers.UUIDField(required=False, allow_null=True)
 
+    def validate(self, data):
+        content = data.get("content", "").strip()
+        file = data.get("file")
+        if not content and not file:
+            raise serializers.ValidationError("Необходимо передать текст или файл")
+        return data
+
 
 class ChatSerializer(serializers.ModelSerializer):
     """Serializer for chat list."""

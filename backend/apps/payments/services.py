@@ -420,12 +420,20 @@ class PaymentService:
         # Create refund in YooKassa
         result = self.yookassa.create_refund(payment, amount, reason)
 
-        # Update wallet
-        wallet = payment.master.wallet
+        # Update wallet (lock row to prevent concurrent refund race condition)
+        try:
+            wallet = Wallet.objects.select_for_update().get(master=payment.master)
+        except Wallet.DoesNotExist:
+            logger.error(f"Wallet not found for master {payment.master.id} during refund of payment {payment.id}")
+            return
+
         refund_amount = Decimal(result["amount"])
 
         # Calculate proportional commission refund
-        commission_refund = (refund_amount / payment.amount) * payment.commission
+        if payment.amount > 0:
+            commission_refund = (refund_amount / payment.amount) * payment.commission
+        else:
+            commission_refund = Decimal("0.00")
         net_refund = refund_amount - commission_refund
 
         # Deduct from wallet
@@ -436,18 +444,21 @@ class PaymentService:
             from_available = wallet.available_balance
             from_pending = net_refund - from_available
             wallet.available_balance = Decimal("0.00")
-            wallet.pending_balance -= from_pending
+            wallet.pending_balance = max(Decimal("0.00"), wallet.pending_balance - from_pending)
 
-        wallet.total_earned -= net_refund
-        wallet.total_commission_paid -= commission_refund
+        wallet.total_earned = max(Decimal("0.00"), wallet.total_earned - net_refund)
+        wallet.total_commission_paid = max(Decimal("0.00"), wallet.total_commission_paid - commission_refund)
         wallet.save()
 
         # Send notification to client about refund
         if payment.client:
+            service_name = ""
+            if hasattr(payment, 'appointment') and payment.appointment:
+                service_name = getattr(payment.appointment, 'service_name', '')
             NotificationService.notify_payment_refunded(
                 client_user=payment.client,
                 amount=str(refund_amount),
-                reason=reason or "Возврат средств"
+                service_name=service_name or "услуга"
             )
 
         logger.info(f"Processed refund for payment {payment.id}, amount: {refund_amount}")

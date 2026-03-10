@@ -116,7 +116,12 @@ class MasterService(BaseModel):
                 fields=["master", "service"],
                 condition=models.Q(service__isnull=False),
                 name="unique_master_catalog_service"
-            )
+            ),
+            models.UniqueConstraint(
+                fields=["master", "custom_name"],
+                condition=models.Q(service__isnull=True, custom_name__gt=""),
+                name="unique_master_custom_service"
+            ),
         ]
 
     def __str__(self):
@@ -145,17 +150,17 @@ class MasterService(BaseModel):
     def actual_price(self):
         if self.price:
             return self.price
-        if self.service:
+        if self.service and self.service.price:
             return self.service.price
-        return 0
+        raise ValidationError("Цена не задана ни для мастера, ни в каталоге")
 
     @property
     def actual_duration(self):
         if self.duration:
             return self.duration
-        if self.service:
+        if self.service and self.service.duration:
             return self.service.duration
-        return 60
+        raise ValidationError("Длительность не задана ни для мастера, ни в каталоге")
 
     @property
     def is_custom(self):

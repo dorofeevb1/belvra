@@ -114,6 +114,7 @@ class ChatMessage(BaseModel):
         indexes = [
             models.Index(fields=["chat", "-created_at"]),
             models.Index(fields=["sender", "-created_at"]),
+            models.Index(fields=["chat", "is_read", "-created_at"]),
         ]
 
     def __str__(self):

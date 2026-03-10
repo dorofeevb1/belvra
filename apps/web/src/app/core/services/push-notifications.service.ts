@@ -32,7 +32,7 @@ export class PushNotificationsService {
 
   async initialize(): Promise<void> {
     if (!Capacitor.isNativePlatform()) {
-      console.log('Push notifications not available on web');
+      // Push notifications are only available on native platforms
       return;
     }
 
@@ -48,7 +48,7 @@ export class PushNotificationsService {
       }
 
       if (!this._hasPermission()) {
-        console.log('Push notification permission not granted');
+        // Permission not granted, cannot register for push notifications
         return;
       }
 
@@ -65,7 +65,7 @@ export class PushNotificationsService {
   private setupListeners(): void {
     // On registration success
     PushNotifications.addListener('registration', async (token: Token) => {
-      console.log('Push registration success, token: ', token.value);
+      // Token received successfully
       this._token.set(token.value);
 
       // Send token to backend
@@ -79,14 +79,13 @@ export class PushNotificationsService {
 
     // On push notification received (app is in foreground)
     PushNotifications.addListener('pushNotificationReceived', (notification: PushNotificationSchema) => {
-      console.log('Push notification received:', notification);
       // Handle foreground notification - show in-app notification
       this.handleForegroundNotification(notification);
     });
 
     // On push notification action performed (user tapped notification)
     PushNotifications.addListener('pushNotificationActionPerformed', (action: ActionPerformed) => {
-      console.log('Push notification action performed:', action);
+      // User tapped on notification, handle navigation
       const data = action.notification.data as PushNotificationData;
       this.handleNotificationTap(data);
     });
@@ -106,9 +105,8 @@ export class PushNotificationsService {
   }
 
   private handleForegroundNotification(notification: PushNotificationSchema): void {
-    // You can show an in-app notification toast here
-    // For now, we'll just log it
-    console.log('Foreground notification:', notification.title, notification.body);
+    // Show in-app notification toast for foreground notifications
+    // Currently a no-op; integrate with a toast/snackbar service as needed
   }
 
   private handleNotificationTap(data: PushNotificationData): void {

@@ -241,6 +241,11 @@ class SubscriptionService:
     @transaction.atomic
     def process_successful_payment(self, payment: SubscriptionPayment, payment_method_id: str = None):
         """Process a successful subscription payment."""
+        # Idempotency: skip if already processed
+        if payment.status == SubscriptionPayment.Status.SUCCEEDED:
+            logger.info(f"Subscription payment {payment.id} already succeeded, skipping")
+            return
+
         payment.status = SubscriptionPayment.Status.SUCCEEDED
         payment.paid_at = timezone.now()
         payment.save()
@@ -272,7 +277,6 @@ class SubscriptionService:
                 notification_type="subscription_activated",
                 title="Подписка активирована",
                 message=f"Ваша подписка {plan.name} успешно активирована до {period_end.strftime('%d.%m.%Y')}",
-                data={"subscription_id": str(subscription.id), "plan_name": plan.name}
             )
         except Exception as e:
             logger.error(f"Error sending subscription notification: {e}")
@@ -308,7 +312,6 @@ class SubscriptionService:
                 notification_type="subscription_cancelled",
                 title="Подписка отменена",
                 message=message,
-                data={"subscription_id": str(subscription.id)}
             )
         except Exception as e:
             logger.error(f"Error sending cancellation notification: {e}")
@@ -524,7 +527,6 @@ class SubscriptionService:
                 notification_type="subscription_expired",
                 title="Подписка истекла",
                 message="Ваша подписка истекла. Продлите подписку для продолжения использования всех функций.",
-                data={"subscription_id": str(subscription.id)}
             )
         except Exception as e:
             logger.error(f"Error sending expiration notification: {e}")
@@ -559,7 +561,6 @@ class SubscriptionService:
                 notification_type="subscription_downgraded",
                 title="Подписка понижена",
                 message="Ваша подписка переведена на бесплатный план.",
-                data={"subscription_id": str(subscription.id)}
             )
         except Exception as e:
             logger.error(f"Error sending downgrade notification: {e}")

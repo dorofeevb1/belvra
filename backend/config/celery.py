@@ -57,8 +57,3 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute="*/1"),  # Every minute
     },
 }
-
-
-@app.task(bind=True, ignore_result=True)
-def debug_task(self):
-    print(f"Request: {self.request!r}")

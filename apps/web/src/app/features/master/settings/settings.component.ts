@@ -2,6 +2,7 @@ import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } from '@angular/forms';
+import { firstValueFrom } from 'rxjs';
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
@@ -375,6 +376,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Validate services form
+    if (!this.servicesForm.valid) {
+      this.servicesForm.markAllAsTouched();
+      this.notificationService.error('Проверьте заполнение полей услуг');
+      this.activeTab.set('services');
+      return;
+    }
+
     this.isSaving.set(true);
 
     // Build work schedule
@@ -519,32 +528,28 @@ export class SettingsComponent implements OnInit, OnDestroy {
         const initialServices = this.initialValues.services || [];
         for (const initial of initialServices) {
           if (initial.id && !initial.id.startsWith('service-') && !currentIds.has(initial.id)) {
-            this.dataService.deleteService(initial.id).subscribe();
+            await firstValueFrom(this.dataService.deleteService(initial.id));
           }
         }
 
-        // Create/update remaining services
-        const services = this.servicesArray.value;
-        for (const service of services) {
+        // Create/update remaining services (await each to get proper IDs)
+        for (let i = 0; i < this.servicesArray.length; i++) {
+          const service = this.servicesArray.at(i).value;
           if (service.id && !service.id.startsWith('service-')) {
             // Update existing service (has real backend ID)
-            this.dataService.updateService(service.id, {
+            await firstValueFrom(this.dataService.updateService(service.id, {
               ...service,
               masterId
-            }).subscribe();
+            }));
           } else {
             // Create new service (custom or from catalog)
-            this.dataService.addService({
+            const newService = await firstValueFrom(this.dataService.addService({
               ...service,
               masterId,
-              serviceId: service.serviceId || undefined // Use catalog service if available
-            }).subscribe(newService => {
-              // Update form with new ID
-              const index = services.indexOf(service);
-              if (index >= 0) {
-                this.servicesArray.at(index).patchValue({ id: newService.id });
-              }
-            });
+              serviceId: service.serviceId || undefined
+            }));
+            // Update form with real backend ID
+            this.servicesArray.at(i).patchValue({ id: newService.id });
           }
         }
       }

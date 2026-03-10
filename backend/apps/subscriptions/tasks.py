@@ -2,10 +2,13 @@
 Celery tasks for subscription management.
 """
 
+import logging
 from datetime import timedelta
 
 from celery import shared_task
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -45,7 +48,7 @@ def check_expiring_subscriptions():
             )
             sent_count += 1
         except Exception as e:
-            print(f"Error sending expiring notification for subscription {subscription.id}: {e}")
+            logger.error(f"Error sending expiring notification for subscription {subscription.id}: {e}")
 
     return f"Sent {sent_count} expiring subscription notifications"
 
@@ -84,7 +87,7 @@ def renew_subscriptions():
             else:
                 failed_count += 1
         except Exception as e:
-            print(f"Error renewing subscription {subscription.id}: {e}")
+            logger.error(f"Error renewing subscription {subscription.id}: {e}")
             failed_count += 1
 
     return f"Renewed {renewed_count} subscriptions, failed: {failed_count}"
@@ -122,7 +125,7 @@ def expire_subscriptions():
             service.expire_subscription(subscription)
             expired_count += 1
         except Exception as e:
-            print(f"Error expiring subscription {subscription.id}: {e}")
+            logger.error(f"Error expiring subscription {subscription.id}: {e}")
 
     return f"Expired {expired_count} subscriptions"
 
@@ -151,7 +154,7 @@ def downgrade_to_free():
             service.downgrade_to_free(subscription)
             downgraded_count += 1
         except Exception as e:
-            print(f"Error downgrading subscription {subscription.id}: {e}")
+            logger.error(f"Error downgrading subscription {subscription.id}: {e}")
 
     return f"Downgraded {downgraded_count} subscriptions to free"
 
@@ -212,6 +215,6 @@ def notify_past_due_subscriptions():
             )
             sent_count += 1
         except Exception as e:
-            print(f"Error sending past due notification for subscription {subscription.id}: {e}")
+            logger.error(f"Error sending past due notification for subscription {subscription.id}: {e}")
 
     return f"Sent {sent_count} past due notifications"

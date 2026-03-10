@@ -212,7 +212,9 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
-CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 25 * 60  # 25 min — graceful shutdown
+CELERY_TASK_TIME_LIMIT = 30 * 60       # 30 min — hard kill
+CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
@@ -261,6 +263,36 @@ CELERY_BEAT_SCHEDULE = {
     "notify-past-due-subscriptions": {
         "task": "apps.subscriptions.tasks.notify_past_due_subscriptions",
         "schedule": crontab(hour=11, minute=0),  # Every day at 11:00
+    },
+    # Payment tasks
+    "release-held-funds": {
+        "task": "apps.payments.tasks.release_held_funds",
+        "schedule": crontab(hour="*/1"),  # Every hour
+    },
+    "process-auto-withdrawals": {
+        "task": "apps.payments.tasks.process_auto_withdrawals",
+        "schedule": crontab(hour=6, minute=30),  # Daily at 6:30
+    },
+    "sync-payment-statuses": {
+        "task": "apps.payments.tasks.sync_payment_statuses",
+        "schedule": crontab(minute="*/10"),  # Every 10 minutes
+    },
+    "cleanup-expired-payments": {
+        "task": "apps.payments.tasks.cleanup_expired_payments",
+        "schedule": crontab(hour="*/2"),  # Every 2 hours
+    },
+    "generate-daily-payment-report": {
+        "task": "apps.payments.tasks.generate_daily_report",
+        "schedule": crontab(hour=1, minute=30),  # Daily at 1:30
+    },
+    # User tasks
+    "cleanup-expired-tokens": {
+        "task": "apps.users.tasks.cleanup_expired_tokens",
+        "schedule": crontab(hour=0, minute=0),  # Daily at midnight
+    },
+    "cleanup-unverified-accounts": {
+        "task": "apps.core.tasks.cleanup_unverified_accounts",
+        "schedule": crontab(hour="*/6"),  # Every 6 hours
     },
     # Todo tasks
     "close-overdue-todos": {

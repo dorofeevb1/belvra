@@ -1,7 +1,11 @@
 from datetime import timedelta
 
+import logging
+
 from celery import shared_task
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 @shared_task
@@ -51,7 +55,7 @@ def send_appointment_reminders():
             )
             sent_count += 1
         except Exception as e:
-            print(f"Error sending reminder for appointment {appointment.id}: {e}")
+            logger.error(f"Error sending reminder for appointment {appointment.id}: {e}")
 
     return f"Sent {sent_count} reminders"
 
@@ -164,6 +168,6 @@ def send_completion_reminder():
             )
             sent_count += 1
         except Exception as e:
-            print(f"Error sending completion reminder for appointment {appointment.id}: {e}")
+            logger.error(f"Error sending completion reminder for appointment {appointment.id}: {e}")
 
     return f"Sent {sent_count} completion reminders"

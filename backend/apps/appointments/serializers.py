@@ -95,6 +95,11 @@ class AppointmentCreateSerializer(serializers.ModelSerializer):
         except MasterProfile.DoesNotExist:
             raise serializers.ValidationError({"master_id": "Мастер не найден"})
 
+        # Prevent booking yourself
+        request = self.context.get("request")
+        if request and hasattr(request.user, "master_profile") and request.user.master_profile == master:
+            raise serializers.ValidationError("Вы не можете записаться к себе")
+
         service_id = attrs["service_id"]
         master_service = None
         service = None

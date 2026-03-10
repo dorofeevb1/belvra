@@ -1,35 +1,31 @@
 {% extends "emails/base.html" %}
 {% block title %}Напоминание о записи - BeautyBook{% endblock %}
-
 {% block content %}
 <h2>Напоминание о записи</h2>
-
 <p>Здравствуйте, {{ client_name }}!</p>
-
-<p>Напоминаем, что через {{ hours_before }} {% if hours_before == 1 %}час{% elif hours_before < 5 %}часа{% else %}часов{% endif %} у вас запланирован визит:</p>
-
-<div class="info-box">
-    <div class="info-row">
-        <span class="info-label">Услуга:</span>
-        <span class="info-value">{{ service_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Мастер:</span>
-        <span class="info-value">{{ master_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Дата:</span>
-        <span class="info-value">{{ date }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Время:</span>
-        <span class="info-value">{{ time }}</span>
-    </div>
+<p>Напоминаем, что завтра у вас запланирована запись:</p>
+<div class="info-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; width: 120px;">Услуга:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ service_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Мастер:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ master_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Дата:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Время:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ time }}</td>
+        </tr>
+    </table>
 </div>
-
-<p>Ждём вас!</p>
-
-<div style="text-align: center;">
-    <a href="{{ frontend_url }}/client/my-appointments" class="btn">Мои записи</a>
-</div>
+<p>Пожалуйста, не опаздывайте. Если вам нужно отменить или перенести запись, сделайте это заранее.</p>
+<p style="text-align: center;">
+    <a href="{{ frontend_url }}/appointments" class="btn">Мои записи</a>
+</p>
 {% endblock %}

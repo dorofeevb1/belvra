@@ -292,10 +292,10 @@ export class MyAppointmentsComponent implements OnInit {
     const remaining = this.getRemainingAmount(apt);
 
     if (type === 'full_payment') {
-      this.paymentAmount.set(remaining);
+      this.paymentAmount.set(apt.price);
     } else if (type === 'prepayment') {
-      // 20% предоплата
-      this.paymentAmount.set(Math.round(remaining * 0.2));
+      // 20% предоплата от полной цены
+      this.paymentAmount.set(Math.round(apt.price * 0.2));
     } else if (type === 'remaining') {
       this.paymentAmount.set(remaining);
     }

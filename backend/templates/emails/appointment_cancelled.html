@@ -1,41 +1,33 @@
 {% extends "emails/base.html" %}
 {% block title %}Запись отменена - BeautyBook{% endblock %}
-
 {% block content %}
 <h2>Запись отменена</h2>
-
 <p>Здравствуйте, {{ recipient_name }}!</p>
-
-<p>К сожалению, следующая запись была отменена:</p>
-
-<div class="info-box">
-    <div class="info-row">
-        <span class="info-label">Услуга:</span>
-        <span class="info-value">{{ service_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Дата:</span>
-        <span class="info-value">{{ date }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Время:</span>
-        <span class="info-value">{{ time }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Отменено:</span>
-        <span class="info-value">{{ cancelled_by }}</span>
-    </div>
-    {% if reason %}
-    <div class="info-row">
-        <span class="info-label">Причина:</span>
-        <span class="info-value">{{ reason }}</span>
-    </div>
-    {% endif %}
+<p>К сожалению, запись была отменена {{ cancelled_by }}.</p>
+<div class="info-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; width: 120px;">Услуга:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ service_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Дата:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Время:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ time }}</td>
+        </tr>
+        {% if reason %}
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Причина:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ reason }}</td>
+        </tr>
+        {% endif %}
+    </table>
 </div>
-
-<p>Если у вас была произведена оплата, средства будут возвращены в течение 3-5 рабочих дней.</p>
-
-<div style="text-align: center;">
-    <a href="{{ frontend_url }}" class="btn">Записаться снова</a>
-</div>
+<p>Вы можете записаться на другое удобное время через приложение.</p>
+<p style="text-align: center;">
+    <a href="{{ frontend_url }}" class="btn">Перейти в приложение</a>
+</p>
 {% endblock %}

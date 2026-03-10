@@ -38,7 +38,7 @@ export const masterGuard: CanActivateFn = () => {
   }
 
   if (!authService.isMaster()) {
-    router.navigate(['/login']);
+    router.navigate(['/client']);
     return false;
   }
 
@@ -62,7 +62,7 @@ export const clientGuard: CanActivateFn = () => {
   }
 
   if (!authService.isClient()) {
-    router.navigate(['/login']);
+    router.navigate(['/master']);
     return false;
   }
 

@@ -41,6 +41,14 @@ class WorkSchedule(BaseModel):
         unique_together = ["master", "weekday"]
         ordering = ["weekday", "start_time"]
 
+    def clean(self):
+        if self.start_time and self.end_time and self.start_time >= self.end_time:
+            raise ValidationError("Время начала должно быть раньше времени окончания")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.master.user.full_name} - {self.get_weekday_display()}"
 
@@ -172,6 +180,7 @@ class Review(BaseModel):
             raise ValidationError("Отзыв можно оставить только для завершённой записи")
 
     def save(self, *args, **kwargs):
+        self.full_clean()
         super().save(*args, **kwargs)
         self._update_master_rating()
 

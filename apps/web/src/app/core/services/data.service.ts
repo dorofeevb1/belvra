@@ -1,10 +1,9 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { Observable, of, delay, map, catchError, forkJoin, switchMap, Subject } from 'rxjs';
 import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
 import {
   Appointment, AppointmentStatus,
-  BeautyService, Master, Client,
+  BeautyService, Master,
   Transaction, TransactionStatus, calculateNetProfit,
   PortfolioItem, Chat, ChatMessage,
   Review, TodoItem, TodoStatus, UsedMaterial,
@@ -17,7 +16,6 @@ import { environment } from '../../../environments/environment';
 })
 export class DataService {
   private api = inject(ApiService);
-  private auth = inject(AuthService);
   private readonly DELAY = 300;
   private readonly MEDIA_BASE_URL = environment.mediaUrl;
 
@@ -159,7 +157,7 @@ export class DataService {
           duration: ms.actual_duration || ms.duration || ms.service?.duration || 60,
           price: parseFloat(ms.actual_price || ms.price || ms.service?.price || 0),
           defaultMaterialsCost: 0,
-          category: 'other' as ServiceCategory,
+          category: (ms.category?.slug || ms.service?.category?.slug || 'other') as ServiceCategory,
           isActive: ms.is_active !== false
         }));
       }),
@@ -253,13 +251,13 @@ export class DataService {
           id: ms.id, // MasterService ID (for update/delete operations)
           masterId: ms.master?.id || '',
           serviceId: ms.service?.id, // Global catalog service ID
-          name: ms.service?.name || '',
-          description: ms.service?.description || '',
-          duration: ms.duration || ms.service?.duration || 60,
-          price: parseFloat(ms.price || ms.service?.price || 0),
+          name: ms.name || ms.service?.name || '',
+          description: ms.description || ms.service?.description || '',
+          duration: ms.actual_duration || ms.duration || ms.service?.duration || 60,
+          price: parseFloat(ms.actual_price || ms.price || ms.service?.price || 0),
           defaultMaterialsCost: 0,
-          category: 'other' as ServiceCategory,
-          isActive: true
+          category: (ms.category?.slug || ms.service?.category?.slug || 'other') as ServiceCategory,
+          isActive: ms.is_active !== false
         }));
       }),
       catchError(() => of(this.getMockServices()))

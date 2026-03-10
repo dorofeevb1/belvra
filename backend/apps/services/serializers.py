@@ -186,6 +186,7 @@ class PortfolioItemCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get("request")
-        if request and hasattr(request.user, "master_profile"):
-            validated_data["master"] = request.user.master_profile
+        if not request or not hasattr(request.user, "master_profile"):
+            raise serializers.ValidationError("Только мастер может добавлять работы в портфолио")
+        validated_data["master"] = request.user.master_profile
         return super().create(validated_data)

@@ -62,11 +62,14 @@ class DeviceTokenSerializer(serializers.ModelSerializer):
         user = self.context["request"].user
         token = validated_data.get("token")
 
-        # Update existing token or create new one
+        # Delete any existing token for OTHER users (device switched accounts)
+        DeviceToken.objects.filter(token=token).exclude(user=user).delete()
+
+        # Update existing token or create new one for this user
         device_token, created = DeviceToken.objects.update_or_create(
             token=token,
+            user=user,
             defaults={
-                "user": user,
                 "platform": validated_data.get("platform", "android"),
                 "device_name": validated_data.get("device_name", ""),
                 "is_active": validated_data.get("is_active", True),

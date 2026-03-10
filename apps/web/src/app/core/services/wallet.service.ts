@@ -310,12 +310,13 @@ export class WalletService {
     return this.api.cancelWithdrawal(withdrawalId).pipe(
       map((response: WithdrawalResponse) => this.mapWithdrawalResponse(response)),
       tap(withdrawal => {
+        // Get original data BEFORE updating list
+        const original = this.withdrawalsData().find(w => w.id === withdrawalId);
         // Update in list
         this.withdrawalsData.update(list =>
           list.map(w => w.id === withdrawalId ? withdrawal : w)
         );
-        // Return funds to available balance
-        const original = this.withdrawalsData().find(w => w.id === withdrawalId);
+        // Return funds to available balance using original amount
         if (original) {
           this.walletData.update(w => w ? {
             ...w,

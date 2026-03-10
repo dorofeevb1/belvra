@@ -378,7 +378,7 @@ export class RescheduleModalComponent implements OnChanges {
   /** Загружает доступные слоты и фильтрует прошедшие, если выбран сегодняшний день */
   private loadSlots(date: string): void {
     const apt = this.appointment();
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!apt || !masterId) return;
 
     this.isLoadingSlots.set(true);

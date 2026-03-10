@@ -121,10 +121,12 @@ export class MasterViewComponent implements OnInit, OnDestroy {
     const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
-    this.dataService.getChats(masterId).subscribe(chats => {
-      const total = chats.reduce((sum, c) => sum + c.unreadCount, 0);
-      const chatItem = this.navItems.find(i => i.route === '/master/chat');
-      if (chatItem) chatItem.badge = total;
-    });
+    this.subs.add(
+      this.dataService.getChats(masterId).subscribe(chats => {
+        const total = chats.reduce((sum, c) => sum + c.unreadCount, 0);
+        const chatItem = this.navItems.find(i => i.route === '/master/chat');
+        if (chatItem) chatItem.badge = total;
+      })
+    );
   }
 }

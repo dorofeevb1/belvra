@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PickerComponent } from '@ctrl/ngx-emoji-mart';
 import { ActivatedRoute } from '@angular/router';
-import { Subject, debounceTime } from 'rxjs';
+import { Subject, debounceTime, takeUntil } from 'rxjs';
 import { AuthService, DataService } from '../../../core/services';
 import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, Master, ReplyPreview } from '../../../core/models';
@@ -99,6 +99,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   // ── Internal
   private shouldScroll = false;
   private chatPollInterval: ReturnType<typeof setInterval> | null = null;
+  private destroy$ = new Subject<void>();
 
   readonly templates = CLIENT_TEMPLATES;
 
@@ -126,19 +127,21 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     this.handleQueryParams();
     this.chatPollInterval = setInterval(() => this.pollChats(), 30000);
 
-    this.messageSearchSubject.pipe(debounceTime(400)).subscribe(q => {
+    this.messageSearchSubject.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(q => {
       this.messageSearchQuery.set(q);
       const chat = this.selectedChat();
       if (chat) this.loadMessages(chat.id, true, q || undefined);
     });
 
-    this.typingSubject.pipe(debounceTime(300)).subscribe(() => {
+    this.typingSubject.pipe(debounceTime(300), takeUntil(this.destroy$)).subscribe(() => {
       const chat = this.selectedChat();
       if (chat) this.dataService.sendTyping(chat.id).subscribe();
     });
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     if (this.chatPollInterval) clearInterval(this.chatPollInterval);
     if (this.typingPollInterval) clearInterval(this.typingPollInterval);
     this.cancelRecording();
@@ -154,7 +157,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   }
 
   private handleQueryParams(): void {
-    this.route.queryParams.subscribe(params => {
+    this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       const masterId = params['masterId'];
       if (masterId) this.openChatWithMaster(masterId);
     });

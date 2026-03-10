@@ -55,7 +55,7 @@ export class FinancesComponent implements OnInit {
   }
 
   private loadData(): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.getTransactions(masterId).subscribe(data => {

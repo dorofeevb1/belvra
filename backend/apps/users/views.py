@@ -475,6 +475,9 @@ class VerifyEmailView(APIView):
         user.save()
         cache.delete(cache_key)
 
+        # Send welcome email after successful verification
+        send_welcome_email_task.delay(str(user.id))
+
         return Response({"detail": "Email успешно подтверждён"})
 
 

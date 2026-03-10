@@ -15,6 +15,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
+from django.db import transaction
+
 from apps.appointments.models import Appointment
 from apps.payments.models import Payment, PayoutDestination, Wallet, Withdrawal
 from apps.payments.serializers import (
@@ -71,13 +73,14 @@ class WalletView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsMaster]
 
     def get_object(self):
-        wallet, created = Wallet.objects.get_or_create(
-            master=self.request.user.master_profile,
-            defaults={
-                "available_balance": Decimal("0.00"),
-                "pending_balance": Decimal("0.00"),
-            }
-        )
+        with transaction.atomic():
+            wallet, created = Wallet.objects.get_or_create(
+                master=self.request.user.master_profile,
+                defaults={
+                    "available_balance": Decimal("0.00"),
+                    "pending_balance": Decimal("0.00"),
+                }
+            )
         return wallet
 
 
@@ -183,6 +186,12 @@ class PaymentViewSet(ModelViewSet):
         """Create a refund for a payment."""
         payment = self.get_object()
 
+        if payment.status not in [Payment.PaymentStatus.SUCCEEDED]:
+            return Response(
+                {"error": "Возврат возможен только для успешно оплаченных платежей"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         serializer = RefundSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -255,7 +264,9 @@ class MasterPaymentListView(generics.ListAPIView):
     filterset_class = PaymentFilter
 
     def get_queryset(self):
-        return Payment.objects.filter(master=self.request.user.master_profile)
+        return Payment.objects.filter(
+            master=self.request.user.master_profile
+        ).select_related("client", "appointment")
 
 
 class PayoutDestinationViewSet(ModelViewSet):
@@ -322,6 +333,16 @@ class PayoutDestinationViewSet(ModelViewSet):
     def set_default(self, request, pk=None):
         """Set destination as default."""
         destination = self.get_object()
+        if destination.master != request.user.master_profile:
+            return Response(
+                {"error": "Нет прав для изменения этого способа выплаты"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        # Unset previous default
+        PayoutDestination.objects.filter(
+            master=request.user.master_profile,
+            is_default=True
+        ).exclude(id=destination.id).update(is_default=False)
         destination.is_default = True
         destination.save()
         return Response(PayoutDestinationSerializer(destination).data)
@@ -361,8 +382,9 @@ class WithdrawalViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        wallet, _ = Wallet.objects.get_or_create(master=request.user.master_profile)
-        destination = PayoutDestination.objects.get(id=data["destination_id"])
+        master = request.user.master_profile
+        wallet, _ = Wallet.objects.get_or_create(master=master)
+        destination = PayoutDestination.objects.get(id=data["destination_id"], master=master)
 
         withdrawal_service = WithdrawalService()
         withdrawal = withdrawal_service.create_withdrawal(
@@ -514,13 +536,15 @@ class YooKassaWebhookView(views.APIView):
         yookassa = YooKassaService()
         signature = request.headers.get("X-YooKassa-Signature", "")
 
-        if settings.YOOKASSA_WEBHOOK_SECRET:
-            if not signature:
-                logger.warning("Missing webhook signature")
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
-            if not yookassa.verify_webhook_signature(request.body, signature):
-                logger.warning("Invalid webhook signature")
-                return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not settings.YOOKASSA_WEBHOOK_SECRET:
+            logger.error("YOOKASSA_WEBHOOK_SECRET is not configured — rejecting webhook")
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        if not signature:
+            logger.warning("Missing webhook signature")
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
+        if not yookassa.verify_webhook_signature(request.body, signature):
+            logger.warning("Invalid webhook signature")
+            return Response(status=status.HTTP_401_UNAUTHORIZED)
 
         # Parse and validate payload
         serializer = WebhookPaymentSerializer(data=request.data)
@@ -563,6 +587,11 @@ class YooKassaWebhookView(views.APIView):
             payment = Payment.objects.get(id=payment_id)
         except Payment.DoesNotExist:
             logger.error(f"Payment {payment_id} not found")
+            return
+
+        # Idempotency: skip if already processed
+        if payment.status == Payment.PaymentStatus.SUCCEEDED:
+            logger.info(f"Payment {payment_id} already succeeded, skipping duplicate webhook")
             return
 
         payment_method = obj.get("payment_method", {}).get("type")

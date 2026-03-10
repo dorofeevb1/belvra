@@ -1,45 +1,41 @@
 {% extends "emails/base.html" %}
 {% block title %}Запись подтверждена - BeautyBook{% endblock %}
-
 {% block content %}
-<h2>Запись подтверждена!</h2>
-
+<h2>Ваша запись подтверждена!</h2>
 <p>Здравствуйте, {{ client_name }}!</p>
-
-<p>Ваша запись успешно подтверждена. Детали:</p>
-
-<div class="info-box">
-    <div class="info-row">
-        <span class="info-label">Услуга:</span>
-        <span class="info-value">{{ service_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Мастер:</span>
-        <span class="info-value">{{ master_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Дата:</span>
-        <span class="info-value">{{ date }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Время:</span>
-        <span class="info-value">{{ time }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Стоимость:</span>
-        <span class="info-value">{{ price }} руб.</span>
-    </div>
-    {% if address %}
-    <div class="info-row">
-        <span class="info-label">Адрес:</span>
-        <span class="info-value">{{ address }}</span>
-    </div>
-    {% endif %}
+<p>Мастер подтвердил вашу запись. Ниже детали:</p>
+<div class="info-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; width: 120px;">Услуга:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ service_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Мастер:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ master_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Дата:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Время:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ time }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Стоимость:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ price }} руб.</td>
+        </tr>
+        {% if address %}
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Адрес:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ address }}</td>
+        </tr>
+        {% endif %}
+    </table>
 </div>
-
-<div style="text-align: center;">
-    <a href="{{ frontend_url }}/client/my-appointments" class="btn">Мои записи</a>
-</div>
-
-<p style="font-size: 14px; color: #6b7280;">Пожалуйста, приходите вовремя. Если вам нужно отменить или перенести запись, сделайте это минимум за 2 часа.</p>
+<p style="text-align: center;">
+    <a href="{{ frontend_url }}/appointments" class="btn">Мои записи</a>
+</p>
+<p style="color: #9ca3af; font-size: 13px;">Для отмены записи перейдите в раздел "Мои записи" в приложении.</p>
 {% endblock %}

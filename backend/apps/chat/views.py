@@ -95,6 +95,14 @@ class ChatViewSet(viewsets.ModelViewSet):
         reply_to_id = serializer.validated_data.get("reply_to_id")
 
         if file:
+            # Validate file size (max 50MB)
+            max_size = 50 * 1024 * 1024
+            if file.size > max_size:
+                return Response(
+                    {"detail": "Файл слишком большой. Максимум 50 МБ"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             if file.content_type and file.content_type.startswith("image/"):
                 message_type = ChatMessage.MessageType.IMAGE
             elif file.content_type and file.content_type.startswith("audio/"):
@@ -159,7 +167,7 @@ class ChatViewSet(viewsets.ModelViewSet):
     def messages(self, request, pk=None):
         """Get messages with pagination and optional search."""
         chat = self.get_object()
-        qs = chat.messages.select_related("sender", "reply_to").order_by("-created_at")
+        qs = chat.messages.select_related("sender", "reply_to", "reply_to__sender").order_by("-created_at")
 
         search = request.query_params.get("search", "").strip()
         if search:

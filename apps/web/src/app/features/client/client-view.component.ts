@@ -1,6 +1,7 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
+import { Subject, takeUntil } from 'rxjs';
 import { HeaderComponent, SidebarComponent, NavItem } from '../../shared/components';
 import { NotificationToastComponent } from '../../shared/components/notification-toast.component';
 import { DataService } from '../../core/services';
@@ -12,8 +13,9 @@ import { DataService } from '../../core/services';
   templateUrl: './client-view.component.html',
   styleUrl: './client-view.component.scss'
 })
-export class ClientViewComponent implements OnInit {
+export class ClientViewComponent implements OnInit, OnDestroy {
   private dataService = inject(DataService);
+  private destroy$ = new Subject<void>();
   sidebarOpen = signal(false);
 
   navItems: NavItem[] = [
@@ -48,8 +50,13 @@ export class ClientViewComponent implements OnInit {
     this.loadUnreadCount();
   }
 
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
   private loadUnreadCount(): void {
-    this.dataService.getAllChats().subscribe(chats => {
+    this.dataService.getAllChats().pipe(takeUntil(this.destroy$)).subscribe(chats => {
       const total = chats.reduce((sum, c) => sum + c.unreadCount, 0);
       const chatItem = this.navItems.find(i => i.route === '/client/chat');
       if (chatItem) chatItem.badge = total;

@@ -144,7 +144,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
 
   private loadData(): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     /** Показываем все активные записи: pending, confirmed, in_progress и completed */
@@ -402,7 +402,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
     if (!slot || !title) return;
 
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.isSavingReminder.set(true);
@@ -491,7 +491,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   saveQuickTodo(): void {
     if (!this.newTodoTitle.trim()) return;
 
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.addTodo({
@@ -603,7 +603,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
 
   onTodoAdded(event: { title: string; status: string }): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
     this.dataService.addTodo({

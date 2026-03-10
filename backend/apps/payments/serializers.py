@@ -333,6 +333,8 @@ class CreateWithdrawalSerializer(serializers.Serializer):
 
     def validate_destination_id(self, value):
         request = self.context.get("request")
+        if not request or not hasattr(request.user, 'master_profile'):
+            raise serializers.ValidationError("Доступно только для мастеров")
         try:
             destination = PayoutDestination.objects.get(
                 id=value,
@@ -348,6 +350,8 @@ class CreateWithdrawalSerializer(serializers.Serializer):
 
     def validate_amount(self, value):
         request = self.context.get("request")
+        if not request or not hasattr(request.user, 'master_profile'):
+            raise serializers.ValidationError("Доступно только для мастеров")
         try:
             wallet = request.user.master_profile.wallet
         except Wallet.DoesNotExist:

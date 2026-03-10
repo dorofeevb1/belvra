@@ -4,6 +4,7 @@ Signals for payment models.
 
 import logging
 
+from django.db import transaction
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -17,7 +18,8 @@ logger = logging.getLogger(__name__)
 def create_master_wallet(sender, instance, created, **kwargs):
     """Create a wallet for new master profiles."""
     if created:
-        Wallet.objects.get_or_create(master=instance)
+        with transaction.atomic():
+            Wallet.objects.get_or_create(master=instance)
         logger.info(f"Created wallet for master {instance.id}")
 
 

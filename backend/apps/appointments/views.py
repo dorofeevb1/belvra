@@ -250,20 +250,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         appointment.cancellation_reason = serializer.validated_data.get("reason", "")
         appointment.save()
 
-        # Determine who cancelled and who should receive the notification
+        # Determine who cancelled
         user = request.user
         is_master = hasattr(user, "master_profile") and appointment.master == user.master_profile
-
-        if is_master:
-            # Master cancelled - notify client
-            recipient_email = appointment.client.email
-            recipient_name = appointment.client.full_name or appointment.client.email
-            cancelled_by = "мастером"
-        else:
-            # Client cancelled - notify master
-            recipient_email = appointment.master.user.email
-            recipient_name = appointment.master.user.full_name or appointment.master.user.email
-            cancelled_by = "клиентом"
+        cancelled_by = "мастером" if is_master else "клиентом"
 
         date_str = appointment.date.strftime("%d.%m.%Y")
         time_str = appointment.start_time.strftime("%H:%M")
@@ -276,9 +266,24 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         else:
             service_name = "Услуга"
 
+        client_email = appointment.client.email
+        client_name = appointment.client.full_name or appointment.client.email
+        master_email = appointment.master.user.email
+        master_name = appointment.master.user.full_name or appointment.master.user.email
+
+        # Send cancellation email to BOTH parties
         send_appointment_cancelled_task.delay(
-            recipient_email=recipient_email,
-            recipient_name=recipient_name,
+            recipient_email=client_email,
+            recipient_name=client_name,
+            service_name=service_name,
+            date=date_str,
+            time=time_str,
+            cancelled_by=cancelled_by,
+            reason=appointment.cancellation_reason
+        )
+        send_appointment_cancelled_task.delay(
+            recipient_email=master_email,
+            recipient_name=master_name,
             service_name=service_name,
             date=date_str,
             time=time_str,

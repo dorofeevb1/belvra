@@ -1,37 +1,35 @@
 {% extends "emails/base.html" %}
 {% block title %}Новая запись - BeautyBook{% endblock %}
-
 {% block content %}
 <h2>Новая запись!</h2>
-
 <p>Здравствуйте, {{ master_name }}!</p>
-
-<p>У вас новая запись от клиента:</p>
-
-<div class="info-box">
-    <div class="info-row">
-        <span class="info-label">Клиент:</span>
-        <span class="info-value">{{ client_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Услуга:</span>
-        <span class="info-value">{{ service_name }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Дата:</span>
-        <span class="info-value">{{ date }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Время:</span>
-        <span class="info-value">{{ time }}</span>
-    </div>
-    <div class="info-row">
-        <span class="info-label">Стоимость:</span>
-        <span class="info-value">{{ price }} руб.</span>
-    </div>
+<p>К вам записался новый клиент. Пожалуйста, подтвердите запись.</p>
+<div class="info-card">
+    <table style="width: 100%; border-collapse: collapse;">
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600; width: 120px;">Клиент:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ client_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Услуга:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ service_name }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Дата:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ date }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Время:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ time }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 6px 0; color: #9d174d; font-weight: 600;">Стоимость:</td>
+            <td style="padding: 6px 0; color: #333333;">{{ price }} руб.</td>
+        </tr>
+    </table>
 </div>
-
-<div style="text-align: center;">
-    <a href="{{ frontend_url }}/master/appointments" class="btn">Посмотреть записи</a>
-</div>
+<p style="text-align: center;">
+    <a href="{{ frontend_url }}/master/appointments" class="btn">Подтвердить запись</a>
+</p>
+<p style="color: #9ca3af; font-size: 13px;">Не забудьте подтвердить или отклонить запись в приложении.</p>
 {% endblock %}
