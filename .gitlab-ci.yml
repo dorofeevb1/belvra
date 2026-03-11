@@ -6,7 +6,7 @@ stages:
 variables:
   REMOTE_DIR_DEV: /opt/beautystyle/dev
   REMOTE_DIR_PROD: /opt/beautystyle/prod
-  DEPLOY_SERVER: root@37.77.104.201
+  DEPLOY_SERVER: root@89.223.126.31
 
 # ============================================================
 # Test Stage — backend and frontend run in parallel
@@ -27,9 +27,13 @@ backend-test:
     REDIS_URL: redis://redis:6379/0
     CELERY_BROKER_URL: redis://redis:6379/1
     CELERY_RESULT_BACKEND: redis://redis:6379/2
+  cache:
+    key: pip-$CI_COMMIT_REF_SLUG
+    paths:
+      - .pip-cache/
   before_script:
     - apt-get update && apt-get install -y libpq-dev gcc
-    - pip install -r backend/requirements.txt
+    - pip install --cache-dir=.pip-cache -r backend/requirements.txt
   script:
     - cd backend
     - python manage.py test --noinput --settings=config.settings.base
@@ -40,6 +44,10 @@ backend-test:
 frontend-build:
   stage: test
   image: node:20-alpine
+  cache:
+    key: npm-$CI_COMMIT_REF_SLUG
+    paths:
+      - apps/web/node_modules/
   before_script:
     - cd apps/web
     - npm install
@@ -63,7 +71,7 @@ frontend-build:
     - mkdir -p ~/.ssh
     - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
     - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan -H 37.77.104.201 >> ~/.ssh/known_hosts 2>/dev/null
+    - ssh-keyscan -H 89.223.126.31 >> ~/.ssh/known_hosts 2>/dev/null
 
 deploy-dev:
   stage: deploy-dev
@@ -115,7 +123,7 @@ deploy-dev:
     - master
   environment:
     name: development
-    url: http://37.77.104.201:8080
+    url: http://89.223.126.31:8080
 
 # ============================================================
 # Deploy Prod — manual, after dev is verified
@@ -172,4 +180,4 @@ deploy-prod:
   when: manual
   environment:
     name: production
-    url: http://37.77.104.201
+    url: http://89.223.126.31

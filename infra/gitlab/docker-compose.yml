@@ -14,23 +14,23 @@ services:
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         # Доступ по IP + порт
-        external_url 'http://37.77.104.201:8929'
+        external_url 'http://89.223.126.31:8929'
         nginx['listen_port'] = 80
         nginx['listen_https'] = false
 
         # SSH на порту 2224
         gitlab_rails['gitlab_shell_ssh_port'] = 2224
 
-        # === Оптимизация для 4 ГБ RAM ===
+        # === Оптимизация для 8 ГБ RAM ===
 
-        # Puma (web server) — минимум воркеров
-        puma['worker_processes'] = 2
-        puma['min_threads'] = 1
-        puma['max_threads'] = 2
+        # Puma (web server)
+        puma['worker_processes'] = 3
+        puma['min_threads'] = 2
+        puma['max_threads'] = 4
 
-        # Sidekiq — снижаем concurrency
-        sidekiq['max_concurrency'] = 5
-        sidekiq['min_concurrency'] = 1
+        # Sidekiq
+        sidekiq['max_concurrency'] = 10
+        sidekiq['min_concurrency'] = 2
 
         # Отключаем мониторинг (экономит ~500 МБ)
         prometheus_monitoring['enable'] = false
@@ -49,14 +49,14 @@ services:
         sentinel['enable'] = false
 
         # PostgreSQL — встроенный, оптимизируем
-        postgresql['shared_buffers'] = "128MB"
-        postgresql['work_mem'] = "8MB"
-        postgresql['maintenance_work_mem'] = "64MB"
-        postgresql['effective_cache_size'] = "256MB"
-        postgresql['max_worker_processes'] = 4
+        postgresql['shared_buffers'] = "256MB"
+        postgresql['work_mem'] = "16MB"
+        postgresql['maintenance_work_mem'] = "128MB"
+        postgresql['effective_cache_size'] = "512MB"
+        postgresql['max_worker_processes'] = 6
 
-        # Redis — ограничиваем память
-        redis['maxmemory'] = "128mb"
+        # Redis
+        redis['maxmemory'] = "256mb"
         redis['maxmemory_policy'] = "allkeys-lru"
 
         # Gitaly — ограничиваем concurrency
@@ -75,7 +75,7 @@ services:
         gitlab_rails['env'] = {
           'MALLOC_ARENA_MAX' => '2',
         }
-    shm_size: '256m'
+    shm_size: '512m'
 
 volumes:
   gitlab_config:

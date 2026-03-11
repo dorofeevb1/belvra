@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-SERVER="root@37.77.104.201"
-GITLAB_URL="http://37.77.104.201:8929"
+SERVER="root@89.223.126.31"
+GITLAB_URL="http://89.223.126.31:8929"
 
 echo "=== GitLab Runner Setup ==="
 echo ""
@@ -30,18 +30,28 @@ docker run -d \
   -v gitlab-runner-config:/etc/gitlab-runner \
   gitlab/gitlab-runner:latest
 
-# Регистрируем runner
+# Регистрируем docker runner
 docker exec gitlab-runner gitlab-runner register \
   --non-interactive \
   --url "${GITLAB_URL}" \
   --token "${RUNNER_TOKEN}" \
   --executor "docker" \
   --docker-image "alpine:3.20" \
+  --docker-privileged \
+  --docker-pull-policy "if-not-present" \
   --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-  --description "beautystyle-runner"
+  --description "beautystyle-docker-runner"
+
+# Регистрируем shell runner (для деплоя через SSH)
+docker exec gitlab-runner gitlab-runner register \
+  --non-interactive \
+  --url "${GITLAB_URL}" \
+  --token "${RUNNER_TOKEN}" \
+  --executor "shell" \
+  --description "beautystyle-shell-runner"
 
 echo ""
-echo "Runner зарегистрирован!"
+echo "Runners зарегистрированы!"
 docker exec gitlab-runner gitlab-runner list
 RUNNER_EOF
 

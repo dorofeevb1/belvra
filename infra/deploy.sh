@@ -4,7 +4,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-SERVER="root@37.77.104.201"
+SERVER="root@89.223.126.31"
 
 # Parse environment argument
 ENV="${1:-dev}"

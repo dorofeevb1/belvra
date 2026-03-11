@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-SERVER="root@37.77.104.201"
-GITLAB_URL="http://37.77.104.201:8929"
+SERVER="root@89.223.126.31"
+GITLAB_URL="http://89.223.126.31:8929"
 
 echo "=== Установка тёмной темы для GitLab ==="
 echo ""

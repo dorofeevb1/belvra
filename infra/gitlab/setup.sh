@@ -2,14 +2,14 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SERVER="root@37.77.104.201"
+SERVER="root@89.223.126.31"
 GITLAB_COMPOSE="${SCRIPT_DIR}/docker-compose.yml"
 REMOTE_DIR="/opt/gitlab"
 
 echo "=== GitLab CE Installation ==="
 echo "Server: ${SERVER}"
-echo "URL:    http://37.77.104.201:8929"
-echo "SSH:    ssh://git@37.77.104.201:2224"
+echo "URL:    http://89.223.126.31:8929"
+echo "SSH:    ssh://git@89.223.126.31:2224"
 echo ""
 
 # 1. Создаём директорию на сервере
@@ -20,12 +20,12 @@ ssh ${SERVER} "mkdir -p ${REMOTE_DIR}"
 echo "[2/5] Копирование конфигурации..."
 scp ${GITLAB_COMPOSE} ${SERVER}:${REMOTE_DIR}/docker-compose.yml
 
-# 3. Настраиваем swap (критично для 4 ГБ RAM)
+# 3. Настраиваем swap (запас для GitLab + Runner)
 echo "[3/5] Настройка swap (если нет)..."
 ssh ${SERVER} 'bash -s' << 'SWAP_EOF'
 if [ ! -f /swapfile ]; then
-    echo "Создаём swap 4 ГБ..."
-    fallocate -l 4G /swapfile
+    echo "Создаём swap 2 ГБ..."
+    fallocate -l 2G /swapfile
     chmod 600 /swapfile
     mkswap /swapfile
     swapon /swapfile
@@ -66,7 +66,7 @@ echo "============================================"
 echo "  GitLab CE установлен!"
 echo "============================================"
 echo ""
-echo "URL:      http://37.77.104.201:8929"
+echo "URL:      http://89.223.126.31:8929"
 echo "Логин:    root"
 
 if docker exec gitlab cat /etc/gitlab/initial_root_password 2>/dev/null | grep -oP 'Password: \K.*'; then
@@ -78,11 +78,11 @@ fi
 
 echo ""
 echo "Получить пароль позже:"
-echo "  ssh root@37.77.104.201 'docker exec gitlab cat /etc/gitlab/initial_root_password'"
+echo "  ssh root@89.223.126.31 'docker exec gitlab cat /etc/gitlab/initial_root_password'"
 echo ""
 echo "ВАЖНО: Смени пароль root в течение 24 часов!"
-echo "Git SSH clone:  ssh://git@37.77.104.201:2224/username/repo.git"
-echo "Git HTTP clone: http://37.77.104.201:8929/username/repo.git"
+echo "Git SSH clone:  ssh://git@89.223.126.31:2224/username/repo.git"
+echo "Git HTTP clone: http://89.223.126.31:8929/username/repo.git"
 echo "============================================"
 WAIT_EOF
 
