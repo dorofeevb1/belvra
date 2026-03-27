@@ -28,15 +28,14 @@ class AppointmentSerializer(serializers.ModelSerializer):
     status_display = serializers.CharField(source="get_status_display", read_only=True)
     can_cancel = serializers.BooleanField(read_only=True)
     service_name = serializers.SerializerMethodField()
-    prepaid = serializers.SerializerMethodField()
-    payment_status = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
         fields = [
             "id", "client", "master", "service", "service_name", "date", "start_time",
             "end_time", "status", "status_display", "price", "notes",
-            "can_cancel", "created_at", "prepaid", "payment_status"
+            "used_materials", "materials_cost",
+            "can_cancel", "created_at"
         ]
 
     def get_service_name(self, obj):
@@ -46,21 +45,6 @@ class AppointmentSerializer(serializers.ModelSerializer):
         if obj.service:
             return obj.service.name
         return None
-
-    def get_prepaid(self, obj):
-        """Get total amount paid for this appointment."""
-        from django.db.models import Sum
-        total = obj.payments.filter(status="succeeded").aggregate(Sum("amount"))["amount__sum"]
-        return float(total) if total else 0
-
-    def get_payment_status(self, obj):
-        """Get payment status: paid, partial, or unpaid."""
-        prepaid = self.get_prepaid(obj)
-        if prepaid >= float(obj.price):
-            return "paid"
-        elif prepaid > 0:
-            return "partial"
-        return "unpaid"
 
 
 class AppointmentCreateSerializer(serializers.ModelSerializer):

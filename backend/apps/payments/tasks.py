@@ -12,7 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.payments.models import Payment, PayoutDestination, Wallet, Withdrawal
-from apps.payments.services import PaymentService, WithdrawalService, YooKassaService
+from apps.payments.services import PaymentService, TBankService, WithdrawalService, YooKassaService
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +41,12 @@ def process_pending_payment(self, payment_id: str):
             logger.info(f"Payment {payment_id} expired")
             return
 
-        # Check status in YooKassa
-        yookassa = YooKassaService()
-        status_data = yookassa.get_payment_status(payment.external_payment_id)
+        # Check status in payment provider
+        if payment.payment_provider == Payment.PaymentProvider.TINKOFF:
+            provider_service = TBankService()
+        else:
+            provider_service = YooKassaService()
+        status_data = provider_service.get_payment_status(payment.external_payment_id)
 
         if status_data["status"] == "succeeded":
             payment_service = PaymentService()
@@ -216,12 +219,16 @@ def sync_payment_statuses():
     )[:100]  # Process in batches
 
     yookassa = YooKassaService()
+    tbank = TBankService()
     payment_service = PaymentService()
     synced_count = 0
 
     for payment in pending_payments:
         try:
-            status_data = yookassa.get_payment_status(payment.external_payment_id)
+            if payment.payment_provider == Payment.PaymentProvider.TINKOFF:
+                status_data = tbank.get_payment_status(payment.external_payment_id)
+            else:
+                status_data = yookassa.get_payment_status(payment.external_payment_id)
 
             if status_data["status"] == "succeeded":
                 payment_service.process_successful_payment(

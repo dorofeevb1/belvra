@@ -1,5 +1,4 @@
 import { UsedMaterial } from './service.model';
-import { PaymentMethodType } from './wallet.model';
 
 export type AppointmentStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'rescheduled' | 'no_show';
 
@@ -20,10 +19,6 @@ export interface Appointment {
   notes?: string;
   usedMaterials?: UsedMaterial[];
   materialsCost?: number;
-  // Payment
-  prepaid?: number;
-  paymentMethod?: PaymentMethodType;
-  paymentStatus?: 'pending' | 'paid' | 'refunded';
   createdAt: Date;
   updatedAt: Date;
 }

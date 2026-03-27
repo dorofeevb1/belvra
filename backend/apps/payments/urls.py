@@ -10,6 +10,7 @@ from apps.payments.views import (
     MasterPaymentListView,
     PaymentViewSet,
     PayoutDestinationViewSet,
+    TBankNotificationView,
     TransactionListView,
     TransactionSummaryView,
     WalletStatsView,
@@ -36,8 +37,9 @@ urlpatterns = [
     path("transactions/", TransactionListView.as_view(), name="transactions"),
     path("transactions/summary/", TransactionSummaryView.as_view(), name="transaction-summary"),
 
-    # Webhook endpoint
+    # Webhook endpoints
     path("webhook/yookassa/", YooKassaWebhookView.as_view(), name="yookassa-webhook"),
+    path("webhook/tbank/", TBankNotificationView.as_view(), name="tbank-webhook"),
 
     # Router URLs
     path("", include(router.urls)),

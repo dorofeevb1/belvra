@@ -47,7 +47,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   private backendSchedules: BackendSchedule[] = [];
 
   // Active tab
-  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'>('profile');
+  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'subscription'>('profile');
 
   // Avatar
   avatarPreview = signal<string>('');
@@ -118,6 +118,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       email: ['', [Validators.required, Validators.email]],
       phone: ['', [Validators.maxLength(20)]], // Phone is optional
       specialization: ['', [Validators.maxLength(100)]],
+      experienceYears: [0, [Validators.min(0), Validators.max(50)]],
+      isAvailable: [true],
       address: ['', [Validators.maxLength(200)]],
       latitude: [null as number | null],
       longitude: [null as number | null],
@@ -190,6 +192,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
       email: master.email,
       phone: master.phone || '',
       specialization: master.specialization,
+      experienceYears: master.experienceYears || 0,
+      isAvailable: master.isAvailable !== false,
       address: master.address,
       latitude: master.coordinates?.lat ?? null,
       longitude: master.coordinates?.lng ?? null,
@@ -349,7 +353,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   // Tab navigation
-  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'): void {
+  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'subscription'): void {
     this.activeTab.set(tab);
   }
 
@@ -471,8 +475,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
         first_name: this.profileForm.get('name')?.value?.split(' ')[0] || '',
         last_name: this.profileForm.get('name')?.value?.split(' ').slice(1).join(' ') || '',
         phone: this.profileForm.get('phone')?.value || '',
-        specialization: this.profileForm.get('specialization')?.value || '',
-        bio: this.profileForm.get('description')?.value || '',
+        specialization_write: this.profileForm.get('specialization')?.value || '',
+        bio_write: this.profileForm.get('description')?.value || '',
+        experience_years: this.profileForm.get('experienceYears')?.value || 0,
+        is_available: this.profileForm.get('isAvailable')?.value ?? true,
         address_write: this.profileForm.get('address')?.value || '',
         latitude_write: this.profileForm.get('latitude')?.value ?? null,
         longitude_write: this.profileForm.get('longitude')?.value ?? null,

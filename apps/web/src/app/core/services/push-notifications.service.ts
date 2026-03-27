@@ -131,7 +131,7 @@ export class PushNotificationsService {
         break;
 
       case 'payment_received':
-        this.router.navigate(['/master/wallet']);
+        this.router.navigate(['/master/finances']);
         break;
 
       default:

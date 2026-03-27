@@ -61,9 +61,6 @@
                       <span class="badge" [class]="getStatusClass(apt.status)">
                         {{ getStatusLabel(apt.status) }}
                       </span>
-                      <span class="badge payment-badge" [class]="getPaymentStatusClass(apt)">
-                        {{ getPaymentStatusLabel(apt) }}
-                      </span>
                     </div>
                   </div>
                   <p class="appointment-date">{{ apt.date | dateFormat:'full' }} в {{ apt.startTime }}</p>
@@ -71,23 +68,8 @@
                 <div class="appointment-actions">
                   <div class="price-section">
                     <p class="appointment-price">{{ apt.price | currencyRub }}</p>
-                    @if (apt.prepaid && apt.prepaid > 0 && apt.paymentStatus !== 'paid') {
-                      <p class="remaining-amount">К оплате: {{ getRemainingAmount(apt) | currencyRub }}</p>
-                    }
                   </div>
                   <div class="action-buttons">
-                    @if (canPay(apt)) {
-                      <button
-                        type="button"
-                        (click)="openPaymentModal(apt)"
-                        class="btn btn-primary btn-sm pay-btn"
-                      >
-                        <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
-                        Оплатить
-                      </button>
-                    }
                     @if (apt.status === 'pending' || apt.status === 'confirmed') {
                       <button
                         type="button"
@@ -127,11 +109,6 @@
                       <span class="badge" [class]="getStatusClass(apt.status)">
                         {{ getStatusLabel(apt.status) }}
                       </span>
-                      @if (apt.paymentStatus) {
-                        <span class="badge payment-badge" [class]="getPaymentStatusClass(apt)">
-                          {{ getPaymentStatusLabel(apt) }}
-                        </span>
-                      }
                     </div>
                   </div>
                   <p class="appointment-date">{{ apt.date | dateFormat:'full' }}@if (apt.startTime) { в {{ apt.startTime }}}</p>
@@ -154,222 +131,6 @@
         </div>
       }
     }
-  }
-
-  <!-- Payment Modal -->
-  @if (showPaymentModal()) {
-    <div class="modal-overlay" (click)="closePaymentModal()">
-      <div class="modal-content card payment-modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h2 class="modal-title">Оплата услуги</h2>
-          <button type="button" class="modal-close" (click)="closePaymentModal()">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-
-        @if (paymentAppointment(); as apt) {
-          <div class="modal-body">
-            <!-- Appointment Info -->
-            <div class="payment-appointment-info">
-              <h3 class="payment-service-name">{{ apt.serviceName }}</h3>
-              <p class="payment-date">{{ apt.date | dateFormat:'full' }} в {{ apt.startTime }}</p>
-              <p class="payment-total">Стоимость услуги: <strong>{{ apt.price | currencyRub }}</strong></p>
-              @if (apt.prepaid && apt.prepaid > 0) {
-                <p class="payment-prepaid">Уже оплачено: {{ apt.prepaid | currencyRub }}</p>
-              }
-            </div>
-
-            <!-- Cash Payment Only Notice -->
-            <div class="cash-payment-notice">
-              <div class="cash-payment-icon">
-                <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                </svg>
-              </div>
-              <h3 class="cash-payment-title">Оплата наличными</h3>
-              <p class="cash-payment-desc">
-                На данный момент доступна только оплата наличными при посещении мастера.
-              </p>
-              <p class="cash-payment-desc">
-                Онлайн-оплата временно недоступна.
-              </p>
-            </div>
-
-            <!-- Payment Summary -->
-            <div class="payment-summary">
-              <div class="payment-summary-row">
-                <span>К оплате при визите:</span>
-                <span class="payment-summary-amount">{{ apt.price | currencyRub }}</span>
-              </div>
-            </div>
-
-            <!-- COMMENTED OUT: Online Payment Options
-            @if (!paymentUrl()) {
-              // Payment Type Selection
-              @if (!apt.prepaid || apt.prepaid === 0) {
-                <div class="form-group">
-                  <label class="form-label">Тип оплаты</label>
-                  <div class="payment-types">
-                    <label class="payment-type-option">
-                      <input
-                        type="radio"
-                        name="paymentType"
-                        value="full_payment"
-                        [checked]="paymentType() === 'full_payment'"
-                        (change)="paymentType.set('full_payment'); onPaymentTypeChange()"
-                      >
-                      <div class="payment-type-content">
-                        <span class="payment-type-title">Полная оплата</span>
-                        <span class="payment-type-amount">{{ apt.price | currencyRub }}</span>
-                      </div>
-                    </label>
-                    <label class="payment-type-option">
-                      <input
-                        type="radio"
-                        name="paymentType"
-                        value="prepayment"
-                        [checked]="paymentType() === 'prepayment'"
-                        (change)="paymentType.set('prepayment'); onPaymentTypeChange()"
-                      >
-                      <div class="payment-type-content">
-                        <span class="payment-type-title">Предоплата 20%</span>
-                        <span class="payment-type-amount">{{ formatMoney(apt.price * 0.2) }}</span>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-              }
-
-              // Payment Method Selection
-              <div class="form-group">
-                <label class="form-label">Способ оплаты</label>
-                <div class="payment-methods-select">
-                  <label class="payment-method-option" [class.selected]="paymentMethod() === 'bank_card'">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="bank_card"
-                      [checked]="paymentMethod() === 'bank_card'"
-                      (change)="paymentMethod.set('bank_card')"
-                    >
-                    <div class="payment-method-content">
-                      <svg class="payment-method-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                      </svg>
-                      <span class="payment-method-label">Банковская карта</span>
-                    </div>
-                  </label>
-                  <label class="payment-method-option" [class.selected]="paymentMethod() === 'sbp'">
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="sbp"
-                      [checked]="paymentMethod() === 'sbp'"
-                      (change)="paymentMethod.set('sbp')"
-                    >
-                    <div class="payment-method-content">
-                      <svg class="payment-method-icon sbp-icon" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/>
-                        <path d="M8 12l2 2 4-4" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-                      </svg>
-                      <span class="payment-method-label">СБП</span>
-                      <span class="payment-method-badge">Быстро</span>
-                    </div>
-                  </label>
-                </div>
-              </div>
-
-              // Payment Summary
-              <div class="payment-summary">
-                <div class="payment-summary-row">
-                  <span>К оплате:</span>
-                  <span class="payment-summary-amount">{{ paymentAmount() | currencyRub }}</span>
-                </div>
-              </div>
-            } @else {
-              // Payment Created - Show Link
-              <div class="payment-created">
-                <div class="payment-created-icon">
-                  <svg class="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                  </svg>
-                </div>
-                <h3 class="payment-created-title">Платёж создан!</h3>
-                <p class="payment-created-desc">
-                  Нажмите кнопку ниже, чтобы перейти на страницу оплаты
-                </p>
-              </div>
-            }
-            END COMMENTED OUT -->
-          </div>
-
-          <div class="modal-footer">
-            <button
-              type="button"
-              (click)="closePaymentModal()"
-              class="btn btn-secondary"
-            >
-              Закрыть
-            </button>
-            <button
-              type="button"
-              (click)="closePaymentModal()"
-              class="btn btn-primary"
-            >
-              <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Понятно
-            </button>
-
-            <!-- COMMENTED OUT: Online Payment Buttons
-            @if (!paymentUrl()) {
-              <button
-                type="button"
-                (click)="closePaymentModal()"
-                class="btn btn-secondary"
-              >
-                Отмена
-              </button>
-              <button
-                type="button"
-                (click)="processPayment()"
-                [disabled]="isProcessingPayment() || paymentAmount() <= 0"
-                class="btn btn-primary"
-              >
-                @if (isProcessingPayment()) {
-                  <span class="spinner spinner-sm"></span>
-                  Создание платежа...
-                } @else {
-                  Перейти к оплате
-                }
-              </button>
-            } @else {
-              <button
-                type="button"
-                (click)="closePaymentModal()"
-                class="btn btn-secondary"
-              >
-                Закрыть
-              </button>
-              <button
-                type="button"
-                (click)="goToPayment()"
-                class="btn btn-primary"
-              >
-                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
-                </svg>
-                Оплатить {{ paymentAmount() | currencyRub }}
-              </button>
-            }
-            END COMMENTED OUT -->
-          </div>
-        }
-      </div>
-    </div>
   }
 
   <!-- Review Modal -->

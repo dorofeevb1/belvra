@@ -18,7 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = env.str("DJANGO_SECRET_KEY", default="change-me-in-production")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
-CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost", "http://127.0.0.1", "http://37.77.104.201", "http://37.77.104.201:8080"])
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost", "http://127.0.0.1", "http://89.223.126.31", "http://89.223.126.31:8080"])
 
 # Application definition
 DJANGO_APPS = [
@@ -321,6 +321,16 @@ YOOKASSA_SHOP_ID = env.str("YOOKASSA_SHOP_ID", default="")
 YOOKASSA_SECRET_KEY = env.str("YOOKASSA_SECRET_KEY", default="")
 YOOKASSA_WEBHOOK_SECRET = env.str("YOOKASSA_WEBHOOK_SECRET", default="")
 YOOKASSA_SEND_RECEIPT = env.bool("YOOKASSA_SEND_RECEIPT", default=False)
+
+# T-Bank (Tinkoff) Payment Settings
+TBANK_TERMINAL_KEY = env.str("TBANK_TERMINAL_KEY", default="1774615155386DEMO")
+TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="cAk9hZfCjw6b3gqu")
+TBANK_SEND_RECEIPT = env.bool("TBANK_SEND_RECEIPT", default=False)
+TBANK_TAXATION = env.str("TBANK_TAXATION", default="usn_income")  # Система налогообложения
+TBANK_API_URL = env.str("TBANK_API_URL", default="https://securepay.tinkoff.ru/v2/")
+
+# Active payment provider: "yookassa" or "tinkoff"
+PAYMENT_PROVIDER = env.str("PAYMENT_PROVIDER", default="tinkoff")
 
 # Payment Settings
 PAYMENT_RETURN_URL = env.str("PAYMENT_RETURN_URL", default="http://localhost:4200/payment/success")

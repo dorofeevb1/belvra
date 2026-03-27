@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, delay, map, catchError, forkJoin, switchMap, Subject } from 'rxjs';
+import { Observable, of, delay, map, catchError, throwError, forkJoin, switchMap, Subject } from 'rxjs';
 import { ApiService } from './api.service';
 import {
   Appointment, AppointmentStatus,
@@ -71,6 +71,8 @@ export class DataService {
       description: backendMaster.bio || '',
       address: backendMaster.address || '',
       coordinates,
+      experienceYears: backendMaster.experience_years || 0,
+      isAvailable: backendMaster.is_available !== false,
       rating: parseFloat(backendMaster.rating) || 0,
       reviewsCount: backendMaster.reviews_count || 0,
       workSchedule: {
@@ -111,10 +113,10 @@ export class DataService {
       price: parseFloat(backendApt.price),
       status: statusMap[backendApt.status] || 'pending',
       notes: backendApt.notes || '',
+      usedMaterials: backendApt.used_materials || [],
+      materialsCost: parseFloat(backendApt.materials_cost) || 0,
       createdAt: new Date(backendApt.created_at),
       updatedAt: new Date(backendApt.updated_at || backendApt.created_at),
-      prepaid: backendApt.prepaid || 0,
-      paymentStatus: backendApt.payment_status === 'paid' ? 'paid' : (backendApt.payment_status === 'partial' ? 'pending' : undefined)
     };
   }
 
@@ -140,7 +142,7 @@ export class DataService {
         const results = response.results || response;
         return results.map((s: any) => this.mapBackendService(s));
       }),
-      catchError(() => of(this.getMockServices()))
+      catchError(() => throwError(() => new Error('Не удалось загрузить услуги')))
     );
   }
 
@@ -161,7 +163,7 @@ export class DataService {
           isActive: ms.is_active !== false
         }));
       }),
-      catchError(() => of(this.getMockServices().filter(s => s.masterId === masterId)))
+      catchError(() => throwError(() => new Error('Не удалось загрузить услуги мастера')))
     );
   }
 
@@ -193,11 +195,7 @@ export class DataService {
         category: (service.category || 'other') as ServiceCategory,
         isActive: response.is_active ?? true
       })),
-      catchError((err) => {
-        console.error('Error creating service:', err);
-        const newService = { ...service, id: `service-${Date.now()}` };
-        return of(newService);
-      })
+      catchError(() => throwError(() => new Error('Не удалось создать услугу')))
     );
   }
 
@@ -228,10 +226,7 @@ export class DataService {
         category: (updates.category || 'other') as ServiceCategory,
         isActive: response.is_active ?? true
       })),
-      catchError((err) => {
-        console.error('Error updating service:', err);
-        return of({ id, ...updates } as BeautyService);
-      })
+      catchError(() => throwError(() => new Error('Не удалось обновить услугу')))
     );
   }
 
@@ -260,7 +255,7 @@ export class DataService {
           isActive: ms.is_active !== false
         }));
       }),
-      catchError(() => of(this.getMockServices()))
+      catchError(() => throwError(() => new Error('Не удалось загрузить ваши услуги')))
     );
   }
 
@@ -285,7 +280,7 @@ export class DataService {
           .filter((apt: any) => apt.client?.id === clientId || apt.client === clientId)
           .map((apt: any) => this.mapBackendAppointment(apt));
       }),
-      catchError(() => of(this.getMockAppointments().filter(a => a.clientId === clientId)))
+      catchError(() => throwError(() => new Error('Не удалось загрузить записи')))
     );
   }
 
@@ -327,21 +322,18 @@ export class DataService {
       start_time: newStartTime
     }).pipe(
       map((response: any) => this.mapBackendAppointment(response)),
-      catchError(() => of({
-        id,
-        date: newDate,
-        startTime: newStartTime,
-        status: 'pending' as AppointmentStatus
-      } as Appointment))
+      catchError(() => throwError(() => new Error('Не удалось перенести запись')))
     );
   }
 
   updateAppointmentMaterials(id: string, materials: UsedMaterial[], totalCost: number): Observable<Appointment> {
-    return of({
-      id,
-      usedMaterials: materials,
-      materialsCost: totalCost
-    } as Appointment).pipe(delay(this.DELAY));
+    return this.api.updateAppointmentMaterials(id, {
+      materials: materials.map(m => ({ name: m.name, quantity: m.quantity, cost: m.totalCost })),
+      materials_cost: totalCost
+    }).pipe(
+      map((response: any) => this.mapBackendAppointment(response)),
+      catchError(() => throwError(() => new Error('Не удалось обновить материалы')))
+    );
   }
 
   createAppointment(appointment: Omit<Appointment, 'id' | 'createdAt' | 'updatedAt'>): Observable<Appointment> {
@@ -352,16 +344,7 @@ export class DataService {
       start_time: appointment.startTime,
       notes: appointment.notes
     }).pipe(
-      map((response: any) => this.mapBackendAppointment(response)),
-      catchError(() => {
-        const newAppointment: Appointment = {
-          ...appointment,
-          id: `apt-${Date.now()}`,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-        return of(newAppointment);
-      })
+      map((response: any) => this.mapBackendAppointment(response))
     );
   }
 
@@ -372,7 +355,7 @@ export class DataService {
     return this.getServices(masterId).pipe(
       map(services => services[0]?.id || ''),
       switchMap(serviceId => {
-        if (!serviceId) return of(this.generateMockSlots(duration));
+        if (!serviceId) return throwError(() => new Error('Нет услуг для получения слотов'));
         return this.api.getAvailableSlots(masterId, serviceId, date).pipe(
           map((response: any) => {
             const slots = response?.slots || response || [];
@@ -381,12 +364,12 @@ export class DataService {
                 typeof s === 'string' ? s : s.start_time?.slice(0, 5) || s
               );
             }
-            return this.generateMockSlots(duration);
+            return [];
           }),
-          catchError(() => of(this.generateMockSlots(duration)))
+          catchError(() => throwError(() => new Error('Не удалось загрузить доступные слоты')))
         );
       }),
-      catchError(() => of(this.generateMockSlots(duration)))
+      catchError(err => throwError(() => err))
     );
   }
 
@@ -396,20 +379,8 @@ export class DataService {
         const slots = response?.slots || [];
         return slots.map((s: any) => s.start_time?.slice(0, 5) || s);
       }),
-      catchError(() => of(this.generateMockSlots(60)))
+      catchError(() => throwError(() => new Error('Не удалось загрузить доступные слоты')))
     );
-  }
-
-  private generateMockSlots(duration: number): string[] {
-    const slots: string[] = [];
-    for (let hour = 9; hour < 20; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        if (hour + duration / 60 <= 20) {
-          slots.push(`${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`);
-        }
-      }
-    }
-    return slots;
   }
 
   // ==================== REVIEWS (from backend) ====================
@@ -420,7 +391,7 @@ export class DataService {
         const results = response.results || response;
         return (Array.isArray(results) ? results : []).map((r: any) => this.mapBackendReview(r));
       }),
-      catchError(() => of(this.getMockReviews().filter(r => r.masterId === masterId)))
+      catchError(() => throwError(() => new Error('Не удалось загрузить отзывы')))
     );
   }
 
@@ -437,7 +408,7 @@ export class DataService {
   updateReview(id: string, data: { rating?: number; comment?: string }): Observable<Review> {
     return this.api.updateReview(id, data).pipe(
       map((response: any) => this.mapBackendReview(response)),
-      catchError(() => of({ id, ...data } as Review))
+      catchError(() => throwError(() => new Error('Не удалось обновить отзыв')))
     );
   }
 
@@ -455,14 +426,7 @@ export class DataService {
       comment: review.comment
     }).pipe(
       map((response: any) => this.mapBackendReview(response)),
-      catchError(() => {
-        const newReview: Review = {
-          ...review,
-          id: `review-${Date.now()}`,
-          createdAt: new Date()
-        };
-        return of(newReview);
-      })
+      catchError(() => throwError(() => new Error('Не удалось отправить отзыв')))
     );
   }
 
@@ -474,14 +438,14 @@ export class DataService {
         const results = response.results || response;
         return results.map((m: any) => this.mapBackendMaster(m));
       }),
-      catchError(() => of(this.getMockMasters()))
+      catchError(() => throwError(() => new Error('Не удалось загрузить мастеров')))
     );
   }
 
   getMasterById(id: string): Observable<Master | undefined> {
     return this.api.getMasterById(id).pipe(
       map((response: any) => this.mapBackendMaster(response)),
-      catchError(() => of(this.getMockMasters().find(m => m.id === id)))
+      catchError(() => throwError(() => new Error('Не удалось загрузить профиль мастера')))
     );
   }
 
@@ -608,12 +572,7 @@ export class DataService {
 
     return this.api.createPortfolioItem(formData).pipe(
       map((response: any) => this.mapBackendPortfolioItem(response)),
-      catchError(() => of({
-        ...item,
-        id: `portfolio-${Date.now()}`,
-        createdAt: new Date(),
-        likes: 0
-      } as PortfolioItem))
+      catchError(() => throwError(() => new Error('Не удалось добавить работу в портфолио')))
     );
   }
 
@@ -630,7 +589,7 @@ export class DataService {
 
     return this.api.updatePortfolioItem(id, formData).pipe(
       map((response: any) => this.mapBackendPortfolioItem(response)),
-      catchError(() => of({ id, ...updates } as PortfolioItem))
+      catchError(() => throwError(() => new Error('Не удалось обновить работу')))
     );
   }
 
@@ -708,13 +667,7 @@ export class DataService {
   getChatWithMaster(masterId: string): Observable<Chat> {
     return this.api.getChatWithMaster(masterId).pipe(
       map((chat: any) => this.mapBackendChat(chat)),
-      catchError(() => of({
-        id: '',
-        masterId,
-        clientId: '',
-        clientName: '',
-        unreadCount: 0
-      } as Chat))
+      catchError(() => throwError(() => new Error('Не удалось загрузить чат')))
     );
   }
 
@@ -732,12 +685,7 @@ export class DataService {
   sendMessage(message: Omit<ChatMessage, 'id' | 'timestamp' | 'isRead'>, file?: File, replyToId?: string): Observable<ChatMessage> {
     return this.api.sendMessage(message.chatId, message.content, file, replyToId).pipe(
       map((response: any) => this.mapBackendMessage(response)),
-      catchError(() => of({
-        ...message,
-        id: `msg-${Date.now()}`,
-        timestamp: new Date(),
-        isRead: false
-      } as ChatMessage))
+      catchError(() => throwError(() => new Error('Не удалось отправить сообщение')))
     );
   }
 
@@ -818,12 +766,7 @@ export class DataService {
       priority: todo.priority
     }).pipe(
       map((response: any) => this.mapBackendTodo(response)),
-      catchError(() => of({
-        ...todo,
-        id: `todo-${Date.now()}`,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      } as TodoItem))
+      catchError(() => throwError(() => new Error('Не удалось создать задачу')))
     );
   }
 
@@ -888,7 +831,7 @@ export class DataService {
           a => a.date >= today && (a.status === 'confirmed' || a.status === 'pending')
         ).length;
 
-        const completedAppointments = appointments.filter(a => a.status === 'completed' && a.paymentStatus === 'paid');
+        const completedAppointments = appointments.filter(a => a.status === 'completed');
         const totalProfit = completedAppointments.reduce((sum, a) => {
           const { netProfit } = calculateNetProfit(a.price, a.materialsCost || 0);
           return sum + netProfit;
@@ -955,99 +898,4 @@ export class DataService {
     return date.toISOString().split('T')[0];
   }
 
-  // ==================== MOCK DATA FALLBACKS ====================
-
-  private getMockServices(): BeautyService[] {
-    return [
-      {
-        id: 'service-1',
-        masterId: 'master-1',
-        name: 'Классический маникюр',
-        description: 'Обработка кутикулы, придание формы ногтям',
-        duration: 60,
-        price: 1500,
-        defaultMaterialsCost: 200,
-        category: 'manicure',
-        isActive: true
-      },
-      {
-        id: 'service-2',
-        masterId: 'master-1',
-        name: 'Маникюр с гель-лаком',
-        description: 'Маникюр с покрытием гель-лаком',
-        duration: 90,
-        price: 2500,
-        defaultMaterialsCost: 400,
-        category: 'manicure',
-        isActive: true
-      }
-    ];
-  }
-
-  private getMockAppointments(): Appointment[] {
-    return [
-      {
-        id: 'apt-1',
-        masterId: 'master-1',
-        clientId: 'client-1',
-        serviceId: 'service-2',
-        serviceName: 'Маникюр с гель-лаком',
-        clientName: 'Мария Иванова',
-        clientPhone: '+7 (999) 987-65-43',
-        date: this.getDateString(0),
-        startTime: '10:00',
-        endTime: '11:30',
-        duration: 90,
-        price: 2500,
-        status: 'confirmed',
-        createdAt: new Date(),
-        updatedAt: new Date()
-      }
-    ];
-  }
-
-  private getMockReviews(): Review[] {
-    return [
-      {
-        id: 'review-1',
-        masterId: 'master-1',
-        clientId: 'client-1',
-        clientName: 'Мария Иванова',
-        appointmentId: 'apt-1',
-        rating: 5,
-        comment: 'Отличный мастер!',
-        createdAt: new Date()
-      }
-    ];
-  }
-
-  private getMockMasters(): Master[] {
-    return [
-      {
-        id: 'master-1',
-        email: 'master@beautybook.ru',
-        name: 'Анна Петрова',
-        role: 'master',
-        phone: '+7 (999) 123-45-67',
-        avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-        specialization: 'Мастер маникюра',
-        description: 'Профессиональный мастер маникюра',
-        address: 'Москва',
-        coordinates: { lat: 55.764019, lng: 37.606738 },
-        rating: 4.8,
-        reviewsCount: 156,
-        workSchedule: {
-          monday: { start: '09:00', end: '18:00' },
-          tuesday: { start: '09:00', end: '18:00' },
-          wednesday: { start: '09:00', end: '18:00' },
-          thursday: { start: '09:00', end: '18:00' },
-          friday: { start: '09:00', end: '18:00' },
-          saturday: { start: '10:00', end: '16:00' },
-          sunday: null
-        },
-        services: [],
-        createdAt: new Date('2023-01-15')
-      }
-    ];
-  }
 }

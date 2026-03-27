@@ -1,5 +1,5 @@
 """
-Payment services for YooKassa integration.
+Payment services for YooKassa and T-Bank integration.
 """
 
 import hashlib
@@ -10,6 +10,7 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Optional
 
+import requests as http_requests
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
@@ -212,7 +213,7 @@ class YooKassaService:
         """
         try:
             refund_amount = amount or payment.amount
-            idempotency_key = f"refund-{payment.id}-{uuid.uuid4()}"
+            idempotency_key = f"refund-{payment.id}"
 
             refund_data = {
                 "payment_id": payment.external_payment_id,
@@ -269,11 +270,308 @@ class YooKassaService:
         return hmac.compare_digest(expected_signature, signature)
 
 
+class TBankService:
+    """Service for T-Bank (Tinkoff) e-acquiring payment processing."""
+
+    def __init__(self):
+        self.terminal_key = settings.TBANK_TERMINAL_KEY
+        self.password = settings.TBANK_PASSWORD
+        self.api_url = getattr(settings, "TBANK_API_URL", "https://securepay.tinkoff.ru/v2/")
+        self.test_mode = not self.terminal_key or not self.password
+
+    def _generate_token(self, params: dict) -> str:
+        """
+        Generate Token for T-Bank API request.
+
+        Algorithm:
+        1. Collect all root-level scalar params (exclude nested objects/arrays).
+        2. Add Password.
+        3. Sort alphabetically by key.
+        4. Concatenate values only.
+        5. SHA-256 hash.
+        """
+        token_params = {}
+        for key, value in params.items():
+            if key == "Token":
+                continue
+            # Only include scalar values (str, int, float, bool), skip dicts/lists
+            if isinstance(value, (dict, list)):
+                continue
+            token_params[key] = str(value)
+
+        token_params["Password"] = self.password
+
+        # Sort by key and concatenate values
+        sorted_keys = sorted(token_params.keys())
+        values_string = "".join(token_params[key] for key in sorted_keys)
+
+        return hashlib.sha256(values_string.encode("utf-8")).hexdigest()
+
+    def _request(self, method: str, params: dict) -> dict:
+        """Make a request to T-Bank API."""
+        params["TerminalKey"] = self.terminal_key
+        params["Token"] = self._generate_token(params)
+
+        url = f"{self.api_url}{method}"
+        response = http_requests.post(url, json=params, timeout=30)
+        response.raise_for_status()
+
+        data = response.json()
+        if not data.get("Success", False):
+            error_code = data.get("ErrorCode", "unknown")
+            error_msg = data.get("Message", "") or data.get("Details", "")
+            raise Exception(f"T-Bank API error {error_code}: {error_msg}")
+
+        return data
+
+    def create_payment(
+        self,
+        payment: Payment,
+        return_url: str,
+        description: Optional[str] = None,
+        save_payment_method: bool = False,
+        payment_method: Optional[str] = None,
+    ) -> dict:
+        """
+        Create a payment via T-Bank Init endpoint.
+
+        Returns:
+            dict with payment_id and confirmation_url
+        """
+        try:
+            if self.test_mode:
+                mock_payment_id = f"tbank_test_{uuid.uuid4().hex[:12]}"
+                separator = "&" if "?" in return_url else "?"
+                mock_url = f"{return_url}{separator}test_payment={mock_payment_id}&payment_id={payment.id}"
+
+                payment.external_payment_id = mock_payment_id
+                payment.confirmation_url = mock_url
+                payment.status = Payment.PaymentStatus.PENDING
+                payment.payment_metadata = {
+                    "test_mode": True,
+                    "provider": "tbank",
+                    "created_at": str(timezone.now()),
+                }
+                payment.save()
+
+                logger.info(f"Created TEST T-Bank payment {mock_payment_id} for payment {payment.id}")
+                return {
+                    "payment_id": mock_payment_id,
+                    "confirmation_url": mock_url,
+                    "status": "pending",
+                    "test_mode": True,
+                }
+
+            # Amount in kopecks (integer)
+            amount_kopecks = int(payment.amount * 100)
+
+            params = {
+                "Amount": amount_kopecks,
+                "OrderId": str(payment.id),
+                "Description": (description or f"Оплата услуги #{payment.appointment_id}")[:140],
+                "SuccessURL": return_url,
+                "FailURL": return_url,
+                "DATA": {
+                    "payment_id": str(payment.id),
+                    "appointment_id": str(payment.appointment_id) if payment.appointment_id else "",
+                    "client_id": str(payment.client_id),
+                    "master_id": str(payment.master_id),
+                },
+            }
+
+            if save_payment_method:
+                params["Recurrent"] = "Y"
+                params["CustomerKey"] = str(payment.client_id)
+
+            # Add receipt for FZ-54 compliance
+            if getattr(settings, "TBANK_SEND_RECEIPT", False):
+                params["Receipt"] = self._create_receipt(payment)
+
+            data = self._request("Init", params)
+
+            payment.external_payment_id = str(data["PaymentId"])
+            payment.confirmation_url = data["PaymentURL"]
+            payment.status = Payment.PaymentStatus.PENDING
+            payment.payment_metadata = {
+                "provider": "tbank",
+                "tbank_status": data.get("Status"),
+                "created_at": str(timezone.now()),
+            }
+            payment.save()
+
+            logger.info(f"Created T-Bank payment {data['PaymentId']} for payment {payment.id}")
+
+            return {
+                "payment_id": str(data["PaymentId"]),
+                "confirmation_url": data["PaymentURL"],
+                "status": data.get("Status", "NEW"),
+            }
+
+        except Exception as e:
+            logger.error(f"Error creating T-Bank payment: {e}")
+            payment.status = Payment.PaymentStatus.FAILED
+            payment.payment_metadata["error"] = str(e)
+            payment.save()
+            raise
+
+    def _create_receipt(self, payment: Payment) -> dict:
+        """Create receipt for FZ-54 compliance (T-Bank format)."""
+        if payment.appointment:
+            if payment.appointment.master_service:
+                service_name = payment.appointment.master_service.name
+            elif payment.appointment.service:
+                service_name = payment.appointment.service.name
+            else:
+                service_name = "Услуга салона красоты"
+        else:
+            service_name = "Услуга салона красоты"
+
+        amount_kopecks = int(payment.amount * 100)
+        taxation = getattr(settings, "TBANK_TAXATION", "usn_income")
+
+        receipt = {
+            "Taxation": taxation,
+            "Items": [
+                {
+                    "Name": service_name[:128],
+                    "Price": amount_kopecks,
+                    "Quantity": 1.0,
+                    "Amount": amount_kopecks,
+                    "Tax": "none",
+                    "PaymentMethod": "full_payment",
+                    "PaymentObject": "service",
+                }
+            ],
+        }
+
+        if payment.client and payment.client.email:
+            receipt["Email"] = payment.client.email
+        if payment.client and hasattr(payment.client, "phone") and payment.client.phone:
+            receipt["Phone"] = payment.client.phone
+
+        return receipt
+
+    def get_payment_status(self, external_payment_id: str) -> dict:
+        """Get payment status from T-Bank via GetState."""
+        try:
+            data = self._request("GetState", {"PaymentId": external_payment_id})
+
+            # Map T-Bank statuses to our format
+            status_map = {
+                "NEW": "pending",
+                "AUTHORIZED": "waiting_for_capture",
+                "CONFIRMED": "succeeded",
+                "REJECTED": "canceled",
+                "REVERSED": "canceled",
+                "PARTIAL_REVERSED": "partially_refunded",
+                "REFUNDED": "refunded",
+                "PARTIAL_REFUNDED": "partially_refunded",
+                "DEADLINE_EXPIRED": "canceled",
+            }
+
+            return {
+                "id": str(data.get("PaymentId")),
+                "status": status_map.get(data.get("Status"), data.get("Status")),
+                "tbank_status": data.get("Status"),
+                "amount": str(Decimal(data.get("Amount", 0)) / 100),
+                "payment_method": "bank_card",
+            }
+        except Exception as e:
+            logger.error(f"Error getting T-Bank payment status: {e}")
+            raise
+
+    def create_refund(
+        self,
+        payment: Payment,
+        amount: Optional[Decimal] = None,
+        description: Optional[str] = None,
+    ) -> dict:
+        """
+        Create a refund via T-Bank Cancel endpoint.
+
+        Works for both reversal (AUTHORIZED) and refund (CONFIRMED).
+        """
+        try:
+            refund_amount = amount or payment.amount
+            amount_kopecks = int(refund_amount * 100)
+
+            params = {
+                "PaymentId": payment.external_payment_id,
+                "Amount": amount_kopecks,
+            }
+
+            if getattr(settings, "TBANK_SEND_RECEIPT", False):
+                params["Receipt"] = self._create_receipt(payment)
+
+            data = self._request("Cancel", params)
+
+            payment.refunded_amount += refund_amount
+            payment.refunded_at = timezone.now()
+
+            if payment.refunded_amount >= payment.amount:
+                payment.status = Payment.PaymentStatus.REFUNDED
+            else:
+                payment.status = Payment.PaymentStatus.PARTIALLY_REFUNDED
+
+            payment.payment_metadata["refund_status"] = data.get("Status")
+            payment.save()
+
+            logger.info(f"Created T-Bank refund for payment {payment.id}, amount: {refund_amount}")
+
+            return {
+                "refund_id": str(data.get("PaymentId")),
+                "status": data.get("Status"),
+                "amount": str(refund_amount),
+            }
+
+        except Exception as e:
+            logger.error(f"Error creating T-Bank refund: {e}")
+            raise
+
+    def verify_notification_token(self, params: dict) -> bool:
+        """
+        Verify T-Bank notification token.
+
+        Same algorithm as _generate_token but applied to notification params.
+        """
+        received_token = params.get("Token", "")
+        if not received_token:
+            return False
+
+        # Build params without Token and nested objects
+        check_params = {}
+        for key, value in params.items():
+            if key == "Token":
+                continue
+            if isinstance(value, (dict, list)):
+                continue
+            check_params[key] = str(value)
+
+        check_params["Password"] = self.password
+
+        sorted_keys = sorted(check_params.keys())
+        values_string = "".join(check_params[key] for key in sorted_keys)
+        expected_token = hashlib.sha256(values_string.encode("utf-8")).hexdigest()
+
+        return hmac.compare_digest(expected_token, received_token)
+
+
 class PaymentService:
     """High-level payment service."""
 
     def __init__(self):
         self.yookassa = YooKassaService()
+        self.tbank = TBankService()
+
+    def _get_provider(self) -> str:
+        """Get the active payment provider from settings."""
+        return getattr(settings, "PAYMENT_PROVIDER", "tinkoff")
+
+    def _get_provider_service(self, provider: str):
+        """Get the payment service for the given provider."""
+        if provider == "tinkoff":
+            return self.tbank
+        return self.yookassa
 
     @transaction.atomic
     def create_appointment_payment(
@@ -287,15 +585,7 @@ class PaymentService:
         """
         Create a payment for an appointment.
 
-        Args:
-            appointment: Appointment instance
-            payment_type: Type of payment (prepayment, full, etc.)
-            amount: Payment amount (uses appointment price if not specified)
-            return_url: URL to redirect after payment
-            payment_method: Preferred payment method ('sbp', 'bank_card', etc.)
-
-        Returns:
-            Payment instance
+        Routes to the active payment provider (T-Bank or YooKassa).
         """
         # Calculate amount
         if amount is None:
@@ -313,6 +603,13 @@ class PaymentService:
         else:
             service_name = "Услуга"
 
+        # Determine provider
+        provider = self._get_provider()
+        if provider == "tinkoff":
+            payment_provider = Payment.PaymentProvider.TINKOFF
+        else:
+            payment_provider = Payment.PaymentProvider.YOOKASSA
+
         # Create payment record
         payment = Payment.objects.create(
             appointment=appointment,
@@ -320,15 +617,16 @@ class PaymentService:
             master=appointment.master,
             payment_type=payment_type,
             amount=amount,
-            payment_provider=Payment.PaymentProvider.YOOKASSA,
+            payment_provider=payment_provider,
             description=f"Оплата услуги: {service_name}"
         )
 
-        # Create payment in YooKassa
+        # Create payment in provider
         if return_url is None:
             return_url = settings.PAYMENT_RETURN_URL
 
-        result = self.yookassa.create_payment(
+        provider_service = self._get_provider_service(provider)
+        result = provider_service.create_payment(
             payment=payment,
             return_url=return_url,
             description=f"Оплата услуги: {service_name}",
@@ -417,8 +715,11 @@ class PaymentService:
         if payment.status not in [Payment.PaymentStatus.SUCCEEDED, Payment.PaymentStatus.PARTIALLY_REFUNDED]:
             raise ValueError("Cannot refund payment that is not succeeded")
 
-        # Create refund in YooKassa
-        result = self.yookassa.create_refund(payment, amount, reason)
+        # Create refund via appropriate provider
+        if payment.payment_provider == Payment.PaymentProvider.TINKOFF:
+            result = self.tbank.create_refund(payment, amount, reason)
+        else:
+            result = self.yookassa.create_refund(payment, amount, reason)
 
         # Update wallet (lock row to prevent concurrent refund race condition)
         try:

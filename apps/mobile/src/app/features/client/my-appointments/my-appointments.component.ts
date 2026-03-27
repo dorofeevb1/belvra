@@ -2,11 +2,10 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { AuthService, DataService, NotificationService, WalletService } from '../../../core/services';
-import { Appointment, APPOINTMENT_STATUS_LABELS, PaymentType } from '../../../core/models';
+import { AuthService, DataService, NotificationService } from '../../../core/services';
+import { Appointment, APPOINTMENT_STATUS_LABELS } from '../../../core/models';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
-import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-my-appointments',
@@ -19,7 +18,6 @@ export class MyAppointmentsComponent implements OnInit {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private notificationService = inject(NotificationService);
-  private walletService = inject(WalletService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
@@ -34,15 +32,6 @@ export class MyAppointmentsComponent implements OnInit {
   reviewRating = signal(0);
   reviewComment = '';
 
-  // Payment modal
-  showPaymentModal = signal(false);
-  paymentAppointment = signal<Appointment | null>(null);
-  paymentType = signal<PaymentType>('full_payment');
-  paymentMethod = signal<'bank_card' | 'sbp'>('bank_card');
-  paymentAmount = signal(0);
-  isProcessingPayment = signal(false);
-  paymentUrl = signal<string | null>(null);
-
   upcomingAppointments = computed(() => {
     const today = new Date().toISOString().split('T')[0];
     return this.appointments()
@@ -54,11 +43,8 @@ export class MyAppointmentsComponent implements OnInit {
     const today = new Date().toISOString().split('T')[0];
     return this.appointments()
       .filter(a => {
-        // Cancelled always go to past
         if (a.status === 'cancelled') return true;
-        // Completed today stays in past but we display correctly
         if (a.status === 'completed') return true;
-        // Past dates go to past
         if (a.date < today) return true;
         return false;
       })
@@ -67,52 +53,7 @@ export class MyAppointmentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadData();
-    // COMMENTED OUT: Online payment handling
-    // this.handlePaymentReturn();
   }
-
-  /* COMMENTED OUT: Online payment return handling
-  private handlePaymentReturn(): void {
-    this.route.queryParams.subscribe(params => {
-      const paymentStatus = params['payment'];
-      const testPayment = params['test_payment'];
-      const paymentId = params['payment_id'];
-
-      if (paymentStatus === 'success' && testPayment && paymentId) {
-        // Confirm test payment
-        this.walletService.confirmTestPayment(paymentId).subscribe({
-          next: () => {
-            this.notificationService.success('Платёж подтверждён!');
-            this.loadData();
-            // Clear query params
-            this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: {},
-              replaceUrl: true
-            });
-          },
-          error: () => {
-            this.notificationService.error('Ошибка подтверждения платежа');
-            this.router.navigate([], {
-              relativeTo: this.route,
-              queryParams: {},
-              replaceUrl: true
-            });
-          }
-        });
-      } else if (paymentStatus === 'success') {
-        this.notificationService.success('Платёж обрабатывается');
-        this.loadData();
-        // Clear query params
-        this.router.navigate([], {
-          relativeTo: this.route,
-          queryParams: {},
-          replaceUrl: true
-        });
-      }
-    });
-  }
-  */
 
   private loadData(): void {
     const clientId = this.authService.clientData()?.id;
@@ -136,32 +77,6 @@ export class MyAppointmentsComponent implements OnInit {
       cancelled: 'badge-error'
     };
     return classes[status] || 'badge-info';
-  }
-
-  getPaymentStatusLabel(apt: Appointment): string {
-    if (apt.paymentStatus === 'paid') return 'Оплачено';
-    if (apt.paymentStatus === 'refunded') return 'Возврат';
-    if (apt.prepaid && apt.prepaid > 0) return `Предоплата ${apt.prepaid} ₽`;
-    return 'Не оплачено';
-  }
-
-  getPaymentStatusClass(apt: Appointment): string {
-    if (apt.paymentStatus === 'paid') return 'payment-paid';
-    if (apt.paymentStatus === 'refunded') return 'payment-refunded';
-    if (apt.prepaid && apt.prepaid > 0) return 'payment-partial';
-    return 'payment-pending';
-  }
-
-  canPay(apt: Appointment): boolean {
-    return (
-      (apt.status === 'pending' || apt.status === 'confirmed') &&
-      apt.paymentStatus !== 'paid'
-    );
-  }
-
-  getRemainingAmount(apt: Appointment): number {
-    const prepaid = apt.prepaid || 0;
-    return apt.price - prepaid;
   }
 
   hasReview(appointmentId: string): boolean {
@@ -212,94 +127,6 @@ export class MyAppointmentsComponent implements OnInit {
       }
     });
   }
-
-  // ========== Payment Modal ==========
-
-  openPaymentModal(apt: Appointment): void {
-    this.paymentAppointment.set(apt);
-    this.paymentUrl.set(null);
-    this.paymentMethod.set('bank_card');
-
-    const remaining = this.getRemainingAmount(apt);
-
-    // Если уже была предоплата, показываем доплату
-    if (apt.prepaid && apt.prepaid > 0) {
-      this.paymentType.set('remaining');
-      this.paymentAmount.set(remaining);
-    } else {
-      // Иначе предлагаем полную оплату по умолчанию
-      this.paymentType.set('full_payment');
-      this.paymentAmount.set(apt.price);
-    }
-
-    this.showPaymentModal.set(true);
-  }
-
-  closePaymentModal(): void {
-    this.showPaymentModal.set(false);
-    this.paymentAppointment.set(null);
-    this.paymentUrl.set(null);
-  }
-
-  onPaymentTypeChange(): void {
-    const apt = this.paymentAppointment();
-    if (!apt) return;
-
-    const type = this.paymentType();
-    const remaining = this.getRemainingAmount(apt);
-
-    if (type === 'full_payment') {
-      this.paymentAmount.set(remaining);
-    } else if (type === 'prepayment') {
-      // 20% предоплата
-      this.paymentAmount.set(Math.round(remaining * 0.2));
-    } else if (type === 'remaining') {
-      this.paymentAmount.set(remaining);
-    }
-  }
-
-  /* COMMENTED OUT: Online payment processing
-  processPayment(): void {
-    const apt = this.paymentAppointment();
-    if (!apt || this.paymentAmount() <= 0) return;
-
-    this.isProcessingPayment.set(true);
-
-    const returnUrl = `${window.location.origin}/client/my-appointments?payment=success&appointment=${apt.id}`;
-
-    this.walletService.createPayment(
-      apt.id,
-      this.paymentType(),
-      this.paymentAmount(),
-      returnUrl,
-      this.paymentMethod()
-    ).subscribe({
-      next: (payment) => {
-        this.isProcessingPayment.set(false);
-
-        if (payment.confirmationUrl) {
-          this.paymentUrl.set(payment.confirmationUrl);
-          this.notificationService.success('Платёж создан! Перейдите по ссылке для оплаты.');
-        } else {
-          this.notificationService.info('Платёж создан, ожидает обработки');
-          this.closePaymentModal();
-        }
-      },
-      error: (err) => {
-        this.isProcessingPayment.set(false);
-        this.notificationService.error(err.error?.detail || 'Ошибка создания платежа');
-      }
-    });
-  }
-
-  goToPayment(): void {
-    const url = this.paymentUrl();
-    if (url) {
-      window.open(url, '_blank');
-      this.closePaymentModal();
-    }
-  }
-  */
 
   formatMoney(amount: number): string {
     return new Intl.NumberFormat('ru-RU', {

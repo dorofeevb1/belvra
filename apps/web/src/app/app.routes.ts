@@ -70,10 +70,6 @@ export const routes: Routes = [
         loadComponent: () => import('./features/master/finances/finances.component').then(m => m.FinancesComponent)
       },
       {
-        path: 'wallet',
-        loadComponent: () => import('./features/master/wallet/wallet.component').then(m => m.WalletComponent)
-      },
-      {
         path: 'settings',
         loadComponent: () => import('./features/master/settings/settings.component').then(m => m.SettingsComponent)
       },

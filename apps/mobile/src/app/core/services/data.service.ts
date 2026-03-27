@@ -110,8 +110,6 @@ export class DataService {
       notes: backendApt.notes || '',
       createdAt: new Date(backendApt.created_at),
       updatedAt: new Date(backendApt.updated_at || backendApt.created_at),
-      prepaid: backendApt.prepaid || 0,
-      paymentStatus: backendApt.payment_status === 'paid' ? 'paid' : (backendApt.payment_status === 'partial' ? 'pending' : undefined)
     };
   }
 

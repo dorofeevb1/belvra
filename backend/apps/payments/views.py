@@ -31,7 +31,7 @@ from apps.payments.serializers import (
     WebhookPaymentSerializer,
     WithdrawalSerializer,
 )
-from apps.payments.services import PaymentService, WithdrawalService, YooKassaService
+from apps.payments.services import PaymentService, TBankService, WithdrawalService, YooKassaService
 
 logger = logging.getLogger(__name__)
 
@@ -141,10 +141,18 @@ class PaymentViewSet(ModelViewSet):
 
         # Master sees their received payments
         if hasattr(user, "master_profile"):
-            return Payment.objects.filter(master=user.master_profile)
+            return Payment.objects.filter(
+                master=user.master_profile
+            ).select_related(
+                "client", "master__user", "appointment__service", "appointment__master_service"
+            )
 
         # Client sees their made payments
-        return Payment.objects.filter(client=user)
+        return Payment.objects.filter(
+            client=user
+        ).select_related(
+            "client", "master__user", "appointment__service", "appointment__master_service"
+        )
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -154,59 +162,23 @@ class PaymentViewSet(ModelViewSet):
         return PaymentSerializer
 
     def create(self, request, *args, **kwargs):
-        """Create a new payment."""
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        data = serializer.validated_data
-        try:
-            appointment = Appointment.objects.get(id=data["appointment_id"])
-        except Appointment.DoesNotExist:
-            return Response(
-                {"detail": "Запись не найдена."},
-                status=status.HTTP_404_NOT_FOUND
-            )
-
-        payment_service = PaymentService()
-        payment = payment_service.create_appointment_payment(
-            appointment=appointment,
-            payment_type=data.get("payment_type", Payment.PaymentType.FULL_PAYMENT),
-            amount=data.get("amount"),
-            return_url=data.get("return_url", settings.PAYMENT_RETURN_URL),
-            payment_method=data.get("payment_method"),
-        )
-
+        """Disabled — оплата услуг через сайт не поддерживается."""
         return Response(
-            PaymentSerializer(payment).data,
-            status=status.HTTP_201_CREATED
+            {"error": "Оплата услуг через сайт отключена. Оплата производится напрямую между клиентом и мастером."},
+            status=status.HTTP_403_FORBIDDEN
         )
 
     @action(detail=True, methods=["post"])
     def refund(self, request, pk=None):
-        """Create a refund for a payment."""
-        payment = self.get_object()
-
-        if payment.status not in [Payment.PaymentStatus.SUCCEEDED]:
-            return Response(
-                {"error": "Возврат возможен только для успешно оплаченных платежей"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = RefundSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        payment_service = PaymentService()
-        payment_service.process_refund(
-            payment=payment,
-            amount=serializer.validated_data.get("amount"),
-            reason=serializer.validated_data.get("reason", ""),
+        """Disabled — возвраты через сайт не поддерживаются."""
+        return Response(
+            {"error": "Возвраты через сайт отключены."},
+            status=status.HTTP_403_FORBIDDEN
         )
 
-        return Response(PaymentSerializer(payment).data)
-
     @action(detail=True, methods=["get"])
-    def status(self, request, pk=None):
-        """Get payment status from YooKassa."""
+    def get_status(self, request, pk=None):
+        """Get payment status from payment provider."""
         payment = self.get_object()
 
         if not payment.external_payment_id:
@@ -215,9 +187,12 @@ class PaymentViewSet(ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        yookassa = YooKassaService()
-        payment_status = yookassa.get_payment_status(payment.external_payment_id)
+        if payment.payment_provider == Payment.PaymentProvider.TINKOFF:
+            service = TBankService()
+        else:
+            service = YooKassaService()
 
+        payment_status = service.get_payment_status(payment.external_payment_id)
         return Response(payment_status)
 
     @action(detail=True, methods=["post"], url_path="confirm-test")
@@ -667,3 +642,121 @@ class YooKassaWebhookView(views.APIView):
             logger.info(f"Canceled withdrawal {withdrawal_id}")
         except Withdrawal.DoesNotExist:
             logger.error(f"Withdrawal {withdrawal_id} not found")
+
+
+class TBankNotificationView(views.APIView):
+    """
+    Webhook handler for T-Bank payment notifications.
+
+    T-Bank sends POST with form/JSON data and expects HTTP 200 with body "OK".
+    """
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    def post(self, request):
+        """Handle T-Bank notification."""
+        data = request.data
+        tbank = TBankService()
+
+        # Verify token signature
+        if not tbank.test_mode and not tbank.verify_notification_token(data):
+            logger.warning("Invalid T-Bank notification token")
+            return Response("INVALID TOKEN", status=status.HTTP_401_UNAUTHORIZED)
+
+        order_id = data.get("OrderId")
+        tbank_status = data.get("Status")
+        payment_id_tbank = str(data.get("PaymentId", ""))
+
+        logger.info(f"T-Bank notification: OrderId={order_id}, Status={tbank_status}, PaymentId={payment_id_tbank}")
+
+        if not order_id:
+            logger.warning("T-Bank notification missing OrderId")
+            return Response("OK", status=status.HTTP_200_OK)
+
+        try:
+            payment = Payment.objects.get(id=order_id)
+        except Payment.DoesNotExist:
+            logger.error(f"Payment with OrderId={order_id} not found")
+            return Response("OK", status=status.HTTP_200_OK)
+
+        # Update external payment ID if not set
+        if payment_id_tbank and not payment.external_payment_id:
+            payment.external_payment_id = payment_id_tbank
+            payment.save(update_fields=["external_payment_id"])
+
+        try:
+            if tbank_status == "CONFIRMED":
+                self._handle_confirmed(payment, data)
+            elif tbank_status == "AUTHORIZED":
+                self._handle_authorized(payment, data)
+            elif tbank_status in ("REJECTED", "DEADLINE_EXPIRED"):
+                self._handle_rejected(payment, tbank_status)
+            elif tbank_status == "REVERSED":
+                self._handle_reversed(payment)
+            elif tbank_status in ("REFUNDED", "PARTIAL_REFUNDED"):
+                self._handle_refunded(payment, data, tbank_status)
+        except Exception as e:
+            logger.error(f"Error processing T-Bank notification: {e}")
+
+        # T-Bank requires response body "OK"
+        return Response("OK", status=status.HTTP_200_OK)
+
+    def _handle_confirmed(self, payment: Payment, data: dict):
+        """Handle CONFIRMED status — payment completed."""
+        if payment.status == Payment.PaymentStatus.SUCCEEDED:
+            logger.info(f"Payment {payment.id} already succeeded, skipping")
+            return
+
+        payment_method = "bank_card"
+        if data.get("Pan"):
+            payment.payment_metadata["card_pan"] = data["Pan"]
+        if data.get("CardId"):
+            payment.payment_metadata["card_id"] = str(data["CardId"])
+        payment.save(update_fields=["payment_metadata"])
+
+        payment_service = PaymentService()
+        payment_service.process_successful_payment(payment, payment_method)
+        logger.info(f"T-Bank: confirmed payment {payment.id}")
+
+    def _handle_authorized(self, payment: Payment, data: dict):
+        """Handle AUTHORIZED status — funds held (two-stage)."""
+        payment.status = Payment.PaymentStatus.PROCESSING
+        payment.payment_metadata["tbank_status"] = "AUTHORIZED"
+        if data.get("Pan"):
+            payment.payment_metadata["card_pan"] = data["Pan"]
+        payment.save()
+        logger.info(f"T-Bank: authorized payment {payment.id}")
+
+    def _handle_rejected(self, payment: Payment, tbank_status: str):
+        """Handle REJECTED or DEADLINE_EXPIRED."""
+        if payment.status in (Payment.PaymentStatus.SUCCEEDED, Payment.PaymentStatus.REFUNDED):
+            return
+        payment.status = Payment.PaymentStatus.FAILED
+        payment.payment_metadata["tbank_status"] = tbank_status
+        payment.save()
+        logger.info(f"T-Bank: rejected payment {payment.id}, status={tbank_status}")
+
+    def _handle_reversed(self, payment: Payment):
+        """Handle REVERSED — full cancellation of authorized payment."""
+        payment.status = Payment.PaymentStatus.CANCELLED
+        payment.payment_metadata["tbank_status"] = "REVERSED"
+        payment.save()
+        logger.info(f"T-Bank: reversed payment {payment.id}")
+
+    def _handle_refunded(self, payment: Payment, data: dict, tbank_status: str):
+        """Handle REFUNDED or PARTIAL_REFUNDED."""
+        amount_kopecks = data.get("Amount", 0)
+        refund_amount = Decimal(str(amount_kopecks)) / 100
+
+        payment.refunded_amount = refund_amount
+        payment.refunded_at = timezone.now()
+
+        if tbank_status == "REFUNDED":
+            payment.status = Payment.PaymentStatus.REFUNDED
+        else:
+            payment.status = Payment.PaymentStatus.PARTIALLY_REFUNDED
+
+        payment.payment_metadata["tbank_status"] = tbank_status
+        payment.save()
+        logger.info(f"T-Bank: refunded payment {payment.id}, amount={refund_amount}")

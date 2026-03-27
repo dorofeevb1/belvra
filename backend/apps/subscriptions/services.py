@@ -1,5 +1,5 @@
 """
-Subscription services with YooKassa integration.
+Subscription services with T-Bank payment integration.
 """
 
 import logging
@@ -11,11 +11,9 @@ from typing import Optional
 from django.conf import settings
 from django.db import transaction
 from django.utils import timezone
-from yookassa import Configuration, Payment as YooKassaPayment
-from yookassa.domain.common import ConfirmationType
-from yookassa.domain.models import Amount
 
 from apps.core.notifications import NotificationService
+from apps.payments.services import TBankService
 from apps.services.models import MasterService, PortfolioItem
 from apps.users.models import User
 
@@ -25,14 +23,10 @@ logger = logging.getLogger(__name__)
 
 
 class SubscriptionService:
-    """Service for managing user subscriptions."""
+    """Service for managing master subscriptions via T-Bank."""
 
     def __init__(self):
-        """Initialize YooKassa configuration."""
-        self.test_mode = not settings.YOOKASSA_SHOP_ID or not settings.YOOKASSA_SECRET_KEY
-        if not self.test_mode:
-            Configuration.account_id = settings.YOOKASSA_SHOP_ID
-            Configuration.secret_key = settings.YOOKASSA_SECRET_KEY
+        self.tbank = TBankService()
 
     def get_or_create_free_subscription(self, user: User) -> Subscription:
         """Get existing subscription or create a free one."""
@@ -85,17 +79,9 @@ class SubscriptionService:
         """
         Subscribe user to a plan.
 
-        Args:
-            user: User to subscribe
-            plan: Subscription plan
-            return_url: URL to redirect after payment
-            save_payment_method: Whether to save payment method for recurring
-            payment_method: Preferred payment method
-
-        Returns:
-            dict with subscription_id, payment_url, status
+        For paid plans, creates a T-Bank payment and returns a payment URL.
         """
-        # Check if user already has a subscription
+        # Check if user already has this subscription
         try:
             existing_subscription = user.subscription
             if existing_subscription.plan == plan and existing_subscription.is_active:
@@ -138,21 +124,20 @@ class SubscriptionService:
                 status=Subscription.Status.PENDING
             )
 
-        # Create payment
+        # Create payment record
         payment = SubscriptionPayment.objects.create(
             subscription=subscription,
             amount=plan.price,
             status=SubscriptionPayment.Status.PENDING
         )
 
-        # Create YooKassa payment
-        result = self._create_yookassa_payment(
+        # Create T-Bank payment
+        result = self._create_tbank_payment(
             payment=payment,
             plan=plan,
             user=user,
             return_url=return_url,
             save_payment_method=save_payment_method,
-            payment_method=payment_method
         )
 
         return {
@@ -162,86 +147,101 @@ class SubscriptionService:
             "message": "Перейдите по ссылке для оплаты"
         }
 
-    def _create_yookassa_payment(
+    def _create_tbank_payment(
         self,
         payment: SubscriptionPayment,
         plan: SubscriptionPlan,
         user: User,
         return_url: str,
         save_payment_method: bool = True,
-        payment_method: Optional[str] = None
     ) -> dict:
-        """Create payment in YooKassa."""
+        """Create payment via T-Bank Init endpoint."""
         try:
-            idempotency_key = str(payment.id)
-
-            # Test mode - return mock response
-            if self.test_mode:
-                mock_payment_id = f"test_sub_{uuid.uuid4().hex[:16]}"
+            # Test mode
+            if self.tbank.test_mode:
+                mock_payment_id = f"tbank_sub_test_{uuid.uuid4().hex[:12]}"
                 separator = "&" if "?" in return_url else "?"
-                mock_confirmation_url = f"{return_url}{separator}test_payment={mock_payment_id}&payment_id={payment.id}"
+                mock_url = f"{return_url}{separator}test_payment={mock_payment_id}&payment_id={payment.id}"
 
                 payment.external_payment_id = mock_payment_id
-                payment.confirmation_url = mock_confirmation_url
+                payment.confirmation_url = mock_url
                 payment.save()
 
-                logger.info(f"Created TEST subscription payment {mock_payment_id}")
-
+                logger.info(f"Created TEST T-Bank subscription payment {mock_payment_id}")
                 return {
                     "payment_id": mock_payment_id,
-                    "confirmation_url": mock_confirmation_url,
+                    "confirmation_url": mock_url,
                     "status": "pending",
-                    "test_mode": True
+                    "test_mode": True,
                 }
 
-            payment_data = {
-                "amount": Amount(
-                    value=str(payment.amount),
-                    currency="RUB"
-                ),
-                "confirmation": {
-                    "type": ConfirmationType.REDIRECT,
-                    "return_url": return_url
-                },
-                "capture": True,
-                "description": f"Подписка {plan.name}",
-                "metadata": {
+            amount_kopecks = int(payment.amount * 100)
+            description = f"Подписка {plan.name}"[:140]
+
+            params = {
+                "Amount": amount_kopecks,
+                "OrderId": str(payment.id),
+                "Description": description,
+                "CustomerKey": str(user.id),
+                "SuccessURL": return_url,
+                "FailURL": return_url,
+                "DATA": {
                     "payment_id": str(payment.id),
                     "subscription_id": str(payment.subscription_id),
                     "user_id": str(user.id),
                     "plan_id": str(plan.id),
                 },
-                "save_payment_method": save_payment_method,
             }
 
-            if payment_method:
-                payment_data["payment_method_data"] = {"type": payment_method}
+            # Save card for recurring payments
+            if save_payment_method:
+                params["Recurrent"] = "Y"
 
-            yoo_payment = YooKassaPayment.create(payment_data, idempotency_key)
+            # Add receipt for FZ-54
+            if getattr(settings, "TBANK_SEND_RECEIPT", False):
+                taxation = getattr(settings, "TBANK_TAXATION", "usn_income")
+                receipt = {
+                    "Taxation": taxation,
+                    "Items": [
+                        {
+                            "Name": description[:128],
+                            "Price": amount_kopecks,
+                            "Quantity": 1.0,
+                            "Amount": amount_kopecks,
+                            "Tax": "none",
+                            "PaymentMethod": "full_payment",
+                            "PaymentObject": "service",
+                        }
+                    ],
+                }
+                if user.email:
+                    receipt["Email"] = user.email
+                params["Receipt"] = receipt
 
-            payment.external_payment_id = yoo_payment.id
-            payment.confirmation_url = yoo_payment.confirmation.confirmation_url
+            data = self.tbank._request("Init", params)
+
+            payment.external_payment_id = str(data["PaymentId"])
+            payment.confirmation_url = data["PaymentURL"]
             payment.save()
 
-            logger.info(f"Created YooKassa subscription payment {yoo_payment.id}")
+            logger.info(f"Created T-Bank subscription payment {data['PaymentId']}")
 
             return {
-                "payment_id": yoo_payment.id,
-                "confirmation_url": yoo_payment.confirmation.confirmation_url,
-                "status": yoo_payment.status
+                "payment_id": str(data["PaymentId"]),
+                "confirmation_url": data["PaymentURL"],
+                "status": data.get("Status", "NEW"),
             }
 
         except Exception as e:
-            logger.error(f"Error creating subscription payment: {e}")
+            logger.error(f"Error creating T-Bank subscription payment: {e}")
             payment.status = SubscriptionPayment.Status.FAILED
             payment.error_message = str(e)
             payment.save()
             raise
 
     @transaction.atomic
-    def process_successful_payment(self, payment: SubscriptionPayment, payment_method_id: str = None):
+    def process_successful_payment(self, payment: SubscriptionPayment, rebill_id: str = None):
         """Process a successful subscription payment."""
-        # Idempotency: skip if already processed
         if payment.status == SubscriptionPayment.Status.SUCCEEDED:
             logger.info(f"Subscription payment {payment.id} already succeeded, skipping")
             return
@@ -253,11 +253,11 @@ class SubscriptionService:
         subscription = payment.subscription
         plan = subscription.plan
 
-        # Calculate period based on plan
+        # Calculate period
         now = timezone.now()
         if plan.period == SubscriptionPlan.Period.MONTHLY:
             period_end = now + timedelta(days=30)
-        else:  # Yearly
+        else:
             period_end = now + timedelta(days=365)
 
         subscription.status = Subscription.Status.ACTIVE
@@ -265,8 +265,9 @@ class SubscriptionService:
         subscription.current_period_end = period_end
         subscription.auto_renew = True
 
-        if payment_method_id:
-            subscription.yookassa_payment_method_id = payment_method_id
+        # Save RebillId for recurring payments via T-Bank Charge
+        if rebill_id:
+            subscription.yookassa_payment_method_id = rebill_id  # Reuse field for T-Bank RebillId
 
         subscription.save()
 
@@ -300,7 +301,6 @@ class SubscriptionService:
         subscription.auto_renew = False
         subscription.save()
 
-        # Send notification
         try:
             if immediately:
                 message = "Ваша подписка отменена"
@@ -356,7 +356,6 @@ class SubscriptionService:
             else:
                 subscription.cancel_at_period_end = True
                 subscription.save()
-                # The actual downgrade will happen via celery task when period ends
 
             return {
                 "status": "downgraded",
@@ -372,9 +371,12 @@ class SubscriptionService:
 
     @transaction.atomic
     def renew_subscription(self, subscription: Subscription) -> Optional[SubscriptionPayment]:
-        """Renew subscription using saved payment method."""
-        if not subscription.yookassa_payment_method_id:
-            logger.warning(f"No saved payment method for subscription {subscription.id}")
+        """
+        Renew subscription using saved RebillId via T-Bank Charge.
+        """
+        rebill_id = subscription.yookassa_payment_method_id  # Stores T-Bank RebillId
+        if not rebill_id:
+            logger.warning(f"No saved RebillId for subscription {subscription.id}")
             return None
 
         if not subscription.auto_renew:
@@ -385,7 +387,7 @@ class SubscriptionService:
         if plan.is_free:
             return None
 
-        # Create recurring payment
+        # Create recurring payment record
         payment = SubscriptionPayment.objects.create(
             subscription=subscription,
             amount=plan.price,
@@ -393,33 +395,66 @@ class SubscriptionService:
             is_recurring=True
         )
 
-        # Process with YooKassa using saved payment method
-        if self.test_mode:
-            # Auto-succeed test payments
-            self.process_successful_payment(payment)
+        # Test mode: auto-succeed
+        if self.tbank.test_mode:
+            self.process_successful_payment(payment, rebill_id)
             return payment
 
         try:
-            idempotency_key = str(payment.id)
+            amount_kopecks = int(payment.amount * 100)
+            params = {
+                "PaymentId": "",  # Will be set by Init
+                "RebillId": rebill_id,
+                "Amount": amount_kopecks,
+            }
 
-            yoo_payment = YooKassaPayment.create({
-                "amount": Amount(value=str(payment.amount), currency="RUB"),
-                "capture": True,
-                "payment_method_id": subscription.yookassa_payment_method_id,
-                "description": f"Продление подписки {plan.name}",
-                "metadata": {
+            # First, Init a new payment
+            init_params = {
+                "Amount": amount_kopecks,
+                "OrderId": str(payment.id),
+                "Description": f"Продление подписки {plan.name}"[:140],
+                "CustomerKey": str(subscription.user_id),
+                "DATA": {
                     "payment_id": str(payment.id),
                     "subscription_id": str(subscription.id),
-                    "is_recurring": True
-                }
-            }, idempotency_key)
+                    "is_recurring": "true",
+                },
+            }
 
-            payment.external_payment_id = yoo_payment.id
+            if getattr(settings, "TBANK_SEND_RECEIPT", False):
+                taxation = getattr(settings, "TBANK_TAXATION", "usn_income")
+                init_params["Receipt"] = {
+                    "Taxation": taxation,
+                    "Items": [
+                        {
+                            "Name": f"Продление подписки {plan.name}"[:128],
+                            "Price": amount_kopecks,
+                            "Quantity": 1.0,
+                            "Amount": amount_kopecks,
+                            "Tax": "none",
+                            "PaymentMethod": "full_payment",
+                            "PaymentObject": "service",
+                        }
+                    ],
+                }
+                if subscription.user.email:
+                    init_params["Receipt"]["Email"] = subscription.user.email
+
+            init_data = self.tbank._request("Init", init_params)
+            tbank_payment_id = str(init_data["PaymentId"])
+
+            payment.external_payment_id = tbank_payment_id
             payment.save()
 
-            if yoo_payment.status == "succeeded":
-                self.process_successful_payment(payment, yoo_payment.payment_method.id)
+            # Charge using saved card (RebillId)
+            charge_params = {
+                "PaymentId": tbank_payment_id,
+                "RebillId": rebill_id,
+            }
+            self.tbank._request("Charge", charge_params)
 
+            logger.info(f"Initiated T-Bank Charge for subscription {subscription.id}")
+            # Payment result will come via notification webhook
             return payment
 
         except Exception as e:
@@ -438,7 +473,6 @@ class SubscriptionService:
         user = subscription.user
         plan = subscription.plan
 
-        # Get current counts
         if user.is_master and hasattr(user, "master_profile"):
             master = user.master_profile
             services_count = MasterService.objects.filter(master=master).count()
@@ -453,7 +487,7 @@ class SubscriptionService:
 
         return {
             "appointments_used": subscription.appointments_this_month,
-            "appointments_limit": appointments_limit if appointments_limit > 0 else -1,  # -1 = unlimited
+            "appointments_limit": appointments_limit if appointments_limit > 0 else -1,
             "appointments_remaining": max(0, appointments_limit - subscription.appointments_this_month) if appointments_limit > 0 else -1,
             "services_count": services_count,
             "services_limit": services_limit if services_limit > 0 else -1,
@@ -520,7 +554,6 @@ class SubscriptionService:
         subscription.status = Subscription.Status.EXPIRED
         subscription.save()
 
-        # Send notification
         try:
             NotificationService.create_notification(
                 user=subscription.user,
@@ -554,7 +587,6 @@ class SubscriptionService:
         subscription.auto_renew = False
         subscription.save()
 
-        # Send notification
         try:
             NotificationService.create_notification(
                 user=subscription.user,

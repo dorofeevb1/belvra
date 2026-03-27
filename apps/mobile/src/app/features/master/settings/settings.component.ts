@@ -40,7 +40,7 @@ export class SettingsComponent implements OnInit {
   private backendSchedules: BackendSchedule[] = [];
 
   // Active tab
-  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'>('profile');
+  activeTab = signal<'profile' | 'schedule' | 'services' | 'notifications' | 'subscription'>('profile');
 
   // Avatar
   avatarPreview = signal<string>('');
@@ -339,7 +339,7 @@ export class SettingsComponent implements OnInit {
   }
 
   // Tab navigation
-  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'payments' | 'subscription'): void {
+  setTab(tab: 'profile' | 'schedule' | 'services' | 'notifications' | 'subscription'): void {
     this.activeTab.set(tab);
   }
 

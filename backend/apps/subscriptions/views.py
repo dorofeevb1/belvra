@@ -2,6 +2,8 @@
 Views for subscription management.
 """
 
+import logging
+
 from django.conf import settings
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, status
@@ -22,6 +24,8 @@ from .serializers import (
     SubscriptionUsageSerializer,
 )
 from .services import SubscriptionService
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema(
@@ -296,47 +300,64 @@ class CheckLimitView(APIView):
 @extend_schema(
     tags=["Подписки"],
     summary="Webhook для оплаты",
-    description="Обработка webhook от YooKassa для подписок"
+    description="Обработка уведомлений от T-Bank для подписок"
 )
 class SubscriptionWebhookView(APIView):
-    """Handle YooKassa webhook for subscription payments."""
+    """Handle T-Bank notifications for subscription payments."""
 
     permission_classes = [AllowAny]
+    authentication_classes = []
 
     def post(self, request):
-        event_type = request.data.get("event")
-        payment_object = request.data.get("object", {})
+        data = request.data
 
-        if event_type == "payment.succeeded":
-            payment_id = payment_object.get("metadata", {}).get("payment_id")
-            payment_method_id = payment_object.get("payment_method", {}).get("id")
+        from apps.payments.services import TBankService
+        tbank = TBankService()
 
-            if payment_id:
-                try:
-                    payment = SubscriptionPayment.objects.get(id=payment_id)
-                    if payment.status == SubscriptionPayment.Status.PENDING:
-                        service = SubscriptionService()
-                        service.process_successful_payment(payment, payment_method_id)
-                except SubscriptionPayment.DoesNotExist:
-                    pass
+        # Verify token signature
+        if not tbank.test_mode and not tbank.verify_notification_token(data):
+            logger.warning("Invalid T-Bank subscription notification token")
+            return Response("INVALID TOKEN", status=status.HTTP_401_UNAUTHORIZED)
 
-        elif event_type == "payment.canceled":
-            payment_id = payment_object.get("metadata", {}).get("payment_id")
+        order_id = data.get("OrderId")
+        tbank_status = data.get("Status")
+        rebill_id = str(data.get("RebillId", "")) if data.get("RebillId") else None
 
-            if payment_id:
-                try:
-                    payment = SubscriptionPayment.objects.get(id=payment_id)
-                    payment.status = SubscriptionPayment.Status.CANCELLED
-                    payment.save()
+        logger.info(f"T-Bank subscription notification: OrderId={order_id}, Status={tbank_status}")
 
-                    subscription = payment.subscription
-                    if subscription.status == Subscription.Status.PENDING:
-                        subscription.status = Subscription.Status.CANCELLED
-                        subscription.save()
-                except SubscriptionPayment.DoesNotExist:
-                    pass
+        if not order_id:
+            return Response("OK", status=status.HTTP_200_OK)
 
-        return Response({"status": "ok"})
+        try:
+            payment = SubscriptionPayment.objects.get(id=order_id)
+        except SubscriptionPayment.DoesNotExist:
+            logger.warning(f"SubscriptionPayment with OrderId={order_id} not found")
+            return Response("OK", status=status.HTTP_200_OK)
+
+        if tbank_status == "CONFIRMED":
+            if payment.status == SubscriptionPayment.Status.PENDING:
+                service = SubscriptionService()
+                service.process_successful_payment(payment, rebill_id)
+                logger.info(f"Subscription payment {payment.id} confirmed")
+
+        elif tbank_status in ("REJECTED", "DEADLINE_EXPIRED"):
+            payment.status = SubscriptionPayment.Status.FAILED
+            payment.error_message = f"T-Bank: {tbank_status}"
+            payment.save()
+
+            subscription = payment.subscription
+            if subscription.status == Subscription.Status.PENDING:
+                subscription.status = Subscription.Status.CANCELLED
+                subscription.save()
+            logger.info(f"Subscription payment {payment.id} rejected: {tbank_status}")
+
+        elif tbank_status == "REVERSED":
+            payment.status = SubscriptionPayment.Status.CANCELLED
+            payment.save()
+            logger.info(f"Subscription payment {payment.id} reversed")
+
+        # T-Bank requires "OK" in response body
+        return Response("OK", status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -362,7 +383,10 @@ class TestConfirmPaymentView(APIView):
             payment = SubscriptionPayment.objects.get(id=payment_id)
 
             # Check if this is a test payment
-            if not payment.external_payment_id or not payment.external_payment_id.startswith("test_"):
+            if not payment.external_payment_id or not (
+                payment.external_payment_id.startswith("test_") or
+                payment.external_payment_id.startswith("tbank_sub_test_")
+            ):
                 return Response(
                     {"error": "Это не тестовый платёж"},
                     status=status.HTTP_400_BAD_REQUEST
