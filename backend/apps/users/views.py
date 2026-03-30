@@ -1,3 +1,4 @@
+import logging
 import math
 import secrets
 from datetime import timedelta
@@ -39,6 +40,8 @@ from .serializers import (
     UserSerializer,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class LoginRateThrottle(ScopedRateThrottle):
     scope = "login"
@@ -67,6 +70,19 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
+        # Grant early adopter Pro subscription (first 50 users)
+        if user.is_early_adopter:
+            self._grant_early_adopter_pro(user)
+
+        # Create referral record
+        if user.referred_by:
+            from apps.subscriptions.models import Referral
+            Referral.objects.get_or_create(
+                referrer=user.referred_by,
+                referred_user=user,
+                defaults={"reward_type": Referral.RewardType.FREE_MONTH_PRO}
+            )
+
         # Generate 6-digit verification code
         code = f"{secrets.randbelow(900000) + 100000}"
         cache_key = f"email_verify_code_{user.id}"
@@ -79,7 +95,49 @@ class RegisterView(generics.CreateAPIView):
         return Response({
             **token_data,
             "verification_email": user.email,
+            "is_early_adopter": user.is_early_adopter,
+            "referral_code": user.referral_code,
         }, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _grant_early_adopter_pro(user):
+        """Grant lifetime Pro subscription to early adopter."""
+        from apps.subscriptions.models import Subscription, SubscriptionPlan
+        from decimal import Decimal
+
+        user_type = SubscriptionPlan.UserType.MASTER if user.role == "master" else SubscriptionPlan.UserType.CLIENT
+
+        pro_plan, _ = SubscriptionPlan.objects.get_or_create(
+            tier=SubscriptionPlan.Tier.PRO,
+            user_type=user_type,
+            period=SubscriptionPlan.Period.MONTHLY,
+            defaults={
+                "name": f"Pro ({user_type})",
+                "price": Decimal("0"),
+                "max_appointments_per_month": 0,
+                "max_services_count": 0,
+                "max_portfolio_items": 0,
+                "commission_percent": Decimal("3.00"),
+                "search_boost_enabled": True,
+                "analytics_level": SubscriptionPlan.AnalyticsLevel.ADVANCED,
+                "ai_assistant_enabled": True,
+                "advanced_notifications": True,
+                "export_data_enabled": True,
+                "priority_booking": True,
+                "cashback_percent": Decimal("5.00"),
+            }
+        )
+
+        Subscription.objects.get_or_create(
+            user=user,
+            defaults={
+                "plan": pro_plan,
+                "status": Subscription.Status.ACTIVE,
+                "current_period_start": timezone.now(),
+                "current_period_end": None,  # Lifetime — never expires
+                "auto_renew": False,
+            }
+        )
 
 
 @extend_schema(
@@ -120,7 +178,7 @@ class LogoutView(APIView):
                 token = RefreshToken(refresh_token)
                 token.blacklist()
         except Exception:
-            pass
+            logger.exception("Failed to blacklist refresh token during logout")
         logout(request)
         return Response({"detail": "Вы успешно вышли"}, status=status.HTTP_200_OK)
 
@@ -241,7 +299,7 @@ class MasterListView(generics.ListAPIView):
         return MasterProfile.objects.filter(
             is_available=True,
             user__is_active=True
-        ).select_related("user")
+        ).select_related("user", "user__subscription", "user__subscription__plan")
 
 
 @extend_schema(
@@ -252,7 +310,7 @@ class MasterListView(generics.ListAPIView):
 class MasterDetailView(generics.RetrieveAPIView):
     """Retrieve master details."""
 
-    queryset = MasterProfile.objects.select_related("user")
+    queryset = MasterProfile.objects.select_related("user", "user__subscription", "user__subscription__plan")
     serializer_class = MasterProfileSerializer
     permission_classes = [AllowAny]
 
@@ -352,7 +410,7 @@ class PasswordResetRequestView(APIView):
 
         except User.DoesNotExist:
             # Don't reveal if user exists
-            pass
+            logger.debug("Password reset requested for non-existent email: %s", email)
 
         return Response({
             "detail": "Если пользователь с таким email существует, инструкции будут отправлены"
@@ -572,6 +630,412 @@ class BecomeMasterView(APIView):
 
         token_data = TokenSerializer.get_token(user)
         return Response(token_data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(
+    tags=["Профиль"],
+    summary="Удаление аккаунта",
+    description="Полное удаление аккаунта и всех персональных данных пользователя (ФЗ-152)"
+)
+class DeleteAccountView(APIView):
+    """Delete user account and all associated personal data."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        password = request.data.get("password")
+        if not password:
+            return Response(
+                {"detail": "Для удаления аккаунта необходимо ввести пароль"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        user = request.user
+        if not user.check_password(password):
+            return Response(
+                {"detail": "Неверный пароль"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Blacklist all refresh tokens
+        try:
+            refresh_token = request.data.get("refresh")
+            if refresh_token:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+        except Exception:
+            pass
+
+        # Delete user — CASCADE will remove all related data
+        user.delete()
+
+        return Response(
+            {"detail": "Аккаунт и все персональные данные удалены"},
+            status=status.HTTP_200_OK
+        )
+
+
+@extend_schema(
+    tags=["Юридические документы"],
+    summary="Юридические документы",
+    description="Получение текстов политики конфиденциальности и пользовательского соглашения"
+)
+class LegalDocumentsView(APIView):
+    """Return legal documents (privacy policy, terms of service)."""
+
+    permission_classes = [AllowAny]
+
+    PRIVACY_POLICY = {
+        "title": "Политика конфиденциальности",
+        "version": "1.1",
+        "effective_date": "2025-01-01",
+        "content": """
+1. ОБЩИЕ ПОЛОЖЕНИЯ
+
+1.1. Настоящая Политика конфиденциальности (далее — Политика) определяет порядок обработки и защиты персональных данных пользователей сервиса Belvra (далее — Сервис).
+
+1.2. Оператором персональных данных является администрация Сервиса (далее — Оператор).
+
+1.3. Политика разработана в соответствии с Федеральным законом от 27.07.2006 № 152-ФЗ «О персональных данных».
+
+2. ПЕРСОНАЛЬНЫЕ ДАННЫЕ, КОТОРЫЕ МЫ СОБИРАЕМ
+
+2.1. При регистрации и использовании Сервиса мы собираем следующие персональные данные:
+— Фамилия, имя;
+— Адрес электронной почты (email);
+— Номер телефона (при указании);
+— Фотография профиля (при загрузке);
+— Адрес оказания услуг (для мастеров);
+— Геолокация (при использовании поиска мастеров поблизости);
+— Данные о записях на услуги;
+— Переписка в чате Сервиса.
+
+2.2. В рамках реферальной программы мы собираем:
+— Уникальный реферальный код пользователя;
+— Информацию о том, кто пригласил пользователя;
+— Статус и дату применения реферального вознаграждения.
+
+2.3. При использовании AI-функций Сервиса (анализ фото, рекомендации, генерация описаний) данные могут обрабатываться с использованием технологий машинного обучения. Изображения и текстовые данные, переданные для AI-анализа, не хранятся после обработки.
+
+2.4. В рамках портфолио мастера мы собираем:
+— Фотографии работ;
+— Описания и хештеги к работам;
+— Данные о лайках и просмотрах.
+
+2.5. Мы не собираем и не храним данные банковских карт. Платежи обрабатываются через сертифицированного платёжного провайдера (Т-Банк).
+
+3. ЦЕЛИ ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ
+
+3.1. Персональные данные обрабатываются для следующих целей:
+— Регистрация и аутентификация пользователя;
+— Предоставление основного функционала Сервиса (запись на услуги, управление расписанием, чат);
+— Связь между клиентами и мастерами;
+— Отправка уведомлений о записях, подтверждениях и напоминаниях;
+— Обработка платежей и подписок;
+— Функционирование реферальной программы;
+— AI-анализ фотографий и генерация рекомендаций (по запросу пользователя);
+— Улучшение качества Сервиса.
+
+4. ПРАВОВЫЕ ОСНОВАНИЯ ОБРАБОТКИ
+
+4.1. Обработка персональных данных осуществляется на основании:
+— Согласия субъекта персональных данных (п. 1 ч. 1 ст. 6 ФЗ-152);
+— Исполнения договора, стороной которого является субъект персональных данных (п. 5 ч. 1 ст. 6 ФЗ-152).
+
+5. ХРАНЕНИЕ ПЕРСОНАЛЬНЫХ ДАННЫХ
+
+5.1. Персональные данные хранятся на серверах, расположенных на территории Российской Федерации, в соответствии с ч. 5 ст. 18 ФЗ-152.
+
+5.2. Персональные данные хранятся в течение всего срока использования Сервиса пользователем. При удалении аккаунта все персональные данные удаляются.
+
+5.3. Данные о совершённых платежах хранятся в течение 3 лет после совершения операции в соответствии с требованиями законодательства.
+
+6. ЗАЩИТА ПЕРСОНАЛЬНЫХ ДАННЫХ
+
+6.1. Оператор принимает необходимые организационные и технические меры для защиты персональных данных:
+— Шифрование паролей;
+— Использование протокола HTTPS;
+— Аутентификация с использованием JWT-токенов;
+— Разграничение прав доступа;
+— Регулярное обновление программного обеспечения.
+
+7. ПРАВА СУБЪЕКТА ПЕРСОНАЛЬНЫХ ДАННЫХ
+
+7.1. Вы имеете право:
+— Получить информацию об обработке ваших персональных данных;
+— Потребовать уточнения, блокирования или уничтожения персональных данных;
+— Отозвать согласие на обработку персональных данных;
+— Удалить свой аккаунт и все связанные данные;
+— Обжаловать действия Оператора в Роскомнадзор.
+
+7.2. Для реализации указанных прав вы можете:
+— Удалить аккаунт через настройки профиля;
+— Обратиться в службу поддержки.
+
+8. ПЕРЕДАЧА ДАННЫХ ТРЕТЬИМ ЛИЦАМ
+
+8.1. Оператор не продаёт и не передаёт персональные данные третьим лицам, за исключением случаев:
+— Обработки платежей через платёжного провайдера (Т-Банк);
+— Обработки AI-запросов через сторонние сервисы машинного обучения (при этом передаются только данные, явно отправленные пользователем для анализа; данные не сохраняются на серверах сторонних сервисов);
+— Требований законодательства Российской Федерации.
+
+9. ФАЙЛЫ COOKIE
+
+9.1. Сервис использует технические файлы cookie, необходимые для работы аутентификации. Рекламные и аналитические cookie не используются.
+
+10. ИЗМЕНЕНИЯ В ПОЛИТИКЕ
+
+10.1. Оператор вправе вносить изменения в настоящую Политику. Актуальная версия размещена в Сервисе.
+
+10.2. При внесении существенных изменений пользователи уведомляются по электронной почте.
+""".strip()
+    }
+
+    TERMS_OF_SERVICE = {
+        "title": "Пользовательское соглашение",
+        "version": "1.1",
+        "effective_date": "2025-01-01",
+        "content": """
+1. ОБЩИЕ ПОЛОЖЕНИЯ
+
+1.1. Настоящее Пользовательское соглашение (далее — Соглашение) регулирует отношения между администрацией сервиса Belvra (далее — Администрация) и пользователем сети Интернет (далее — Пользователь).
+
+1.2. Сервис Belvra (далее — Сервис) — онлайн-платформа для записи на услуги в сфере красоты, связывающая клиентов и мастеров.
+
+1.3. Регистрируясь в Сервисе, Пользователь подтверждает, что ознакомился с настоящим Соглашением и принимает его условия в полном объёме.
+
+1.4. Использование Сервиса допускается лицами, достигшими 18 лет.
+
+2. ПРЕДМЕТ СОГЛАШЕНИЯ
+
+2.1. Администрация предоставляет Пользователю доступ к функционалу Сервиса на условиях, определённых настоящим Соглашением.
+
+2.2. Сервис предоставляет следующие возможности:
+— Для клиентов: поиск мастеров, запись на услуги, управление записями, чат с мастерами, оплата услуг;
+— Для мастеров: управление профилем и расписанием, приём записей, портфолио, чат с клиентами, приём платежей, аналитика.
+
+3. РЕГИСТРАЦИЯ И АККАУНТ
+
+3.1. Для использования Сервиса необходима регистрация с указанием достоверных данных.
+
+3.2. Пользователь обязуется не передавать данные своего аккаунта третьим лицам.
+
+3.3. Пользователь несёт ответственность за все действия, совершённые от имени его аккаунта.
+
+3.4. Администрация вправе заблокировать или удалить аккаунт при нарушении настоящего Соглашения.
+
+4. ПРАВА И ОБЯЗАННОСТИ ПОЛЬЗОВАТЕЛЯ
+
+4.1. Пользователь имеет право:
+— Использовать доступный функционал Сервиса;
+— Получать техническую поддержку;
+— Удалить свой аккаунт в любое время;
+— Получить информацию о своих персональных данных.
+
+4.2. Пользователь обязуется:
+— Предоставлять достоверную информацию при регистрации;
+— Не использовать Сервис для противоправных целей;
+— Не размещать оскорбительный, незаконный или вредоносный контент;
+— Соблюдать права других пользователей;
+— Не предпринимать действия, направленные на нарушение работы Сервиса.
+
+5. ПРАВА И ОБЯЗАННОСТИ АДМИНИСТРАЦИИ
+
+5.1. Администрация имеет право:
+— Изменять функционал Сервиса без предварительного уведомления;
+— Приостановить доступ Пользователя при нарушении условий Соглашения;
+— Направлять Пользователю служебные уведомления.
+
+5.2. Администрация обязуется:
+— Обеспечивать работоспособность Сервиса;
+— Защищать персональные данные Пользователей в соответствии с ФЗ-152;
+— Рассматривать обращения Пользователей.
+
+6. ПОДПИСКИ И ОПЛАТА
+
+6.1. Доступ к расширенному функционалу для мастеров предоставляется по платной подписке.
+
+6.2. Стоимость подписки указана в Сервисе и может быть изменена с предварительным уведомлением.
+
+6.3. Оплата производится через сертифицированного платёжного провайдера (Т-Банк).
+
+6.4. Возврат средств за подписку осуществляется в соответствии с законодательством РФ о защите прав потребителей.
+
+6.5. Первые 50 зарегистрированных пользователей получают бесплатную пожизненную подписку Pro (программа «Ранний пользователь»).
+
+6.6. Реферальная программа:
+— Каждый пользователь получает уникальный реферальный код;
+— При регистрации нового пользователя по реферальному коду и оформлении им подписки Pro, пригласивший пользователь получает 1 месяц подписки Pro бесплатно;
+— Реферальные вознаграждения суммируются (каждый приглашённый — дополнительный месяц);
+— Администрация вправе изменить условия реферальной программы с предварительным уведомлением.
+
+7. AI-ФУНКЦИИ
+
+7.1. Сервис предоставляет AI-функции (анализ фото, генерация описаний, рекомендации по стилю).
+
+7.2. При использовании AI-функций пользователь самостоятельно решает, какие данные отправлять для анализа.
+
+7.3. Администрация не гарантирует точность результатов AI-анализа. Результаты носят рекомендательный характер.
+
+8. ИНТЕЛЛЕКТУАЛЬНАЯ СОБСТВЕННОСТЬ
+
+8.1. Все элементы Сервиса (дизайн, программный код, логотипы) являются интеллектуальной собственностью Администрации.
+
+8.2. Контент, размещённый Пользователем (фотографии портфолио, описания), остаётся собственностью Пользователя. Размещая контент, Пользователь предоставляет Администрации неисключительную лицензию на его отображение в рамках Сервиса.
+
+9. ОТВЕТСТВЕННОСТЬ
+
+9.1. Администрация не несёт ответственности за:
+— Качество услуг, оказываемых мастерами клиентам;
+— Споры между клиентами и мастерами;
+— Временную недоступность Сервиса по техническим причинам;
+— Убытки, вызванные нарушением Пользователем условий Соглашения;
+— Точность и результаты AI-анализа.
+
+9.2. Сервис предоставляется «как есть». Администрация не гарантирует его бесперебойную работу.
+
+10. ОБРАБОТКА ПЕРСОНАЛЬНЫХ ДАННЫХ
+
+10.1. Обработка персональных данных осуществляется в соответствии с Политикой конфиденциальности, которая является неотъемлемой частью настоящего Соглашения.
+
+10.2. Регистрируясь, Пользователь даёт согласие на обработку персональных данных в соответствии с ФЗ-152.
+
+11. РАЗРЕШЕНИЕ СПОРОВ
+
+11.1. Все споры разрешаются путём переговоров. В случае невозможности достижения соглашения — в суде по месту нахождения Администрации, в соответствии с законодательством РФ.
+
+12. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ
+
+12.1. Настоящее Соглашение вступает в силу с момента регистрации Пользователя и действует бессрочно.
+
+12.2. Администрация вправе вносить изменения в Соглашение с уведомлением Пользователей.
+
+12.3. Продолжение использования Сервиса после изменений означает принятие новых условий.
+""".strip()
+    }
+
+    def get(self, request):
+        doc_type = request.query_params.get("type", "all")
+
+        if doc_type == "privacy":
+            return Response(self.PRIVACY_POLICY)
+        elif doc_type == "terms":
+            return Response(self.TERMS_OF_SERVICE)
+
+        return Response({
+            "privacy_policy": self.PRIVACY_POLICY,
+            "terms_of_service": self.TERMS_OF_SERVICE,
+        })
+
+
+@extend_schema(
+    tags=["Юридические документы"],
+    summary="Отзыв согласия",
+    description="Отзыв согласия на обработку персональных данных. После отзыва аккаунт будет деактивирован."
+)
+class WithdrawConsentView(APIView):
+    """Withdraw consent for personal data processing (FZ-152 Article 9)."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        consent_type = request.data.get("type")
+
+        if consent_type == "privacy":
+            user.privacy_accepted_at = None
+            user.privacy_version_accepted = ""
+            user.is_active = False
+            user.save(update_fields=["privacy_accepted_at", "privacy_version_accepted", "is_active"])
+            logout(request)
+            return Response({
+                "detail": "Согласие на обработку ПДн отозвано. Аккаунт деактивирован. Для восстановления обратитесь в поддержку."
+            })
+        elif consent_type == "terms":
+            user.terms_accepted_at = None
+            user.terms_version_accepted = ""
+            user.is_active = False
+            user.save(update_fields=["terms_accepted_at", "terms_version_accepted", "is_active"])
+            logout(request)
+            return Response({
+                "detail": "Пользовательское соглашение отозвано. Аккаунт деактивирован."
+            })
+
+        return Response(
+            {"detail": "Укажите type: privacy или terms"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+
+@extend_schema(
+    tags=["Юридические документы"],
+    summary="Статус согласий",
+    description="Получение текущего статуса согласий пользователя"
+)
+class ConsentStatusView(APIView):
+    """Get current consent status for the authenticated user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        current_privacy_version = LegalDocumentsView.PRIVACY_POLICY["version"]
+        current_terms_version = LegalDocumentsView.TERMS_OF_SERVICE["version"]
+
+        return Response({
+            "privacy": {
+                "accepted": user.privacy_accepted_at is not None,
+                "accepted_at": user.privacy_accepted_at,
+                "version_accepted": user.privacy_version_accepted or None,
+                "current_version": current_privacy_version,
+                "needs_update": (
+                    user.privacy_version_accepted != current_privacy_version
+                    if user.privacy_accepted_at else True
+                ),
+            },
+            "terms": {
+                "accepted": user.terms_accepted_at is not None,
+                "accepted_at": user.terms_accepted_at,
+                "version_accepted": user.terms_version_accepted or None,
+                "current_version": current_terms_version,
+                "needs_update": (
+                    user.terms_version_accepted != current_terms_version
+                    if user.terms_accepted_at else True
+                ),
+            }
+        })
+
+    def post(self, request):
+        """Re-accept updated legal documents."""
+        user = request.user
+        consent_type = request.data.get("type")
+        now = timezone.now()
+
+        if consent_type == "privacy":
+            user.privacy_accepted_at = now
+            user.privacy_version_accepted = LegalDocumentsView.PRIVACY_POLICY["version"]
+            user.save(update_fields=["privacy_accepted_at", "privacy_version_accepted"])
+            return Response({"detail": "Согласие на обработку ПДн обновлено"})
+        elif consent_type == "terms":
+            user.terms_accepted_at = now
+            user.terms_version_accepted = LegalDocumentsView.TERMS_OF_SERVICE["version"]
+            user.save(update_fields=["terms_accepted_at", "terms_version_accepted"])
+            return Response({"detail": "Пользовательское соглашение принято"})
+        elif consent_type == "all":
+            user.privacy_accepted_at = now
+            user.privacy_version_accepted = LegalDocumentsView.PRIVACY_POLICY["version"]
+            user.terms_accepted_at = now
+            user.terms_version_accepted = LegalDocumentsView.TERMS_OF_SERVICE["version"]
+            user.save(update_fields=[
+                "privacy_accepted_at", "privacy_version_accepted",
+                "terms_accepted_at", "terms_version_accepted"
+            ])
+            return Response({"detail": "Все согласия обновлены"})
+
+        return Response(
+            {"detail": "Укажите type: privacy, terms или all"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
 
 @extend_schema_view(

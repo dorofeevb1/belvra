@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "BeautyStyleService": {
+    "Belvra": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:class": {
@@ -89,10 +89,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "BeautyStyleService:build:production"
+              "buildTarget": "Belvra:build:production"
             },
             "development": {
-              "buildTarget": "BeautyStyleService:build:development"
+              "buildTarget": "Belvra:build:development"
             }
           },
           "defaultConfiguration": "development"

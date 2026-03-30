@@ -10,6 +10,8 @@ from .views import (
     CheckLimitView,
     CurrentSubscriptionView,
     ReactivateSubscriptionView,
+    ReferralListView,
+    ReferralStatsView,
     SubscribeView,
     SubscriptionPaymentsView,
     SubscriptionPlanListView,
@@ -37,6 +39,10 @@ urlpatterns = [
 
     # Limits
     path("check-limit/<str:limit_type>/", CheckLimitView.as_view(), name="subscription-check-limit"),
+
+    # Referral program
+    path("referrals/", ReferralListView.as_view(), name="referral-list"),
+    path("referrals/stats/", ReferralStatsView.as_view(), name="referral-stats"),
 
     # Webhooks
     path("webhook/", SubscriptionWebhookView.as_view(), name="subscription-webhook"),

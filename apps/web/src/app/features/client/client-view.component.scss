@@ -11,9 +11,23 @@
   flex: 1;
   padding: 1rem;
   min-height: calc(100vh - 64px);
+  overflow-x: hidden;
+  max-width: 100%;
 
   @media (min-width: 1024px) {
     margin-left: 256px;
     padding: 1.5rem;
+  }
+}
+
+// Mobile responsive (320-480px)
+@media (max-width: 480px) {
+  .app-layout {
+    overflow-x: hidden;
+  }
+
+  .main-content {
+    padding: 0.5rem;
+    min-height: calc(100vh - 56px);
   }
 }

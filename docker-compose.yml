@@ -2,11 +2,11 @@ services:
   # PostgreSQL Database
   db:
     image: postgres:16-alpine
-    container_name: beautystyle_db
+    container_name: belvra_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-beautystyle}
+      POSTGRES_DB: ${POSTGRES_DB:-belvra}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
     ports:
@@ -17,12 +17,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Redis Cache & Broker
   redis:
     image: redis:7-alpine
-    container_name: beautystyle_redis
+    container_name: belvra_redis
     command: redis-server --appendonly yes
     volumes:
       - redis_data:/data
@@ -34,14 +34,14 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Django Backend
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_backend
+    container_name: belvra_backend
     command: python manage.py runserver 0.0.0.0:8000
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -55,7 +55,7 @@ services:
       - DJANGO_ENV=development
       - DJANGO_DEBUG=True
       - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key-change-in-production}
-      - POSTGRES_DB=${POSTGRES_DB:-beautystyle}
+      - POSTGRES_DB=${POSTGRES_DB:-belvra}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_HOST=db
@@ -71,14 +71,14 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Angular Frontend (Web)
   web:
     build:
       context: ./apps/web
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_web
+    container_name: belvra_web
     volumes:
       - ./apps/web:/app:z
       - /app/node_modules
@@ -87,20 +87,20 @@ services:
     environment:
       - NODE_ENV=development
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Celery Worker
   celery:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_celery
+    container_name: belvra_celery
     command: celery -A config worker -l INFO
     volumes:
       - ./backend:/app:z
     environment:
       - DJANGO_ENV=development
-      - POSTGRES_DB=${POSTGRES_DB:-beautystyle}
+      - POSTGRES_DB=${POSTGRES_DB:-belvra}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_HOST=db
@@ -113,20 +113,20 @@ services:
       - redis
       - backend
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Celery Beat Scheduler
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_celery_beat
+    container_name: belvra_celery_beat
     command: celery -A config beat -l INFO
     volumes:
       - ./backend:/app:z
     environment:
       - DJANGO_ENV=development
-      - POSTGRES_DB=${POSTGRES_DB:-beautystyle}
+      - POSTGRES_DB=${POSTGRES_DB:-belvra}
       - POSTGRES_USER=${POSTGRES_USER:-postgres}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
       - POSTGRES_HOST=db
@@ -139,12 +139,12 @@ services:
       - redis
       - celery
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
-    container_name: beautystyle_nginx
+    container_name: belvra_nginx
     restart: always
     ports:
       - "80:80"
@@ -162,25 +162,25 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Ollama - Local AI for image analysis
   ollama:
     image: ollama/ollama:latest
-    container_name: beautystyle_ollama
+    container_name: belvra_ollama
     volumes:
       - ollama_data:/root/.ollama
     ports:
       - "11434:11434"
     networks:
-      - beautystyle_network
+      - belvra_network
 
   # Flower - Celery monitoring
   flower:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
-    container_name: beautystyle_flower
+    container_name: belvra_flower
     command: celery -A config flower --port=5555
     ports:
       - "5555:5555"
@@ -192,7 +192,7 @@ services:
       - redis
       - celery
     networks:
-      - beautystyle_network
+      - belvra_network
 
 volumes:
   postgres_data:
@@ -202,5 +202,5 @@ volumes:
   ollama_data:
 
 networks:
-  beautystyle_network:
+  belvra_network:
     driver: bridge

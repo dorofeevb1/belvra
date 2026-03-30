@@ -10,13 +10,13 @@ SERVER="root@89.223.126.31"
 ENV="${1:-dev}"
 
 if [ "$ENV" = "prod" ]; then
-    REMOTE_DIR="/opt/beautystyle/prod"
+    REMOTE_DIR="/opt/belvra/prod"
     COMPOSE_FILE="docker-compose.prod.yml"
     ENV_FILE=".env.prod"
     CHECK_PORT=""
     LABEL="PRODUCTION"
 elif [ "$ENV" = "dev" ]; then
-    REMOTE_DIR="/opt/beautystyle/dev"
+    REMOTE_DIR="/opt/belvra/dev"
     COMPOSE_FILE="docker-compose.dev.yml"
     ENV_FILE=".env.dev"
     CHECK_PORT=":8080"
@@ -28,7 +28,7 @@ else
     exit 1
 fi
 
-echo "=== BeautyStyleService Deploy [${LABEL}] ==="
+echo "=== Belvra Deploy [${LABEL}] ==="
 echo "Project: ${PROJECT_ROOT}"
 echo "Remote:  ${SERVER}:${REMOTE_DIR}"
 

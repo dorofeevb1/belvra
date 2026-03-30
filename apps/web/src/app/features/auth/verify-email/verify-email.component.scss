@@ -137,3 +137,43 @@
 :host {
   display: block;
 }
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .verify-page {
+    padding: 1rem;
+  }
+
+  .verify-container {
+    max-width: 100%;
+  }
+
+  .verify-card {
+    padding: 1.25rem;
+  }
+
+  .state-content {
+    h2 {
+      font-size: 1.25rem;
+    }
+
+    p {
+      font-size: 0.875rem;
+    }
+  }
+
+  .icon-circle {
+    width: 56px;
+    height: 56px;
+  }
+
+  .code-inputs {
+    gap: 4px;
+
+    input {
+      width: 40px;
+      height: 48px;
+      font-size: 1.25rem;
+    }
+  }
+}

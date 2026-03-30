@@ -10,7 +10,7 @@ from rest_framework.response import Response
 
 from apps.core.permissions import IsAdminOrReadOnly, IsMasterOrReadOnly, IsMasterOwner
 
-from .models import Category, MasterService, PortfolioItem, Service
+from .models import Category, MasterService, PortfolioItem, PortfolioLike, Service
 from .serializers import (
     CategorySerializer,
     MasterServiceSerializer,
@@ -268,8 +268,29 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
     )
     @action(detail=True, methods=["post"])
     def like(self, request, pk=None):
-        """Like a portfolio item."""
+        """Like a portfolio item (idempotent — one like per user)."""
         item = self.get_object()
-        PortfolioItem.objects.filter(pk=item.pk).update(likes_count=F("likes_count") + 1)
-        item.refresh_from_db(fields=["likes_count"])
-        return Response({"likes_count": item.likes_count})
+        _, created = PortfolioLike.objects.get_or_create(
+            user=request.user, portfolio_item=item
+        )
+        if created:
+            PortfolioItem.objects.filter(pk=item.pk).update(likes_count=F("likes_count") + 1)
+            item.refresh_from_db(fields=["likes_count"])
+        return Response({"likes_count": item.likes_count, "liked": True})
+
+    @extend_schema(
+        tags=["Портфолио"],
+        summary="Убрать лайк",
+        description="Удалить лайк с работы"
+    )
+    @action(detail=True, methods=["post"])
+    def unlike(self, request, pk=None):
+        """Remove a like from a portfolio item."""
+        item = self.get_object()
+        deleted, _ = PortfolioLike.objects.filter(
+            user=request.user, portfolio_item=item
+        ).delete()
+        if deleted:
+            PortfolioItem.objects.filter(pk=item.pk).update(likes_count=F("likes_count") - 1)
+            item.refresh_from_db(fields=["likes_count"])
+        return Response({"likes_count": item.likes_count, "liked": False})

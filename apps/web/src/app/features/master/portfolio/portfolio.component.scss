@@ -211,3 +211,85 @@
 .mt-4 {
   margin-top: 1rem;
 }
+
+// Mobile responsive (320-480px)
+@media (max-width: 480px) {
+  .portfolio-page {
+    gap: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .portfolio-content {
+    padding: 0.75rem;
+  }
+
+  .portfolio-title {
+    font-size: 0.8125rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .portfolio-desc {
+    font-size: 0.75rem;
+    -webkit-line-clamp: 1;
+    margin-bottom: 0.5rem;
+  }
+
+  .portfolio-tags {
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.625rem;
+  }
+
+  .portfolio-footer {
+    font-size: 0.625rem;
+  }
+
+  .overlay-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+
+    &-icon {
+      width: 4rem;
+      height: 4rem;
+      margin-bottom: 1rem;
+    }
+
+    &-title {
+      font-size: 1rem;
+    }
+
+    &-desc {
+      font-size: 0.8125rem;
+    }
+  }
+
+  .loading-container {
+    padding: 2rem 0;
+  }
+}

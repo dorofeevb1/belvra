@@ -4,9 +4,9 @@ import { Observable, tap, catchError, of, map, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
 import { User, Master, Client, UserRole, UserSubscription } from '../models';
 
-const TOKEN_KEY = 'beautybook_access_token';
-const REFRESH_TOKEN_KEY = 'beautybook_refresh_token';
-const USER_KEY = 'beautybook_user';
+const TOKEN_KEY = 'belvra_access_token';
+const REFRESH_TOKEN_KEY = 'belvra_refresh_token';
+const USER_KEY = 'belvra_user';
 
 @Injectable({
   providedIn: 'root'
@@ -232,6 +232,9 @@ export class AuthService {
     last_name: string;
     phone?: string;
     role: UserRole;
+    accept_privacy?: boolean;
+    accept_terms?: boolean;
+    referral_code?: string;
   }): Observable<boolean> {
     return this.api.register(data).pipe(
       tap(response => {

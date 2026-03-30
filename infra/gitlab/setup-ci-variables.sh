@@ -15,7 +15,7 @@ if [ -z "$GITLAB_TOKEN" ]; then
     exit 1
 fi
 
-read -p "Введи путь проекта (например root/beautystyle): " PROJECT_PATH
+read -p "Введи путь проекта (например root/belvra): " PROJECT_PATH
 
 if [ -z "$PROJECT_PATH" ]; then
     echo "Ошибка: путь проекта не указан."

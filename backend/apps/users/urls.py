@@ -5,7 +5,10 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     BecomeMasterView,
     ChangePasswordView,
+    ConsentStatusView,
+    DeleteAccountView,
     FavoriteMasterViewSet,
+    LegalDocumentsView,
     LoginView,
     LogoutView,
     MasterDetailView,
@@ -20,6 +23,7 @@ from .views import (
     UploadAvatarView,
     UserProfileView,
     VerifyEmailView,
+    WithdrawConsentView,
 )
 
 router = DefaultRouter()
@@ -43,5 +47,9 @@ urlpatterns = [
     path("masters/", MasterListView.as_view(), name="master-list"),
     path("masters/nearby/", MasterGeoSearchView.as_view(), name="master-nearby"),
     path("masters/<uuid:pk>/", MasterDetailView.as_view(), name="master-detail"),
+    path("profile/delete-account/", DeleteAccountView.as_view(), name="delete-account"),
+    path("legal/", LegalDocumentsView.as_view(), name="legal-documents"),
+    path("consent/status/", ConsentStatusView.as_view(), name="consent-status"),
+    path("consent/withdraw/", WithdrawConsentView.as_view(), name="consent-withdraw"),
     path("", include(router.urls)),
 ]

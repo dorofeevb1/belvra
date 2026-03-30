@@ -42,7 +42,7 @@ export class PlatformService {
 
     try {
       // Setup status bar based on saved theme
-      const savedTheme = localStorage.getItem('beautybook_theme');
+      const savedTheme = localStorage.getItem('belvra_theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       const isDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
       await this.updateStatusBarForTheme(isDark);
@@ -74,8 +74,8 @@ export class PlatformService {
       const path = url.pathname;
 
       // Handle deep links
-      // beautybook://master/123 -> /master/123
-      // https://beautybook.app/booking/456 -> /booking/456
+      // belvra://master/123 -> /master/123
+      // https://belvra.ru/booking/456 -> /booking/456
       if (path) {
         this.router.navigateByUrl(path);
       }

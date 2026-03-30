@@ -416,6 +416,60 @@ interface MaterialInput {
         position: relative;
         padding-top: 2.5rem;
       }
+
+      .modal-content {
+        gap: 1rem;
+      }
+
+      .info-card {
+        padding: 0.75rem;
+      }
+
+      .info-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .info-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+
+      .add-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 0.5rem;
+        background: var(--color-brand-50);
+        border-radius: var(--radius-md);
+      }
+
+      .total-card {
+        padding: 0.75rem 1rem;
+      }
+
+      .total-value {
+        font-size: 1.125rem;
+      }
+
+      .modal-actions {
+        padding: 0.75rem 1rem;
+        margin: 0 -1rem -1rem -1rem;
+        border-radius: 0;
+      }
+
+      .modal-actions .btn {
+        flex: 1;
+      }
+
+      .empty-materials {
+        padding: 1.5rem 0.75rem;
+      }
     }
   `]
 })

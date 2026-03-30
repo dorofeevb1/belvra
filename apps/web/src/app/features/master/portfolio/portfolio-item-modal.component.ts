@@ -343,6 +343,56 @@ import { PortfolioItem, BeautyService } from '../../../core/models';
       margin: 0 -1.5rem -1.5rem -1.5rem;
       border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
     }
+
+    /* Mobile responsive (320-480px) */
+    @media (max-width: 480px) {
+      .modal-content {
+        gap: 1rem;
+      }
+
+      .image-preview {
+        aspect-ratio: 4 / 3;
+        max-height: 40vh;
+      }
+
+      .image-preview img {
+        object-fit: contain;
+        background: var(--color-surface-secondary);
+      }
+
+      .upload-area {
+        aspect-ratio: 4 / 3;
+      }
+
+      .upload-area svg {
+        width: 32px;
+        height: 32px;
+      }
+
+      .ai-btn {
+        padding: 0.625rem 0.75rem;
+        font-size: 0.8125rem;
+      }
+
+      .input {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem;
+      }
+
+      .textarea {
+        min-height: 4rem;
+      }
+
+      .modal-actions {
+        margin: 0 -1rem -1rem -1rem;
+        padding: 0.75rem 1rem;
+        border-radius: 0;
+      }
+
+      .modal-actions .btn {
+        flex: 1;
+      }
+    }
   `]
 })
 export class PortfolioItemModalComponent implements OnChanges {

@@ -6,9 +6,9 @@ import { PlatformService } from './platform.service';
 import { PushNotificationsService } from './push-notifications.service';
 
 const STORAGE_KEYS = [
-  'beautybook_access_token',
-  'beautybook_refresh_token',
-  'beautybook_user'
+  'belvra_access_token',
+  'belvra_refresh_token',
+  'belvra_user'
 ];
 
 @Injectable({

@@ -17,7 +17,7 @@ from apps.payments.services import TBankService
 from apps.services.models import MasterService, PortfolioItem
 from apps.users.models import User
 
-from .models import Subscription, SubscriptionPayment, SubscriptionPlan
+from .models import Referral, Subscription, SubscriptionPayment, SubscriptionPlan
 
 logger = logging.getLogger(__name__)
 
@@ -281,6 +281,9 @@ class SubscriptionService:
             )
         except Exception as e:
             logger.error(f"Error sending subscription notification: {e}")
+
+        # Apply referral reward to referrer
+        self._apply_referral_reward(subscription.user)
 
         logger.info(f"Activated subscription {subscription.id} until {period_end}")
 
@@ -598,3 +601,65 @@ class SubscriptionService:
             logger.error(f"Error sending downgrade notification: {e}")
 
         logger.info(f"Downgraded subscription {subscription.id} to free plan")
+
+    @transaction.atomic
+    def _apply_referral_reward(self, referred_user: User):
+        """Apply referral reward when a referred user subscribes to Pro."""
+        if not referred_user.referred_by:
+            return
+
+        referral = Referral.objects.filter(
+            referrer=referred_user.referred_by,
+            referred_user=referred_user,
+            status=Referral.Status.PENDING
+        ).first()
+
+        if not referral:
+            return
+
+        referrer = referred_user.referred_by
+
+        try:
+            referrer_sub = referrer.subscription
+        except Subscription.DoesNotExist:
+            referrer_sub = self.create_free_subscription(referrer)
+
+        # If referrer is on free plan, upgrade to Pro for 1 month
+        if referrer_sub.plan.is_free:
+            user_type = referrer_sub.plan.user_type
+            pro_plan = SubscriptionPlan.objects.filter(
+                tier=SubscriptionPlan.Tier.PRO,
+                user_type=user_type,
+                period=SubscriptionPlan.Period.MONTHLY
+            ).first()
+
+            if pro_plan:
+                now = timezone.now()
+                referrer_sub.plan = pro_plan
+                referrer_sub.status = Subscription.Status.ACTIVE
+                referrer_sub.current_period_start = now
+                referrer_sub.current_period_end = now + timedelta(days=30)
+                referrer_sub.auto_renew = False
+                referrer_sub.save()
+        else:
+            # If referrer already has Pro, extend by 30 days
+            if referrer_sub.current_period_end:
+                referrer_sub.current_period_end += timedelta(days=30)
+                referrer_sub.save(update_fields=["current_period_end"])
+
+        referral.status = Referral.Status.APPLIED
+        referral.applied_at = timezone.now()
+        referral.save()
+
+        try:
+            NotificationService.create_notification(
+                user=referrer,
+                notification_type="referral_reward",
+                title="Реферальная награда",
+                message=f"Ваш приглашённый {referred_user.full_name} оформил подписку! "
+                        f"Вы получили 1 месяц Pro бесплатно.",
+            )
+        except Exception as e:
+            logger.error(f"Error sending referral reward notification: {e}")
+
+        logger.info(f"Applied referral reward for referrer {referrer.id}")

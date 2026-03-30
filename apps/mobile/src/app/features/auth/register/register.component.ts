@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { NotificationService } from '../../../core/services/notification.service';
@@ -15,6 +15,9 @@ interface RegisterForm {
   phone: string;
   password: string;
   passwordConfirm: string;
+  acceptPrivacy: boolean;
+  acceptTerms: boolean;
+  referralCode: string;
 }
 
 @Component({
@@ -28,6 +31,7 @@ export class RegisterComponent {
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   themeService = inject(ThemeService);
 
   selectedRole = signal<UserRole>('client');
@@ -37,13 +41,23 @@ export class RegisterComponent {
   errorMessage = signal('');
   currentStep = signal(1);
 
+  constructor() {
+    const ref = this.route.snapshot.queryParamMap.get('ref');
+    if (ref) {
+      this.form.referralCode = ref.toUpperCase();
+    }
+  }
+
   form: RegisterForm = {
     firstName: '',
     lastName: '',
     email: '',
     phone: '',
     password: '',
-    passwordConfirm: ''
+    passwordConfirm: '',
+    acceptPrivacy: false,
+    acceptTerms: false,
+    referralCode: ''
   };
 
   // Validation errors
@@ -91,6 +105,14 @@ export class RegisterComponent {
       newErrors.passwordConfirm = 'Пароли не совпадают';
     }
 
+    if (!this.form.acceptPrivacy) {
+      newErrors.acceptPrivacy = 'Необходимо дать согласие на обработку персональных данных';
+    }
+
+    if (!this.form.acceptTerms) {
+      newErrors.acceptTerms = 'Необходимо принять пользовательское соглашение';
+    }
+
     this.errors.set(newErrors);
     return Object.keys(newErrors).length === 0;
   }
@@ -127,7 +149,10 @@ export class RegisterComponent {
           first_name: this.form.firstName.trim(),
           last_name: this.form.lastName.trim(),
           phone: this.form.phone.trim() || undefined,
-          role: this.selectedRole()
+          role: this.selectedRole(),
+          accept_privacy: true,
+          accept_terms: true,
+          referral_code: this.form.referralCode.trim() || undefined
         })
       );
 

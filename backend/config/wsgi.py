@@ -1,5 +1,5 @@
 """
-WSGI config for BeautyStyleService project.
+WSGI config for Belvra project.
 """
 
 import os

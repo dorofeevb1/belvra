@@ -1,6 +1,6 @@
 {
-  "name": "BeautyBook",
-  "short_name": "BeautyBook",
+  "name": "Belvra",
+  "short_name": "Belvra",
   "description": "Платформа для бьюти-мастеров и клиентов",
   "start_url": "/",
   "display": "standalone",
@@ -88,17 +88,17 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
-      "label": "Главный экран BeautyBook"
+      "label": "Главный экран Belvra"
     }
   ],
   "related_applications": [
     {
       "platform": "play",
-      "url": "https://play.google.com/store/apps/details?id=com.beautybook.app"
+      "url": "https://play.google.com/store/apps/details?id=com.belvra.app"
     },
     {
       "platform": "itunes",
-      "url": "https://apps.apple.com/app/beautybook/id000000000"
+      "url": "https://apps.apple.com/app/belvra/id000000000"
     }
   ],
   "prefer_related_applications": false

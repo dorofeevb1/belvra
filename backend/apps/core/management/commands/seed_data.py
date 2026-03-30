@@ -258,7 +258,7 @@ class Command(BaseCommand):
 
         masters = []
         for data in masters_data:
-            email = f"{transliterate(data['first_name'])}.{transliterate(data['last_name'])}@beautystyle.ru"
+            email = f"{transliterate(data['first_name'])}.{transliterate(data['last_name'])}@belvra.ru"
             user, created = User.objects.get_or_create(
                 email=email,
                 defaults={

@@ -4,8 +4,8 @@ stages:
   - deploy-prod
 
 variables:
-  REMOTE_DIR_DEV: /opt/beautystyle/dev
-  REMOTE_DIR_PROD: /opt/beautystyle/prod
+  REMOTE_DIR_DEV: /opt/belvra/dev
+  REMOTE_DIR_PROD: /opt/belvra/prod
   DEPLOY_SERVER: root@89.223.126.31
 
 # ============================================================
@@ -19,7 +19,7 @@ backend-test:
     - postgres:16-alpine
     - redis:7-alpine
   variables:
-    POSTGRES_DB: beautystyle_test
+    POSTGRES_DB: belvra_test
     POSTGRES_USER: postgres
     POSTGRES_PASSWORD: postgres
     POSTGRES_HOST: postgres

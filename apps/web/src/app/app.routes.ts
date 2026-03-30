@@ -32,6 +32,14 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/verify-email/verify-email.component').then(m => m.VerifyEmailComponent)
   },
   {
+    path: 'privacy-policy',
+    loadComponent: () => import('./features/legal/legal-page.component').then(m => m.LegalPageComponent)
+  },
+  {
+    path: 'terms',
+    loadComponent: () => import('./features/legal/legal-page.component').then(m => m.LegalPageComponent)
+  },
+  {
     path: 'master',
     canActivate: [masterGuard],
     loadComponent: () => import('./features/master/master-view.component').then(m => m.MasterViewComponent),

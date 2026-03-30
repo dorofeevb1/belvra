@@ -84,6 +84,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   isTypingOther = signal(false);
   private typingSubject = new Subject<void>();
   private typingPollInterval: ReturnType<typeof setInterval> | null = null;
+  private messagePollInterval: ReturnType<typeof setInterval> | null = null;
 
   // ── Recording
   readonly isRecordingSupported = typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices;
@@ -142,6 +143,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     this.destroy$.complete();
     if (this.chatPollInterval) clearInterval(this.chatPollInterval);
     if (this.typingPollInterval) clearInterval(this.typingPollInterval);
+    if (this.messagePollInterval) clearInterval(this.messagePollInterval);
     this.cancelRecording();
     this.messageSearchSubject.complete();
     this.typingSubject.complete();
@@ -201,6 +203,22 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
     if (this.typingPollInterval) clearInterval(this.typingPollInterval);
     this.typingPollInterval = setInterval(() => {
       this.dataService.getWhoIsTyping(chat.id).subscribe(t => this.isTypingOther.set(t));
+    }, 3000);
+
+    // Start message poll for real-time updates
+    if (this.messagePollInterval) clearInterval(this.messagePollInterval);
+    this.messagePollInterval = setInterval(() => {
+      const cur = this.selectedChat();
+      if (!cur) return;
+      this.dataService.getMessages(cur.id, { limit: PAGE_SIZE, offset: 0 }).subscribe(({ messages, count }) => {
+        const existing = this.messages();
+        if (messages.length > 0 && (existing.length === 0 || messages[messages.length - 1].id !== existing[existing.length - 1]?.id)) {
+          this.messages.set(messages);
+          this.totalMessages.set(count);
+          this.shouldScroll = true;
+          setTimeout(() => this.scrollToBottom(), 50);
+        }
+      });
     }, 3000);
   }
 

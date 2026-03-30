@@ -4,7 +4,7 @@ Serializers for subscription management.
 
 from rest_framework import serializers
 
-from .models import Subscription, SubscriptionPayment, SubscriptionPlan
+from .models import Referral, Subscription, SubscriptionPayment, SubscriptionPlan
 
 
 class SubscriptionPlanSerializer(serializers.ModelSerializer):
@@ -122,3 +122,40 @@ class CheckLimitSerializer(serializers.Serializer):
     limit = serializers.IntegerField()
     remaining = serializers.IntegerField()
     message = serializers.CharField(required=False)
+
+
+class ReferralSerializer(serializers.ModelSerializer):
+    """Serializer for referral records."""
+
+    referred_user_name = serializers.SerializerMethodField()
+    referred_user_email = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Referral
+        fields = [
+            "id", "referred_user_name", "referred_user_email",
+            "reward_type", "status", "applied_at", "created_at"
+        ]
+        read_only_fields = ["id", "created_at"]
+
+    def get_referred_user_name(self, obj):
+        return obj.referred_user.full_name
+
+    def get_referred_user_email(self, obj):
+        email = obj.referred_user.email
+        parts = email.split("@")
+        if len(parts) == 2:
+            name = parts[0]
+            masked = name[:2] + "***" if len(name) > 2 else name[0] + "***"
+            return f"{masked}@{parts[1]}"
+        return email
+
+
+class ReferralStatsSerializer(serializers.Serializer):
+    """Serializer for referral statistics."""
+
+    referral_code = serializers.CharField()
+    total_referrals = serializers.IntegerField()
+    rewards_applied = serializers.IntegerField()
+    rewards_pending = serializers.IntegerField()
+    referrals = ReferralSerializer(many=True, read_only=True)

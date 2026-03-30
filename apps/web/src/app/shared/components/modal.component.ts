@@ -116,6 +116,44 @@ import { CommonModule } from '@angular/common';
       }
     }
 
+    @media (max-width: 480px) {
+      .modal-overlay {
+        padding: 0;
+        align-items: stretch;
+      }
+
+      .modal {
+        max-height: 100vh;
+        min-height: 100vh;
+        border-radius: 0;
+        margin: 0;
+      }
+
+      .modal-sm,
+      .modal-md,
+      .modal-lg,
+      .modal-xl,
+      .modal-full {
+        max-width: 100%;
+      }
+
+      .modal-header {
+        padding: 1rem;
+      }
+
+      .modal-body {
+        padding: 1rem;
+      }
+
+      ::ng-deep .modal-footer {
+        padding: 0.75rem 1rem;
+      }
+
+      ::ng-deep .modal-footer .btn {
+        flex: 1;
+      }
+    }
+
     :host {
       display: contents;
     }

@@ -2,6 +2,7 @@ import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { SubscriptionService } from '../../../core/services/subscription.service';
 import { AuthService, NotificationService } from '../../../core/services';
+import { ApiService } from '../../../core/services/api.service';
 import { ProBadgeComponent } from '../../../shared/components/pro-badge.component';
 import {
   SubscriptionPlan,
@@ -242,6 +243,57 @@ import {
         </div>
       }
 
+      <!-- Referral Program -->
+      @if (referralCode()) {
+        <div class="referral-section">
+          <h3 class="section-title">Реферальная программа</h3>
+          <p class="section-subtitle">Приглашайте друзей и получайте 1 месяц PRO бесплатно за каждого</p>
+
+          <div class="referral-card">
+            <div class="referral-code-block">
+              <span class="referral-label">Ваш реферальный код</span>
+              <div class="referral-code-row">
+                <code class="referral-code">{{ referralCode() }}</code>
+                <button type="button" class="btn-copy" (click)="copyReferralCode()">
+                  @if (codeCopied()) {
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  } @else {
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:20px;height:20px">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                  }
+                </button>
+              </div>
+              <button type="button" class="btn-share" (click)="copyReferralLink()">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:16px;height:16px">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                </svg>
+                Скопировать ссылку для приглашения
+              </button>
+            </div>
+
+            @if (referralStats()) {
+              <div class="referral-stats">
+                <div class="referral-stat">
+                  <span class="stat-value">{{ referralStats()!.total_referrals }}</span>
+                  <span class="stat-label">Приглашено</span>
+                </div>
+                <div class="referral-stat">
+                  <span class="stat-value">{{ referralStats()!.rewards_applied }}</span>
+                  <span class="stat-label">Награды получены</span>
+                </div>
+                <div class="referral-stat">
+                  <span class="stat-value">{{ referralStats()!.rewards_pending }}</span>
+                  <span class="stat-label">Ожидают</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+
       <!-- FAQ Section -->
       <div class="faq-section">
         <h3 class="section-title">Часто задаваемые вопросы</h3>
@@ -267,8 +319,12 @@ export class ClientSubscriptionComponent implements OnInit {
   subscriptionService = inject(SubscriptionService);
   private authService = inject(AuthService);
   private notificationService = inject(NotificationService);
+  private apiService = inject(ApiService);
 
   selectedPeriod = signal<SubscriptionPeriod>('monthly');
+  referralCode = signal('');
+  referralStats = signal<{ total_referrals: number; rewards_applied: number; rewards_pending: number } | null>(null);
+  codeCopied = signal(false);
 
   displayedPlans = computed(() => {
     const period = this.selectedPeriod();
@@ -298,6 +354,7 @@ export class ClientSubscriptionComponent implements OnInit {
 
   ngOnInit(): void {
     this.subscriptionService.loadSubscription().subscribe();
+    this.loadReferralStats();
   }
 
   subscribeToPlan(plan: SubscriptionPlan): void {
@@ -314,6 +371,41 @@ export class ClientSubscriptionComponent implements OnInit {
         this.notificationService.error('Не удалось оформить подписку. Попробуйте позже.');
       }
     });
+  }
+
+  loadReferralStats(): void {
+    this.apiService.getReferralStats().subscribe({
+      next: (data) => {
+        this.referralCode.set(data.referral_code || '');
+        this.referralStats.set({
+          total_referrals: data.total_referrals || 0,
+          rewards_applied: data.rewards_applied || 0,
+          rewards_pending: data.rewards_pending || 0
+        });
+      },
+      error: () => {}
+    });
+  }
+
+  copyReferralCode(): void {
+    const code = this.referralCode();
+    if (code) {
+      navigator.clipboard.writeText(code).then(() => {
+        this.codeCopied.set(true);
+        this.notificationService.success('Код скопирован!');
+        setTimeout(() => this.codeCopied.set(false), 2000);
+      });
+    }
+  }
+
+  copyReferralLink(): void {
+    const code = this.referralCode();
+    if (code) {
+      const link = `${window.location.origin}/register?ref=${code}`;
+      navigator.clipboard.writeText(link).then(() => {
+        this.notificationService.success('Ссылка скопирована!');
+      });
+    }
   }
 
   cancelSubscription(): void {

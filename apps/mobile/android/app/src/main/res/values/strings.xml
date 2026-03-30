@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">BeautyBook</string>
-    <string name="title_activity_main">BeautyBook</string>
-    <string name="package_name">com.beautybook.app</string>
-    <string name="custom_url_scheme">com.beautybook.app</string>
+    <string name="app_name">Belvra</string>
+    <string name="title_activity_main">Belvra</string>
+    <string name="package_name">ru.belvra.app</string>
+    <string name="custom_url_scheme">ru.belvra.app</string>
 </resources>

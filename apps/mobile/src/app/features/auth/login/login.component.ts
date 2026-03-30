@@ -49,7 +49,7 @@ export class LoginComponent {
             queryParams: { email: user?.email }
           });
         } else {
-          this.notificationService.success('Добро пожаловать в BeautyBook!');
+          this.notificationService.success('Добро пожаловать в Belvra!');
           const route = user?.role === 'master' ? '/master' : '/client';
           this.router.navigate([route]);
         }

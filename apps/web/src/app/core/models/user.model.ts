@@ -66,6 +66,8 @@ export interface Master extends User {
     lat: number;
     lng: number;
   };
+  experienceYears?: number;
+  isAvailable?: boolean;
   rating: number;
   reviewsCount: number;
   workSchedule: WorkSchedule;

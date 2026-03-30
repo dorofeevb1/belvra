@@ -453,3 +453,216 @@
   height: 24rem;
   background: var(--color-surface-secondary);
 }
+
+/* Mobile responsive (320-480px) */
+@media (max-width: 480px) {
+  .profile-page {
+    gap: 1rem;
+  }
+
+  .back-btn {
+    font-size: 0.8125rem;
+  }
+
+  .profile-header {
+    padding: 1rem;
+  }
+
+  .profile-main {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .profile-avatar,
+  .profile-avatar-placeholder {
+    width: 5rem;
+    height: 5rem;
+  }
+
+  .profile-avatar-placeholder span {
+    font-size: 2rem;
+  }
+
+  .profile-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .profile-name {
+    font-size: 1.25rem;
+  }
+
+  .profile-spec {
+    font-size: 0.8125rem;
+  }
+
+  .profile-address {
+    font-size: 0.8125rem;
+    justify-content: center;
+  }
+
+  .profile-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .chat-btn {
+    width: 100%;
+  }
+
+  .book-btn {
+    width: 100%;
+  }
+
+  .profile-desc {
+    font-size: 0.8125rem;
+    text-align: left;
+  }
+
+  /* Tabs */
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  .tab {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+
+  /* Services */
+  .service-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .service-name {
+    font-size: 0.9375rem;
+  }
+
+  .service-description {
+    font-size: 0.75rem;
+  }
+
+  .service-action {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    text-align: left;
+  }
+
+  .service-price {
+    font-size: 0.9375rem;
+  }
+
+  .service-book-btn {
+    font-size: 0.8125rem;
+  }
+
+  /* Portfolio */
+  .portfolio-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .portfolio-content {
+    padding: 0.75rem;
+  }
+
+  .portfolio-title {
+    font-size: 0.8125rem;
+  }
+
+  .portfolio-desc {
+    font-size: 0.6875rem;
+  }
+
+  /* Reviews */
+  .review-card {
+    padding: 1rem;
+  }
+
+  .review-header {
+    gap: 0.625rem;
+  }
+
+  .review-avatar,
+  .review-avatar-placeholder {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .review-avatar-placeholder span {
+    font-size: 0.75rem;
+  }
+
+  .review-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .review-author {
+    font-size: 0.8125rem;
+  }
+
+  .star-sm {
+    width: 16px;
+    height: 16px;
+  }
+
+  .review-comment {
+    font-size: 0.8125rem;
+  }
+
+  .review-date {
+    font-size: 0.6875rem;
+  }
+
+  /* Location */
+  .location-header {
+    padding: 0.875rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .location-icon {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .location-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .location-label {
+    font-size: 0.6875rem;
+  }
+
+  .location-address {
+    font-size: 0.875rem;
+  }
+
+  .location-map {
+    height: 16rem;
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-desc {
+    font-size: 0.8125rem;
+  }
+}

@@ -1,14 +1,15 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { AuthService, NotificationService, ThemeService } from '../../../core/services';
+import { ApiService } from '../../../core/services/api.service';
 import { SavedCard, NotificationSettings } from '../../../core/models';
 
 @Component({
   selector: 'app-client-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, FormsModule],
+  imports: [CommonModule, ReactiveFormsModule, FormsModule, RouterLink],
   templateUrl: './client-profile.component.html',
   styleUrl: './client-profile.component.scss'
 })
@@ -286,6 +287,35 @@ export class ClientProfileComponent implements OnInit {
       error: () => {
         this.isSaving.set(false);
         this.notificationService.error('Ошибка сохранения');
+      }
+    });
+  }
+
+  // Delete account
+  private api = inject(ApiService);
+  showDeleteConfirm = signal(false);
+  isDeletingAccount = signal(false);
+  deleteError = signal('');
+  deletePassword = '';
+
+  deleteAccount(): void {
+    if (!this.deletePassword) {
+      this.deleteError.set('Введите пароль');
+      return;
+    }
+
+    this.isDeletingAccount.set(true);
+    this.deleteError.set('');
+
+    this.api.deleteAccount(this.deletePassword).subscribe({
+      next: () => {
+        this.authService.logout();
+        this.router.navigate(['/login']);
+        this.notificationService.success('Аккаунт и все данные удалены');
+      },
+      error: (err: any) => {
+        this.isDeletingAccount.set(false);
+        this.deleteError.set(err?.error?.detail || 'Ошибка удаления аккаунта');
       }
     });
   }

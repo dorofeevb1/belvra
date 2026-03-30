@@ -7,7 +7,7 @@ SSH_PORT="2224"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "=========================================="
-echo "  BeautyStyleService — Full GitLab Setup"
+echo "  Belvra — Full GitLab Setup"
 echo "=========================================="
 echo ""
 echo "Сервер:    ${NEW_SERVER}"
@@ -94,7 +94,7 @@ GITLAB_URL="http://${NEW_SERVER}:${GITLAB_PORT}"
 echo "ВАЖНО: Сначала создай проект в GitLab:"
 echo "  ${GITLAB_URL}/projects/new"
 echo ""
-read -p "Введи путь проекта (например root/beautystyle): " PROJECT_PATH
+read -p "Введи путь проекта (например root/belvra): " PROJECT_PATH
 if [ -n "$PROJECT_PATH" ]; then
     REPO_ROOT="$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || echo "")"
     if [ -n "$REPO_ROOT" ]; then

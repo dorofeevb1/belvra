@@ -5,7 +5,7 @@ GREEN := \033[0;32m
 NC := \033[0m
 
 help:
-	@echo "$(GREEN)BeautyStyle Service$(NC)"
+	@echo "$(GREEN)Belvra$(NC)"
 	@echo ""
 	@echo "Available commands:"
 	@echo "  make build            - Build all Docker images"

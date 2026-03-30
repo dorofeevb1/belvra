@@ -301,3 +301,133 @@
   height: 500px;
   background: var(--color-surface-secondary);
 }
+
+/* Mobile responsive (320-480px) */
+@media (max-width: 480px) {
+  .search-page {
+    gap: 1rem;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .page-title {
+    font-size: 1.25rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .search-card {
+    padding: 1rem;
+  }
+
+  .search-input-wrap {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-icon {
+    top: 0.75rem;
+  }
+
+  .search-input {
+    width: 100%;
+    padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+    font-size: 0.875rem;
+  }
+
+  .search-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-hint {
+    font-size: 0.6875rem;
+    margin-top: 0.5rem;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .results-count {
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+
+  .view-toggle {
+    justify-content: center;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 0.5rem;
+    font-size: 0.8125rem;
+  }
+
+  .masters-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .master-card {
+    &:hover {
+      transform: none;
+    }
+  }
+
+  .master-header {
+    gap: 0.75rem;
+  }
+
+  .master-avatar,
+  .master-avatar-placeholder {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+
+  .master-avatar-placeholder span {
+    font-size: 1.25rem;
+  }
+
+  .master-name {
+    font-size: 0.9375rem;
+  }
+
+  .master-spec {
+    font-size: 0.8125rem;
+  }
+
+  .master-address {
+    font-size: 0.6875rem;
+  }
+
+  .empty-state {
+    padding: 2rem 1rem;
+  }
+
+  .empty-state-icon {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .empty-state-title {
+    font-size: 1rem;
+  }
+
+  .empty-state-desc {
+    font-size: 0.8125rem;
+  }
+
+  .map-container {
+    height: 300px;
+  }
+}

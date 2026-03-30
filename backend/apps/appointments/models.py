@@ -98,6 +98,8 @@ class Appointment(BaseModel):
     )
     price = models.DecimalField(max_digits=10, decimal_places=2)
     notes = models.TextField(blank=True)
+    used_materials = models.JSONField(default=list, blank=True, help_text="Использованные материалы")
+    materials_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0, help_text="Стоимость материалов")
     cancelled_at = models.DateTimeField(null=True, blank=True)
     cancellation_reason = models.TextField(blank=True)
     is_archived = models.BooleanField(default=False, db_index=True)

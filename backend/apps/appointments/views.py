@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -13,6 +14,8 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.core.notifications import NotificationService
+
+logger = logging.getLogger(__name__)
 from apps.core.tasks import (
     send_appointment_cancelled_task,
     send_appointment_confirmation_task,
@@ -186,7 +189,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                         {"detail": "Превышен месячный лимит записей для данного мастера."}
                     )
             except MasterProfile.DoesNotExist:
-                pass
+                logger.warning("MasterProfile id=%s not found during appointment creation", master_id)
 
         appointment = serializer.save()
 
@@ -512,6 +515,32 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 new_date=new_date_str,
                 new_time=new_time_str
             )
+
+        return Response(AppointmentSerializer(appointment).data)
+
+    @extend_schema(
+        tags=["Записи"],
+        summary="Обновить материалы",
+        description="Обновить использованные материалы и их стоимость",
+    )
+    @action(detail=True, methods=["post"], url_path="update-materials")
+    def update_materials(self, request, pk=None):
+        """Update used materials for an appointment."""
+        appointment = self.get_object()
+
+        # Only master can update materials
+        if not hasattr(request.user, "master_profile") or appointment.master != request.user.master_profile:
+            return Response(
+                {"error": "Только мастер может обновлять материалы"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        materials = request.data.get("materials", [])
+        materials_cost = request.data.get("materials_cost", 0)
+
+        appointment.used_materials = materials
+        appointment.materials_cost = materials_cost
+        appointment.save(update_fields=["used_materials", "materials_cost"])
 
         return Response(AppointmentSerializer(appointment).data)
 

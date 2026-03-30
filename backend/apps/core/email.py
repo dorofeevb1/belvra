@@ -40,7 +40,7 @@ class EmailService:
         try:
             # Add common context
             context['frontend_url'] = settings.FRONTEND_URL
-            context['support_email'] = 'support@beautybook.ru'
+            context['support_email'] = 'support@belvra.ru'
 
             # Render HTML content
             html_content = render_to_string(f'emails/{template_name}.html', context)
@@ -68,7 +68,7 @@ class EmailService:
     def send_welcome_email(cls, user) -> bool:
         """Send welcome email after registration."""
         return cls.send_email(
-            subject="Добро пожаловать в BeautyBook!",
+            subject="Добро пожаловать в Belvra!",
             template_name="welcome",
             context={
                 'user': user,
@@ -81,7 +81,7 @@ class EmailService:
     def send_email_verification_code(cls, user, code: str) -> bool:
         """Send email verification code."""
         return cls.send_email(
-            subject="Код подтверждения - BeautyBook",
+            subject="Код подтверждения - Belvra",
             template_name="email_verification_code",
             context={
                 'user': user,
@@ -95,7 +95,7 @@ class EmailService:
     def send_password_reset(cls, user, reset_url: str) -> bool:
         """Send password reset link."""
         return cls.send_email(
-            subject="Сброс пароля - BeautyBook",
+            subject="Сброс пароля - Belvra",
             template_name="password_reset",
             context={
                 'user': user,

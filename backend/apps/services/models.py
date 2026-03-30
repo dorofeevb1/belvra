@@ -2,6 +2,7 @@
 Models for beauty services.
 """
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 
@@ -197,3 +198,27 @@ class PortfolioItem(BaseModel):
 
     def __str__(self):
         return f"{self.master.user.full_name} - {self.title}"
+
+
+class PortfolioLike(models.Model):
+    """Track individual likes to prevent duplicates."""
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="portfolio_likes",
+    )
+    portfolio_item = models.ForeignKey(
+        PortfolioItem,
+        on_delete=models.CASCADE,
+        related_name="likes",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Лайк портфолио"
+        verbose_name_plural = "Лайки портфолио"
+        unique_together = ("user", "portfolio_item")
+
+    def __str__(self):
+        return f"{self.user} -> {self.portfolio_item}"

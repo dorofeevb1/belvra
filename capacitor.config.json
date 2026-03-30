@@ -1,6 +1,6 @@
 {
-  "appId": "com.beautybook.app",
-  "appName": "BeautyBook",
+  "appId": "ru.belvra.app",
+  "appName": "Belvra",
   "webDir": "apps/mobile/dist/mobile/browser",
   "ios": {
     "path": "apps/mobile/ios"

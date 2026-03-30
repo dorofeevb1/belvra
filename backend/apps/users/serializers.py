@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -24,9 +25,12 @@ class UserSerializer(serializers.ModelSerializer):
     social_links = serializers.SerializerMethodField()
     notification_settings = serializers.SerializerMethodField()
     payment_settings = serializers.SerializerMethodField()
+    # Master profile read fields (specialization, bio)
+    specialization = serializers.SerializerMethodField()
+    bio = serializers.SerializerMethodField()
     # Write-only fields for master profile updates
-    specialization = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    bio = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    specialization_write = serializers.CharField(write_only=True, required=False, allow_blank=True, source='specialization')
+    bio_write = serializers.CharField(write_only=True, required=False, allow_blank=True, source='bio')
     address_write = serializers.CharField(write_only=True, required=False, allow_blank=True, source='address')
     latitude_write = serializers.DecimalField(
         max_digits=9, decimal_places=6, write_only=True, required=False, allow_null=True
@@ -51,13 +55,18 @@ class UserSerializer(serializers.ModelSerializer):
     accept_card = serializers.BooleanField(write_only=True, required=False)
     accept_sbp = serializers.BooleanField(write_only=True, required=False)
     accept_yoomoney = serializers.BooleanField(write_only=True, required=False)
+    # Master profile extra fields
+    experience_years = serializers.IntegerField(write_only=True, required=False, min_value=0)
+    is_available = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = [
             "id", "email", "phone", "first_name", "last_name",
-            "full_name", "avatar", "role", "is_verified", "created_at",
-            "master_profile_id", "has_master_profile", "specialization", "bio",
+            "full_name", "avatar", "role", "is_verified",
+            "referral_code", "is_early_adopter", "created_at",
+            "master_profile_id", "has_master_profile", "specialization", "specialization_write",
+            "bio", "bio_write",
             "address", "address_write", "latitude", "latitude_write",
             "longitude", "longitude_write", "rating", "reviews_count",
             "social_links", "notification_settings", "payment_settings",
@@ -65,9 +74,10 @@ class UserSerializer(serializers.ModelSerializer):
             "email_notifications", "sms_notifications", "push_notifications", "reminder_hours",
             "online_payments_enabled", "prepayment_required", "prepayment_percent",
             "accept_card", "accept_sbp", "accept_yoomoney",
+            "experience_years", "is_available",
             "subscription"
         ]
-        read_only_fields = ["id", "email", "role", "is_verified", "created_at"]
+        read_only_fields = ["id", "email", "role", "is_verified", "referral_code", "is_early_adopter", "created_at"]
 
     def get_master_profile_id(self, obj):
         """Return master profile ID if user is a master."""
@@ -78,6 +88,16 @@ class UserSerializer(serializers.ModelSerializer):
     def get_has_master_profile(self, obj):
         """Return True if user has a master profile (can switch to master mode)."""
         return hasattr(obj, 'master_profile') and obj.master_profile is not None
+
+    def get_specialization(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return obj.master_profile.specialization or ''
+        return ''
+
+    def get_bio(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return obj.master_profile.bio or ''
+        return ''
 
     def get_address(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
@@ -180,6 +200,8 @@ class UserSerializer(serializers.ModelSerializer):
         accept_card = validated_data.pop('accept_card', None)
         accept_sbp = validated_data.pop('accept_sbp', None)
         accept_yoomoney = validated_data.pop('accept_yoomoney', None)
+        experience_years = validated_data.pop('experience_years', None)
+        is_available = validated_data.pop('is_available', None)
 
         # Update user fields
         instance = super().update(instance, validated_data)
@@ -231,6 +253,10 @@ class UserSerializer(serializers.ModelSerializer):
                 master_profile.accept_sbp = accept_sbp
             if accept_yoomoney is not None:
                 master_profile.accept_yoomoney = accept_yoomoney
+            if experience_years is not None:
+                master_profile.experience_years = experience_years
+            if is_available is not None:
+                master_profile.is_available = is_available
             master_profile.save()
 
         return instance
@@ -245,20 +271,71 @@ class UserCreateSerializer(serializers.ModelSerializer):
         choices=[("client", "Клиент"), ("master", "Мастер")],
         default="client"
     )
+    accept_privacy = serializers.BooleanField(write_only=True)
+    accept_terms = serializers.BooleanField(write_only=True)
+    referral_code = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
         fields = [
             "email", "password", "password_confirm",
-            "first_name", "last_name", "phone", "role"
+            "first_name", "last_name", "phone", "role",
+            "accept_privacy", "accept_terms", "referral_code"
         ]
+
+    def validate_accept_privacy(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "Необходимо дать согласие на обработку персональных данных"
+            )
+        return value
+
+    def validate_accept_terms(self, value):
+        if not value:
+            raise serializers.ValidationError(
+                "Необходимо принять пользовательское соглашение"
+            )
+        return value
 
     def validate(self, attrs):
         if attrs["password"] != attrs.pop("password_confirm"):
             raise serializers.ValidationError({"password_confirm": "Пароли не совпадают"})
         return attrs
 
+    def validate_referral_code(self, value):
+        if value:
+            value = value.strip().upper()
+            if not User.objects.filter(referral_code=value).exists():
+                raise serializers.ValidationError("Реферальный код не найден")
+        return value
+
     def create(self, validated_data):
+        from django.db.models import Count
+
+        validated_data.pop("accept_privacy", None)
+        validated_data.pop("accept_terms", None)
+        ref_code = validated_data.pop("referral_code", None)
+        now = timezone.now()
+        validated_data["privacy_accepted_at"] = now
+        validated_data["terms_accepted_at"] = now
+        validated_data["privacy_version_accepted"] = "1.1"
+        validated_data["terms_version_accepted"] = "1.1"
+
+        # Link referrer (prevent self-referral by checking email)
+        if ref_code:
+            referrer = User.objects.filter(referral_code=ref_code).first()
+            if referrer and referrer.email != validated_data.get("email"):
+                validated_data["referred_by"] = referrer
+
+        # Check early adopter (first 50 users) with atomic count
+        from django.db import transaction
+        with transaction.atomic():
+            early_count = User.objects.select_for_update().filter(
+                is_early_adopter=True
+            ).count()
+            if early_count < 50:
+                validated_data["is_early_adopter"] = True
+
         return User.objects.create_user(**validated_data)
 
 

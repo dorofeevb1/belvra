@@ -1,5 +1,5 @@
 """
-URL configuration for BeautyStyleService project.
+URL configuration for Belvra project.
 """
 
 from django.conf import settings

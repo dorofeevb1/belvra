@@ -4,8 +4,8 @@ import { Router } from '@angular/router';
 import { BehaviorSubject, catchError, filter, switchMap, take, throwError } from 'rxjs';
 import { ApiService } from '../services/api.service';
 
-const TOKEN_KEY = 'beautybook_access_token';
-const REFRESH_TOKEN_KEY = 'beautybook_refresh_token';
+const TOKEN_KEY = 'belvra_access_token';
+const REFRESH_TOKEN_KEY = 'belvra_refresh_token';
 
 let isRefreshing = false;
 const refreshTokenSubject = new BehaviorSubject<string | null>(null);
@@ -102,6 +102,6 @@ function handleTokenRefresh(
 function clearAuthAndRedirect(router: Router) {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
-  localStorage.removeItem('beautybook_user');
+  localStorage.removeItem('belvra_user');
   router.navigate(['/login']);
 }

@@ -519,3 +519,274 @@
     cursor: not-allowed;
   }
 }
+
+// Referral Section
+.referral-section {
+  margin-bottom: 2rem;
+}
+
+.section-subtitle {
+  font-size: 0.875rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25rem;
+  margin-bottom: 1rem;
+}
+
+.referral-card {
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.referral-code-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.referral-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.referral-code-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.referral-code {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: var(--color-brand-500);
+  background: var(--color-bg-secondary);
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-family: monospace;
+}
+
+.btn-copy {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+    color: var(--color-brand-500);
+  }
+}
+
+.btn-share {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-brand-500);
+  background: transparent;
+  border: 1px solid var(--color-brand-500);
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+
+  &:hover {
+    background: var(--color-brand-50);
+  }
+}
+
+.referral-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.referral-stat {
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+}
+
+.stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary);
+  margin-top: 0.25rem;
+}
+
+/* Mobile (320-480px) */
+@media (max-width: 480px) {
+  .subscription-page {
+    padding: 0.75rem;
+  }
+
+  .page-header {
+    margin-bottom: 1.25rem;
+  }
+
+  .page-title {
+    font-size: 1.375rem;
+  }
+
+  .page-subtitle {
+    font-size: 0.875rem;
+  }
+
+  .current-subscription {
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .subscription-icon {
+    width: 2.5rem;
+    height: 2.5rem;
+
+    svg {
+      width: 1.25rem;
+      height: 1.25rem;
+    }
+  }
+
+  .subscription-text {
+    h3 {
+      font-size: 0.9375rem;
+    }
+
+    p {
+      font-size: 0.8125rem;
+    }
+  }
+
+  .subscription-actions {
+    button {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
+  }
+
+  .btn-reactivate, .btn-cancel {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .period-toggle {
+    margin-bottom: 1.25rem;
+  }
+
+  .toggle-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .plans-grid {
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .plan-card {
+    padding: 1.25rem;
+  }
+
+  .plan-name {
+    font-size: 1.125rem;
+  }
+
+  .price-amount {
+    font-size: 1.75rem;
+  }
+
+  .price-period {
+    font-size: 0.875rem;
+  }
+
+  .price-savings {
+    .original-price, .savings-amount {
+      font-size: 0.8125rem;
+    }
+  }
+
+  .features-list {
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .feature-item {
+    gap: 0.5rem;
+
+    svg {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    span {
+      font-size: 0.8125rem;
+    }
+  }
+
+  .plan-cta {
+    padding: 0.75rem 1rem;
+    font-size: 0.9375rem;
+  }
+
+  .usage-section {
+    padding: 1rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .usage-card {
+    padding: 0.75rem;
+  }
+
+  .usage-label, .usage-value {
+    font-size: 0.8125rem;
+  }
+
+  .faq-section {
+    padding: 1rem;
+  }
+
+  .faq-item {
+    summary {
+      padding: 0.75rem 0;
+      font-size: 0.875rem;
+
+      svg {
+        width: 1rem;
+        height: 1rem;
+        flex-shrink: 0;
+      }
+    }
+
+    p {
+      font-size: 0.8125rem;
+      padding-bottom: 0.75rem;
+    }
+  }
+}

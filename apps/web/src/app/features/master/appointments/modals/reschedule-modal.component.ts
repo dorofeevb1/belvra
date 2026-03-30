@@ -333,6 +333,57 @@ import { Appointment } from '../../../../core/models';
       border-top: 1px solid var(--color-border-secondary);
       flex-shrink: 0;
     }
+
+    @media (max-width: 480px) {
+      .modal-content {
+        gap: 1rem;
+      }
+
+      .info-card {
+        padding: 0.75rem;
+      }
+
+      .info-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      .info-icon svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .info-value {
+        font-size: 0.8125rem;
+      }
+
+      .mini-calendar {
+        padding: 0.5rem;
+      }
+
+      .calendar-day {
+        font-size: 0.6875rem;
+      }
+
+      .time-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.375rem;
+      }
+
+      .time-slot {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8125rem;
+        text-align: center;
+      }
+
+      .modal-actions {
+        padding: 0.75rem 1rem;
+      }
+
+      .modal-actions .btn {
+        flex: 1;
+      }
+    }
   `]
 })
 export class RescheduleModalComponent implements OnChanges {
@@ -382,10 +433,16 @@ export class RescheduleModalComponent implements OnChanges {
     if (!apt || !masterId) return;
 
     this.isLoadingSlots.set(true);
-    this.dataService.getAvailableSlots(masterId, date, apt.duration).subscribe(slots => {
-      const filtered = this.dateService.filterPastSlots(date, slots);
-      this.availableSlots.set(filtered);
-      this.isLoadingSlots.set(false);
+    this.dataService.getAvailableSlots(masterId, date, apt.duration).subscribe({
+      next: (slots) => {
+        const filtered = this.dateService.filterPastSlots(date, slots);
+        this.availableSlots.set(filtered);
+        this.isLoadingSlots.set(false);
+      },
+      error: () => {
+        this.availableSlots.set([]);
+        this.isLoadingSlots.set(false);
+      }
     });
   }
 

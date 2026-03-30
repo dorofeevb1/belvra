@@ -1,7 +1,8 @@
 """
-Payment models for BeautyStyleService.
+Payment models for Belvra.
 """
 
+import logging
 from decimal import Decimal
 
 from django.conf import settings
@@ -9,6 +10,8 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.core.models import BaseModel
+
+logger = logging.getLogger(__name__)
 
 
 class Wallet(BaseModel):
@@ -243,7 +246,7 @@ class Payment(BaseModel):
             if subscription and subscription.plan:
                 commission_rate = subscription.plan.commission_percent / Decimal("100")
         except Exception:
-            pass
+            logger.exception("Failed to get subscription commission rate for master %s", self.master_id)
         min_commission = getattr(settings, "MIN_COMMISSION", Decimal("10.00"))
 
         commission = self.amount * commission_rate

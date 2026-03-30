@@ -1,5 +1,5 @@
 """
-Django base settings for BeautyStyleService project.
+Django base settings for Belvra project.
 """
 
 import os
@@ -94,7 +94,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": env.str("POSTGRES_DB", default="beautystyle"),
+        "NAME": env.str("POSTGRES_DB", default="belvra"),
         "USER": env.str("POSTGRES_USER", default="postgres"),
         "PASSWORD": env.str("POSTGRES_PASSWORD", default="postgres"),
         "HOST": env.str("POSTGRES_HOST", default="localhost"),
@@ -115,7 +115,7 @@ CACHES = {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             "CONNECTION_POOL_KWARGS": {"max_connections": 50},
         },
-        "KEY_PREFIX": "beautystyle",
+        "KEY_PREFIX": "belvra",
     }
 }
 
@@ -308,7 +308,7 @@ CELERY_BEAT_SCHEDULE = {
 
 # API Documentation
 SPECTACULAR_SETTINGS = {
-    "TITLE": "BeautyStyle API",
+    "TITLE": "Belvra API",
     "DESCRIPTION": "API для сервиса записи в салоны красоты",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
@@ -357,8 +357,8 @@ EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=False)
 EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL", default=True)
 EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD", default="")
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="BeautyBook <noreply@beautybook.ru>")
-SERVER_EMAIL = env.str("SERVER_EMAIL", default="errors@beautybook.ru")
+DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="Belvra <noreply@belvra.ru>")
+SERVER_EMAIL = env.str("SERVER_EMAIL", default="errors@belvra.ru")
 
 # Frontend URL for email links
 FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:4200")
@@ -407,8 +407,8 @@ LOGGING = {
 
 # Django Unfold Admin
 UNFOLD = {
-    "SITE_TITLE": "BeautyStyle Admin",
-    "SITE_HEADER": "BeautyStyle",
+    "SITE_TITLE": "Belvra Admin",
+    "SITE_HEADER": "Belvra",
     "SITE_SYMBOL": "spa",
     "SHOW_HISTORY": True,
     "SHOW_VIEW_ON_SITE": True,

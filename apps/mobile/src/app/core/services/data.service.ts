@@ -1024,7 +1024,7 @@ export class DataService {
     return [
       {
         id: 'master-1',
-        email: 'master@beautybook.ru',
+        email: 'master@belvra.ru',
         name: 'Анна Петрова',
         role: 'master',
         phone: '+7 (999) 123-45-67',

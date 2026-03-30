@@ -1,4 +1,4 @@
-<div class="chat-page animate-fadeInUp">
+<div class="chat-page animate-fadeInUp" [class.chat-open]="selectedChat()">
 
   <!-- ===== SIDEBAR ===== -->
   <div class="chat-sidebar">
@@ -76,6 +76,11 @@
 
       <!-- Header -->
       <div class="chat-header">
+        <button type="button" class="back-btn" (click)="selectedChat.set(null)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
         <div class="header-avatar">
           @if (selectedChat()!.masterAvatar) {
             <img [src]="selectedChat()!.masterAvatar" [alt]="selectedChat()!.masterName" />

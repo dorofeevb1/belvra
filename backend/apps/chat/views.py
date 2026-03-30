@@ -124,7 +124,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             try:
                 reply_to = ChatMessage.objects.get(id=reply_to_id, chat=chat)
             except ChatMessage.DoesNotExist:
-                pass
+                logger.warning("Reply-to message id=%s not found in chat %s", reply_to_id, chat.id)
 
         message = ChatMessage.objects.create(
             chat=chat,
@@ -208,7 +208,7 @@ class ChatViewSet(viewsets.ModelViewSet):
                 is_read=False
             ).update(is_read=True, read_at=timezone.now())
         except Exception:
-            pass
+            logger.exception("Failed to mark chat notifications as read for chat %s", chat.id)
 
         return Response({"marked_read": count})
 

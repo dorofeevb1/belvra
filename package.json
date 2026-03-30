@@ -1,22 +1,22 @@
 {
-  "name": "beautystyle-monorepo",
+  "name": "belvra-monorepo",
   "version": "1.0.0",
   "private": true,
-  "description": "BeautyStyle Service - Web and Mobile Applications",
+  "description": "Belvra - Web and Mobile Applications",
   "workspaces": [
     "apps/*",
     "libs/*"
   ],
   "scripts": {
-    "web:dev": "npm run dev -w @beautystyle/web",
-    "web:build": "npm run build -w @beautystyle/web",
-    "mobile:dev": "npm run dev -w @beautystyle/mobile",
-    "mobile:build": "npm run build -w @beautystyle/mobile",
-    "mobile:sync": "npm run sync -w @beautystyle/mobile",
-    "shared:build": "npm run build -w @beautystyle/shared",
-    "build": "npm run build:prod -w @beautystyle/mobile",
-    "ionic:build": "npm run build:prod -w @beautystyle/mobile",
-    "ionic:capacitor:build": "npm run build:prod -w @beautystyle/mobile"
+    "web:dev": "npm run dev -w @belvra/web",
+    "web:build": "npm run build -w @belvra/web",
+    "mobile:dev": "npm run dev -w @belvra/mobile",
+    "mobile:build": "npm run build -w @belvra/mobile",
+    "mobile:sync": "npm run sync -w @belvra/mobile",
+    "shared:build": "npm run build -w @belvra/shared",
+    "build": "npm run build:prod -w @belvra/mobile",
+    "ionic:build": "npm run build:prod -w @belvra/mobile",
+    "ionic:capacitor:build": "npm run build:prod -w @belvra/mobile"
   },
   "engines": {
     "node": ">=20.0.0"

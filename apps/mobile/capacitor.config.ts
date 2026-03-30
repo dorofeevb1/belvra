@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.beautybook.app',
-  appName: 'BeautyBook',
+  appId: 'ru.belvra.app',
+  appName: 'Belvra',
   webDir: 'dist/mobile/browser',
 
   // Server configuration for development
@@ -17,7 +17,7 @@ const config: CapacitorConfig = {
   ios: {
     contentInset: 'automatic',
     preferredContentMode: 'mobile',
-    scheme: 'beautybook'
+    scheme: 'belvra'
   },
 
   // Android specific configuration
@@ -69,9 +69,9 @@ const config: CapacitorConfig = {
     // App deep links
     App: {
       links: [
-        { scheme: 'beautybook' },
-        { scheme: 'https', host: 'beautybook.app' },
-        { scheme: 'https', host: 'www.beautybook.app' }
+        { scheme: 'belvra' },
+        { scheme: 'https', host: 'belvra.ru' },
+        { scheme: 'https', host: 'www.belvra.ru' }
       ]
     }
   }

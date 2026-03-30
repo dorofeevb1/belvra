@@ -52,8 +52,15 @@ export class ApiService {
     last_name: string;
     phone?: string;
     role?: string;
+    accept_privacy?: boolean;
+    accept_terms?: boolean;
+    referral_code?: string;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/register/`, data);
+  }
+
+  deleteAccount(password: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/profile/delete-account/`, { password });
   }
 
   logout(): Observable<any> {
@@ -747,5 +754,29 @@ export class ApiService {
 
   getSubscriptionPlans(): Observable<any> {
     return this.http.get(`${this.baseUrl}/subscriptions/plans/`);
+  }
+
+  // ============ Referral endpoints ============
+
+  getReferralStats(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/referrals/stats/`);
+  }
+
+  getReferrals(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/referrals/`);
+  }
+
+  // ============ Consent endpoints ============
+
+  getConsentStatus(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/auth/consent/status/`);
+  }
+
+  updateConsent(type: 'privacy' | 'terms' | 'all'): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/consent/status/`, { type });
+  }
+
+  withdrawConsent(type: 'privacy' | 'terms'): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/consent/withdraw/`, { type });
   }
 }

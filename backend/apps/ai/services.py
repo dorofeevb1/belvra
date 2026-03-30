@@ -105,7 +105,7 @@ class AIService:
             if match:
                 return json.loads(match.group(0))
         except json.JSONDecodeError:
-            pass
+            logger.warning("Failed to extract JSON from AI response: %.200s", text)
         return None
 
     def analyze_photo(self, image_base64: str, analysis_type: str = "general") -> dict[str, Any]:

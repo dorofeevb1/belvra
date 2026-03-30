@@ -52,6 +52,9 @@ export class ApiService {
     last_name: string;
     phone?: string;
     role?: string;
+    accept_privacy?: boolean;
+    accept_terms?: boolean;
+    referral_code?: string;
   }): Observable<any> {
     return this.http.post(`${this.baseUrl}/auth/register/`, data);
   }
@@ -97,6 +100,10 @@ export class ApiService {
       old_password: oldPassword,
       new_password: newPassword
     });
+  }
+
+  deleteAccount(password: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/profile/delete-account/`, { password });
   }
 
   // Password Reset endpoints
@@ -269,6 +276,10 @@ export class ApiService {
 
   rescheduleAppointment(id: string, data: { date: string; start_time: string }): Observable<any> {
     return this.http.post(`${this.baseUrl}/appointments/${id}/reschedule/`, data);
+  }
+
+  updateAppointmentMaterials(id: string, data: { materials: any[]; materials_cost: number }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/appointments/${id}/update-materials/`, data);
   }
 
   // Available slots
@@ -791,5 +802,29 @@ export class ApiService {
 
   getSubscriptionPlans(): Observable<any> {
     return this.http.get(`${this.baseUrl}/subscriptions/plans/`);
+  }
+
+  // ============ Referral endpoints ============
+
+  getReferralStats(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/referrals/stats/`);
+  }
+
+  getReferrals(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/subscriptions/referrals/`);
+  }
+
+  // ============ Consent endpoints ============
+
+  getConsentStatus(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/auth/consent/status/`);
+  }
+
+  updateConsent(type: 'privacy' | 'terms' | 'all'): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/consent/status/`, { type });
+  }
+
+  withdrawConsent(type: 'privacy' | 'terms'): Observable<any> {
+    return this.http.post(`${this.baseUrl}/auth/consent/withdraw/`, { type });
   }
 }

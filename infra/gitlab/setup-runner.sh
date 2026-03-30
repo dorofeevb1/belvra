@@ -40,7 +40,7 @@ docker exec gitlab-runner gitlab-runner register \
   --docker-privileged \
   --docker-pull-policy "if-not-present" \
   --docker-volumes "/var/run/docker.sock:/var/run/docker.sock" \
-  --description "beautystyle-docker-runner"
+  --description "belvra-docker-runner"
 
 # Регистрируем shell runner (для деплоя через SSH)
 docker exec gitlab-runner gitlab-runner register \
@@ -48,7 +48,7 @@ docker exec gitlab-runner gitlab-runner register \
   --url "${GITLAB_URL}" \
   --token "${RUNNER_TOKEN}" \
   --executor "shell" \
-  --description "beautystyle-shell-runner"
+  --description "belvra-shell-runner"
 
 echo ""
 echo "Runners зарегистрированы!"

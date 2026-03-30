@@ -11,11 +11,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Subscription, SubscriptionPayment, SubscriptionPlan
+from .models import Referral, Subscription, SubscriptionPayment, SubscriptionPlan
 from .serializers import (
     CancelSubscriptionSerializer,
     ChangePlanSerializer,
     CheckLimitSerializer,
+    ReferralSerializer,
+    ReferralStatsSerializer,
     SubscribeRequestSerializer,
     SubscribeResponseSerializer,
     SubscriptionPaymentSerializer,
@@ -419,3 +421,46 @@ class TestConfirmPaymentView(APIView):
                 {"error": "Платёж не найден"},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+
+@extend_schema(
+    tags=["Реферальная программа"],
+    summary="Статистика рефералов",
+    description="Реферальный код, количество приглашённых, полученные награды"
+)
+class ReferralStatsView(APIView):
+    """Get referral statistics for current user."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        referrals = Referral.objects.filter(referrer=user)
+        total_referrals = referrals.count()
+        rewards_applied = referrals.filter(status=Referral.Status.APPLIED).count()
+        rewards_pending = referrals.filter(status=Referral.Status.PENDING).count()
+
+        return Response(ReferralStatsSerializer({
+            "referral_code": user.referral_code,
+            "total_referrals": total_referrals,
+            "rewards_applied": rewards_applied,
+            "rewards_pending": rewards_pending,
+            "referrals": ReferralSerializer(referrals, many=True).data,
+        }).data)
+
+
+@extend_schema(
+    tags=["Реферальная программа"],
+    summary="Список рефералов",
+    description="Список приглашённых пользователей"
+)
+class ReferralListView(generics.ListAPIView):
+    """List referrals for current user."""
+
+    serializer_class = ReferralSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Referral.objects.filter(
+            referrer=self.request.user
+        ).select_related("referred_user")

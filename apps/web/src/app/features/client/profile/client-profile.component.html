@@ -142,6 +142,52 @@
             Выйти из аккаунта
           </button>
         </div>
+
+        <div class="delete-account-section">
+          @if (!showDeleteConfirm()) {
+            <button type="button" class="btn btn-link-danger" (click)="showDeleteConfirm.set(true)">
+              Удалить аккаунт и все данные
+            </button>
+          } @else {
+            <div class="delete-confirm-box">
+              <p class="delete-warning">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                Все ваши данные будут безвозвратно удалены. Это действие нельзя отменить.
+              </p>
+              <div class="form-group">
+                <label class="label">Введите пароль для подтверждения</label>
+                <input
+                  type="password"
+                  [(ngModel)]="deletePassword"
+                  class="input"
+                  placeholder="Ваш пароль"
+                />
+              </div>
+              @if (deleteError()) {
+                <span class="field-error">{{ deleteError() }}</span>
+              }
+              <div class="confirm-actions">
+                <button type="button" class="btn btn-secondary" (click)="showDeleteConfirm.set(false); deletePassword = ''; deleteError.set('')">
+                  Отмена
+                </button>
+                <button type="button" class="btn btn-danger" [disabled]="isDeletingAccount()" (click)="deleteAccount()">
+                  @if (isDeletingAccount()) {
+                    Удаление...
+                  } @else {
+                    Удалить навсегда
+                  }
+                </button>
+              </div>
+            </div>
+          }
+          <p class="legal-links">
+            <a routerLink="/privacy-policy" target="_blank">Политика конфиденциальности</a>
+            &nbsp;|&nbsp;
+            <a routerLink="/terms" target="_blank">Пользовательское соглашение</a>
+          </p>
+        </div>
       </div>
     }
 

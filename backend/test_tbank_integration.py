@@ -70,7 +70,7 @@ def test_1_init_simple():
     data = api_request("Init", {
         "Amount": 29900,  # 299.00 RUB (подписка Pro)
         "OrderId": order_id,
-        "Description": "Подписка BeautyStyle PRO (тест)",
+        "Description": "Подписка Belvra PRO (тест)",
         "Language": "ru",
         "SuccessURL": "https://example.com/success",
         "FailURL": "https://example.com/fail",
@@ -101,14 +101,14 @@ def test_2_init_with_receipt():
     data = api_request("Init", {
         "Amount": 29900,
         "OrderId": order_id,
-        "Description": "Подписка BeautyStyle PRO",
+        "Description": "Подписка Belvra PRO",
         "Language": "ru",
         "Receipt": {
             "Taxation": "usn_income",
             "Email": "test@example.com",
             "Items": [
                 {
-                    "Name": "Подписка BeautyStyle PRO (месяц)",
+                    "Name": "Подписка Belvra PRO (месяц)",
                     "Price": 29900,
                     "Quantity": 1.0,
                     "Amount": 29900,

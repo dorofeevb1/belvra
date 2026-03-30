@@ -1,5 +1,5 @@
 """
-ASGI config for BeautyStyleService project.
+ASGI config for Belvra project.
 """
 
 import os

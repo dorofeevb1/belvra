@@ -2,7 +2,7 @@ services:
   # PostgreSQL Database (dev)
   db:
     image: postgres:16-alpine
-    container_name: beautystyle_db_dev
+    container_name: belvra_db_dev
     volumes:
       - postgres_data_dev:/var/lib/postgresql/data
     environment:
@@ -16,12 +16,12 @@ services:
       retries: 5
     restart: always
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
   # Redis (dev)
   redis:
     image: redis:7-alpine
-    container_name: beautystyle_redis_dev
+    container_name: belvra_redis_dev
     command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
     volumes:
       - redis_data_dev:/data
@@ -32,14 +32,14 @@ services:
       retries: 5
     restart: always
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
   # Django Backend (dev)
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_backend_dev
+    container_name: belvra_backend_dev
     volumes:
       - backend_static_dev:/app/staticfiles
       - backend_media_dev:/app/media
@@ -68,14 +68,14 @@ services:
         condition: service_healthy
     restart: always
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
   # Angular Frontend Builder (dev)
   frontend:
     build:
       context: ./apps/web
       dockerfile: Dockerfile
-    container_name: beautystyle_frontend_dev
+    container_name: belvra_frontend_dev
     volumes:
       - frontend_dist_dev:/out
     restart: "no"
@@ -85,7 +85,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_celery_dev
+    container_name: belvra_celery_dev
     command: celery -A config worker -l INFO --concurrency=2
     env_file:
       - .env
@@ -106,14 +106,14 @@ services:
       - backend
     restart: always
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
   # Celery Beat (dev)
   celery-beat:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: beautystyle_celery_beat_dev
+    container_name: belvra_celery_beat_dev
     command: celery -A config beat -l INFO --schedule=/tmp/celerybeat-schedule
     env_file:
       - .env
@@ -134,12 +134,12 @@ services:
       - celery
     restart: always
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
   # Nginx (dev) - port 8080
   nginx:
     image: nginx:alpine
-    container_name: beautystyle_nginx_dev
+    container_name: belvra_nginx_dev
     ports:
       - "8080:80"
     volumes:
@@ -158,7 +158,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - beautystyle_network_dev
+      - belvra_network_dev
 
 volumes:
   postgres_data_dev:
@@ -168,5 +168,5 @@ volumes:
   frontend_dist_dev:
 
 networks:
-  beautystyle_network_dev:
+  belvra_network_dev:
     driver: bridge

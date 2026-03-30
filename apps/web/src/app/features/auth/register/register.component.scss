@@ -235,6 +235,41 @@
   }
 }
 
+.consent-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+}
+
+.consent-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1.4;
+
+  a {
+    color: var(--color-brand-500);
+    text-decoration: underline;
+
+    &:hover {
+      color: var(--color-brand-600);
+    }
+  }
+}
+
+.consent-checkbox {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.125rem;
+  flex-shrink: 0;
+  accent-color: var(--color-brand-500);
+  cursor: pointer;
+}
+
 .error-message {
   display: flex;
   align-items: center;
@@ -305,5 +340,79 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 480px) {
+  .register-page {
+    padding: 1rem;
+  }
+
+  .register-container {
+    max-width: 100%;
+  }
+
+  .register-logo {
+    margin-bottom: 1.5rem;
+  }
+
+  .logo-icon {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 0.75rem;
+  }
+
+  .logo-text {
+    font-size: 1.375rem;
+  }
+
+  .logo-subtitle {
+    font-size: 0.8125rem;
+  }
+
+  .register-card {
+    padding: 1.25rem;
+  }
+
+  .steps-indicator {
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .step-number {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.75rem;
+  }
+
+  .step-label {
+    font-size: 0.6875rem;
+  }
+
+  .step-line {
+    max-width: 2.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-step {
+    gap: 0.875rem;
+  }
+
+  .form-buttons {
+    flex-direction: column;
+
+    button {
+      width: 100%;
+    }
+  }
+
+  .register-footer {
+    margin-top: 1.5rem;
+  }
+
+  .theme-toggle {
+    top: 1rem;
+    right: 1rem;
   }
 }

@@ -2,6 +2,8 @@
 Custom User model and related models.
 """
 
+import secrets
+import string
 import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
@@ -56,6 +58,40 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_staff = models.BooleanField(default=False)
     is_verified = models.BooleanField(default=False)
 
+    # FZ-152 consent fields
+    privacy_accepted_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Согласие на обработку ПДн"
+    )
+    terms_accepted_at = models.DateTimeField(
+        null=True, blank=True,
+        verbose_name="Принятие пользовательского соглашения"
+    )
+    privacy_version_accepted = models.CharField(
+        max_length=10, blank=True, default="",
+        verbose_name="Версия политики конфиденциальности"
+    )
+    terms_version_accepted = models.CharField(
+        max_length=10, blank=True, default="",
+        verbose_name="Версия пользовательского соглашения"
+    )
+
+    # Referral program
+    referral_code = models.CharField(
+        max_length=12, unique=True, blank=True,
+        verbose_name="Реферальный код"
+    )
+    referred_by = models.ForeignKey(
+        "self", null=True, blank=True,
+        on_delete=models.SET_NULL,
+        related_name="referrals",
+        verbose_name="Пригласил"
+    )
+    is_early_adopter = models.BooleanField(
+        default=False,
+        verbose_name="Ранний пользователь (бесплатный Pro)"
+    )
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -65,6 +101,19 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         verbose_name = "Пользователь"
         verbose_name_plural = "Пользователи"
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.referral_code:
+            self.referral_code = self._generate_referral_code()
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def _generate_referral_code():
+        chars = string.ascii_uppercase + string.digits
+        while True:
+            code = ''.join(secrets.choice(chars) for _ in range(8))
+            if not User.objects.filter(referral_code=code).exists():
+                return code
 
     def __str__(self):
         return self.email

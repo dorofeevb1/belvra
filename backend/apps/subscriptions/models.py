@@ -185,6 +185,48 @@ class Subscription(BaseModel):
         return current_count < limit
 
 
+class Referral(BaseModel):
+    """Tracks referral rewards."""
+
+    class RewardType(models.TextChoices):
+        FREE_MONTH_PRO = "free_month_pro", "Бесплатный месяц Pro"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Ожидает"
+        APPLIED = "applied", "Применено"
+        EXPIRED = "expired", "Истекло"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    referrer = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name="referral_rewards",
+        verbose_name="Пригласивший"
+    )
+    referred_user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name="referral_source",
+        verbose_name="Приглашённый"
+    )
+    reward_type = models.CharField(
+        max_length=30, choices=RewardType.choices,
+        default=RewardType.FREE_MONTH_PRO
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices,
+        default=Status.PENDING
+    )
+    applied_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Реферал"
+        verbose_name_plural = "Рефералы"
+        unique_together = ["referrer", "referred_user"]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.referrer.email} -> {self.referred_user.email}"
+
+
 class SubscriptionPayment(BaseModel):
     """Payment record for subscriptions."""
 

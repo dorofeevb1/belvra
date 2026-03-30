@@ -15,12 +15,12 @@ export class ThemeService {
     effect(() => {
       const theme = this.themeSignal();
       this.applyTheme(theme);
-      localStorage.setItem('beautybook_theme', theme);
+      localStorage.setItem('belvra_theme', theme);
     });
   }
 
   private getInitialTheme(): Theme {
-    const stored = localStorage.getItem('beautybook_theme') as Theme | null;
+    const stored = localStorage.getItem('belvra_theme') as Theme | null;
     if (stored) return stored;
 
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {

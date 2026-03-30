@@ -24,9 +24,9 @@ import { AuthService } from './auth.service';
 import { Master } from '../models';
 
 // Keys must match those in the service
-const TOKEN_KEY = 'beautybook_access_token';
-const REFRESH_TOKEN_KEY = 'beautybook_refresh_token';
-const USER_KEY = 'beautybook_user';
+const TOKEN_KEY = 'belvra_access_token';
+const REFRESH_TOKEN_KEY = 'belvra_refresh_token';
+const USER_KEY = 'belvra_user';
 
 /**
  * Helper: build a minimal AuthService instance **without** Angular TestBed.

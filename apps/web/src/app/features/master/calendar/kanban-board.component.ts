@@ -326,6 +326,86 @@ import { TodoItem, TodoStatus, TODO_STATUS_LABELS, TODO_PRIORITY_COLORS } from '
         transform: translateY(0);
       }
     }
+
+    /* Mobile 320-480px */
+    @media (max-width: 480px) {
+      .kanban-grid {
+        gap: 0.75rem;
+      }
+
+      .kanban-column {
+        padding: 0.75rem;
+        min-height: 200px;
+      }
+
+      .column-header {
+        margin-bottom: 0.75rem;
+        padding-bottom: 0.5rem;
+      }
+
+      .column-title {
+        gap: 0.375rem;
+
+        h3 {
+          font-size: 0.8125rem;
+        }
+      }
+
+      .column-dot {
+        width: 8px;
+        height: 8px;
+      }
+
+      .column-count {
+        font-size: 0.6875rem;
+        padding: 0.0625rem 0.375rem;
+      }
+
+      .add-form {
+        padding: 0.5rem;
+        margin-bottom: 0.5rem;
+      }
+
+      .task-card {
+        padding: 0.625rem;
+      }
+
+      .task-title {
+        font-size: 0.8125rem;
+      }
+
+      .task-description {
+        font-size: 0.6875rem;
+      }
+
+      .task-footer {
+        margin-top: 0.5rem;
+      }
+
+      .priority-badge {
+        font-size: 0.625rem;
+        padding: 0.1875rem 0.375rem;
+      }
+
+      .task-delete {
+        opacity: 1;
+      }
+
+      .empty-column {
+        padding: 1.5rem 0.75rem;
+
+        svg {
+          width: 1.5rem;
+          height: 1.5rem;
+          max-width: 24px;
+          max-height: 24px;
+        }
+
+        p {
+          font-size: 0.75rem;
+        }
+      }
+    }
   `]
 })
 export class KanbanBoardComponent {

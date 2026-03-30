@@ -72,8 +72,8 @@ export class PlatformService {
       const path = url.pathname;
 
       // Handle deep links
-      // beautybook://master/123 -> /master/123
-      // https://beautybook.app/booking/456 -> /booking/456
+      // belvra://master/123 -> /master/123
+      // https://belvra.ru/booking/456 -> /booking/456
       if (path) {
         this.router.navigateByUrl(path);
       }

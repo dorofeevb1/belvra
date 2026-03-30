@@ -92,7 +92,7 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X PUT \
     "${GITLAB_URL}/api/v4/application/appearance" \
     -H "PRIVATE-TOKEN: ${GITLAB_TOKEN}" \
     --form "title=GitLab" \
-    --form "description=BeautyStyle GitLab" \
+    --form "description=Belvra GitLab" \
     --form "new_project_guidelines=" \
     --form-string "header_message=<style>${DARK_CSS}</style>")
 
