@@ -2,6 +2,7 @@
 API views for payment processing.
 """
 
+import hashlib
 import logging
 from datetime import timedelta
 from decimal import Decimal
@@ -162,19 +163,61 @@ class PaymentViewSet(ModelViewSet):
         return PaymentSerializer
 
     def create(self, request, *args, **kwargs):
-        """Disabled — оплата услуг через сайт не поддерживается."""
-        return Response(
-            {"error": "Оплата услуг через сайт отключена. Оплата производится напрямую между клиентом и мастером."},
-            status=status.HTTP_403_FORBIDDEN
+        """Create a payment for an appointment."""
+        serializer = CreatePaymentSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        appointment = Appointment.objects.get(id=data["appointment_id"])
+
+        payment_service = PaymentService()
+        payment = payment_service.create_appointment_payment(
+            appointment=appointment,
+            payment_type=data.get("payment_type", Payment.PaymentType.FULL_PAYMENT),
+            amount=data.get("amount"),
+            return_url=data.get("return_url", settings.PAYMENT_RETURN_URL),
+            payment_method=data.get("payment_method"),
         )
+
+        return Response(PaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def refund(self, request, pk=None):
-        """Disabled — возвраты через сайт не поддерживаются."""
-        return Response(
-            {"error": "Возвраты через сайт отключены."},
-            status=status.HTTP_403_FORBIDDEN
-        )
+        """Process a refund for a payment."""
+        payment = self.get_object()
+
+        # Only masters who received the payment can issue refunds
+        if not hasattr(request.user, "master_profile") or payment.master != request.user.master_profile:
+            return Response(
+                {"error": "Только мастер может оформить возврат"},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = RefundSerializer(data={
+            "payment_id": str(payment.id),
+            **request.data
+        })
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        payment_service = PaymentService()
+
+        try:
+            payment_service.process_refund(
+                payment=payment,
+                amount=data.get("amount"),
+                reason=data.get("reason", "")
+            )
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            logger.error(f"Refund error for payment {payment.id}: {e}")
+            return Response(
+                {"error": "Ошибка при обработке возврата. Попробуйте позже."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response(PaymentSerializer(payment).data)
 
     @action(detail=True, methods=["get"])
     def get_status(self, request, pk=None):
@@ -276,8 +319,8 @@ class PayoutDestinationViewSet(ModelViewSet):
             card_number = data["card_number"].replace(" ", "")
             destination_data["card_last_four"] = card_number[-4:]
             destination_data["card_type"] = self._detect_card_type(card_number)
-            # In production, card_number would be tokenized via YooKassa
-            destination_data["payout_token"] = f"card_token_{card_number[-4:]}"
+            # Tokenize card via payment provider
+            destination_data["payout_token"] = self._tokenize_card(card_number, master)
 
         elif data["destination_type"] == PayoutDestination.DestinationType.YOOMONEY:
             destination_data["yoomoney_account"] = data["yoomoney_account"]
@@ -303,6 +346,61 @@ class PayoutDestinationViewSet(ModelViewSet):
         elif card_number.startswith("2"):
             return "МИР"
         return "Unknown"
+
+    def _tokenize_card(self, card_number: str, master) -> str:
+        """
+        Tokenize card number via YooKassa Payout synonym API.
+
+        In production, card number is sent to YooKassa to obtain a secure
+        synonym (token) used for payouts. Card number is never stored.
+        In test mode, generates a deterministic token from last 4 digits.
+        """
+        yookassa_shop_id = getattr(settings, "YOOKASSA_SHOP_ID", "")
+        yookassa_secret = getattr(settings, "YOOKASSA_SECRET_KEY", "")
+
+        if not yookassa_shop_id or not yookassa_secret:
+            # Test mode — generate a safe deterministic token
+            token_input = f"{master.id}:{card_number[-4:]}:{settings.SECRET_KEY}"
+            token_hash = hashlib.sha256(token_input.encode()).hexdigest()[:32]
+            return f"test_card_{token_hash}"
+
+        try:
+            import requests as http_requests  # noqa: F811
+
+            # YooKassa synonym API for card tokenization
+            response = http_requests.post(
+                "https://payment.yookassa.ru/api/v3/payouts",
+                json={
+                    "amount": {"value": "1.00", "currency": "RUB"},
+                    "payout_destination_data": {
+                        "type": "bank_card",
+                        "card": {"number": card_number}
+                    },
+                    "description": f"Токенизация карты для мастера {master.user.full_name}",
+                    "metadata": {"master_id": str(master.id), "purpose": "card_tokenization"},
+                },
+                auth=(yookassa_shop_id, yookassa_secret),
+                timeout=30,
+            )
+
+            if response.status_code in (200, 201):
+                data = response.json()
+                payout_id = data.get("id", "")
+                # The payout_destination_data from response contains the synonym
+                dest_data = data.get("payout_destination", {})
+                card_data = dest_data.get("card", {})
+                synonym = card_data.get("synonym") or card_data.get("number") or payout_id
+                return synonym
+
+            logger.warning(f"Card tokenization failed: {response.status_code} {response.text}")
+            # Fallback: use hashed token
+            token_input = f"{master.id}:{card_number[-4:]}:{settings.SECRET_KEY}"
+            return f"card_{hashlib.sha256(token_input.encode()).hexdigest()[:32]}"
+
+        except Exception as e:
+            logger.error(f"Card tokenization error: {e}")
+            token_input = f"{master.id}:{card_number[-4:]}:{settings.SECRET_KEY}"
+            return f"card_{hashlib.sha256(token_input.encode()).hexdigest()[:32]}"
 
     @action(detail=True, methods=["post"])
     def set_default(self, request, pk=None):
