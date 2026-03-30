@@ -365,12 +365,17 @@ class TBankService:
             # Amount in kopecks (integer)
             amount_kopecks = int(payment.amount * 100)
 
+            # Build webhook URL for T-Bank notifications
+            frontend_url = getattr(settings, "FRONTEND_URL", "https://belvra.ru")
+            notification_url = f"{frontend_url}/api/v1/payments/webhook/tbank/"
+
             params = {
                 "Amount": amount_kopecks,
                 "OrderId": str(payment.id),
                 "Description": (description or f"Оплата услуги #{payment.appointment_id}")[:140],
                 "SuccessURL": return_url,
                 "FailURL": return_url,
+                "NotificationURL": notification_url,
                 "DATA": {
                     "payment_id": str(payment.id),
                     "appointment_id": str(payment.appointment_id) if payment.appointment_id else "",

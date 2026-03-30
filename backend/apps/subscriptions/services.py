@@ -178,6 +178,10 @@ class SubscriptionService:
             amount_kopecks = int(payment.amount * 100)
             description = f"Подписка {plan.name}"[:140]
 
+            # Build webhook URL for T-Bank notifications
+            frontend_url = getattr(settings, "FRONTEND_URL", "https://belvra.ru")
+            notification_url = f"{frontend_url}/api/v1/subscriptions/webhook/"
+
             params = {
                 "Amount": amount_kopecks,
                 "OrderId": str(payment.id),
@@ -185,6 +189,7 @@ class SubscriptionService:
                 "CustomerKey": str(user.id),
                 "SuccessURL": return_url,
                 "FailURL": return_url,
+                "NotificationURL": notification_url,
                 "DATA": {
                     "payment_id": str(payment.id),
                     "subscription_id": str(payment.subscription_id),
