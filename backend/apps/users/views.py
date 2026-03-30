@@ -683,7 +683,9 @@ class DeleteAccountView(APIView):
 class LegalDocumentsView(APIView):
     """Return legal documents (privacy policy, terms of service)."""
 
+    authentication_classes = []
     permission_classes = [AllowAny]
+    throttle_classes = []
 
     PRIVACY_POLICY = {
         "title": "Политика конфиденциальности",
