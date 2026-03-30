@@ -65,8 +65,34 @@ class CurrentSubscriptionView(APIView):
     def get(self, request):
         service = SubscriptionService()
         subscription = service.get_or_create_free_subscription(request.user)
+
+        # Auto-check pending payments: if subscription is pending and payment was confirmed in T-Bank
+        if subscription.status == Subscription.Status.PENDING:
+            self._try_activate_pending(subscription, service)
+
         serializer = SubscriptionSerializer(subscription)
         return Response(serializer.data)
+
+    def _try_activate_pending(self, subscription, service):
+        """Check if a pending subscription has a confirmed payment in T-Bank."""
+        pending_payment = SubscriptionPayment.objects.filter(
+            subscription=subscription,
+            status=SubscriptionPayment.Status.PENDING
+        ).order_by('-created_at').first()
+
+        if not pending_payment or not pending_payment.external_payment_id:
+            return
+
+        try:
+            tbank_status = service.tbank.get_payment_status(pending_payment.external_payment_id)
+            if tbank_status.get('tbank_status') == 'CONFIRMED' or tbank_status.get('status') == 'succeeded':
+                # Payment confirmed — activate subscription
+                rebill_id = None
+                service.process_successful_payment(pending_payment, rebill_id)
+                subscription.refresh_from_db()
+                logger.info(f"Auto-activated subscription {subscription.id} from pending payment check")
+        except Exception as e:
+            logger.warning(f"Failed to check T-Bank status for payment {pending_payment.id}: {e}")
 
 
 @extend_schema(
