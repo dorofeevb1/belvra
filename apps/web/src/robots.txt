@@ -1,9 +1,36 @@
 User-agent: *
 Allow: /
+Allow: /login
+Allow: /register
+Allow: /privacy-policy
+Allow: /terms
 Disallow: /api/
 Disallow: /admin/
 Disallow: /ws/
 Disallow: /master/
+Disallow: /client/
 Disallow: /payment/
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /static/
+
+# Block aggressive bots
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Crawl delay for other bots
+User-agent: *
+Crawl-delay: 1
 
 Sitemap: https://belvra.ru/sitemap.xml
+Host: https://belvra.ru
