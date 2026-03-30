@@ -170,12 +170,15 @@ export class LegalPageComponent implements OnInit {
     const path = this.route.snapshot.routeConfig?.path;
     this.docType = path === 'terms' ? 'terms' : 'privacy';
 
-    this.api.get(`/auth/legal/`, { type: this.docType }).subscribe({
+    this.api.get(`/auth/legal/`).subscribe({
       next: (data: any) => {
-        this.title.set(data.title);
-        this.version.set(data.version);
-        this.effectiveDate.set(data.effective_date);
-        this.formattedContent.set(data.content);
+        const doc = this.docType === 'privacy' ? data.privacy_policy : data.terms_of_service;
+        if (doc) {
+          this.title.set(doc.title);
+          this.version.set(doc.version);
+          this.effectiveDate.set(doc.effective_date);
+          this.formattedContent.set(doc.content);
+        }
         this.isLoading.set(false);
       },
       error: () => {
