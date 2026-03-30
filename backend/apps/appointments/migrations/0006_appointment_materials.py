@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("appointments", "0003_add_master_service_to_appointment"),
+        ("appointments", "0005_appointment_appointment_master__e64005_idx"),
     ]
 
     operations = [
