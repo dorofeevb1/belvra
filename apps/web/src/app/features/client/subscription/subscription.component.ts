@@ -358,7 +358,7 @@ export class ClientSubscriptionComponent implements OnInit {
   }
 
   subscribeToPlan(plan: SubscriptionPlan): void {
-    const returnUrl = window.location.origin + '/client/subscription?success=true';
+    const returnUrl = window.location.origin + '/payment/result?success=true';
 
     this.subscriptionService.subscribeToPlan(plan.id, returnUrl).subscribe({
       next: (response) => {
