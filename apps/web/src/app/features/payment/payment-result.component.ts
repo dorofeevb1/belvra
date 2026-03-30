@@ -2,6 +2,7 @@ import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { ApiService } from '../../core/services/api.service';
 
 @Component({
   selector: 'app-payment-result',
@@ -498,6 +499,7 @@ import { AuthService } from '../../core/services/auth.service';
 export class PaymentResultComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private auth = inject(AuthService);
+  private api = inject(ApiService);
 
   isLoading = signal(true);
   isSuccess = signal(false);
@@ -535,21 +537,6 @@ export class PaymentResultComponent implements OnInit {
     this.subscriptionLink.set(role === 'client' ? '/client/subscription' : '/master/subscription');
 
     const params = this.route.snapshot.queryParams;
-    const success = params['Success'] || params['success'];
-    const status = params['Status'] || params['status'];
-
-    if (success === 'true' || success === true || status === 'CONFIRMED') {
-      this.isSuccess.set(true);
-    } else if (success === 'false' || success === false || status === 'REJECTED' || status === 'DEADLINE_EXPIRED') {
-      this.isSuccess.set(false);
-      if (status === 'REJECTED') {
-        this.errorMessage.set('Платёж отклонён банком. Проверьте данные карты и попробуйте снова.');
-      } else if (status === 'DEADLINE_EXPIRED') {
-        this.errorMessage.set('Время на оплату истекло. Попробуйте оформить подписку заново.');
-      }
-    } else {
-      this.isSuccess.set(success === 'true');
-    }
 
     if (params['Amount']) {
       const amountKopecks = parseInt(params['Amount'], 10);
@@ -557,8 +544,35 @@ export class PaymentResultComponent implements OnInit {
     } else if (params['amount']) {
       this.amount.set(params['amount']);
     }
-
     this.orderId.set(params['OrderId'] || params['order_id'] || '');
-    this.isLoading.set(false);
+
+    // Check real subscription status from API instead of trusting query params
+    this.api.getSubscription().subscribe({
+      next: (sub: any) => {
+        if (sub && sub.status === 'active' && sub.plan?.tier === 'pro') {
+          this.isSuccess.set(true);
+        } else {
+          this.isSuccess.set(false);
+        }
+        this.isLoading.set(false);
+      },
+      error: () => {
+        // Fallback to query params if API fails
+        const success = params['Success'] || params['success'];
+        const status = params['Status'] || params['status'];
+
+        if (success === 'false' || status === 'REJECTED' || status === 'DEADLINE_EXPIRED') {
+          this.isSuccess.set(false);
+          if (status === 'REJECTED') {
+            this.errorMessage.set('Платёж отклонён банком. Проверьте данные карты и попробуйте снова.');
+          } else if (status === 'DEADLINE_EXPIRED') {
+            this.errorMessage.set('Время на оплату истекло. Попробуйте оформить подписку заново.');
+          }
+        } else {
+          this.isSuccess.set(success === 'true');
+        }
+        this.isLoading.set(false);
+      }
+    });
   }
 }

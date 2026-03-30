@@ -188,7 +188,7 @@ class SubscriptionService:
                 "Description": description,
                 "CustomerKey": str(user.id),
                 "SuccessURL": return_url,
-                "FailURL": return_url.replace('success=true', 'success=false'),
+                "FailURL": return_url.replace('success=true', 'success=false') if 'success=true' in return_url else return_url + ('&' if '?' in return_url else '?') + 'success=false',
                 "NotificationURL": notification_url,
                 "DATA": {
                     "payment_id": str(payment.id),
