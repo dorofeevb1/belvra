@@ -189,12 +189,13 @@ export class SubscriptionService {
     return this.api.getSubscription().pipe(
       tap((response: any) => {
         if (response) {
+          const plan = response.plan || {};
           const subscription: Subscription = {
             id: response.id,
-            userId: response.user_id,
-            planId: response.plan_id,
-            tier: response.tier,
-            period: response.period,
+            userId: response.user_id || response.user,
+            planId: plan.id || response.plan_id,
+            tier: plan.tier || response.tier || 'free',
+            period: plan.period || response.period || 'monthly',
             status: response.status,
             currentPeriodStart: new Date(response.current_period_start),
             currentPeriodEnd: new Date(response.current_period_end),
