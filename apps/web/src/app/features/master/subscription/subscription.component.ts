@@ -6,8 +6,7 @@ import { ApiService } from '../../../core/services/api.service';
 import { ProBadgeComponent } from '../../../shared/components/pro-badge.component';
 import {
   SubscriptionPlan,
-  SubscriptionPeriod,
-  MASTER_PLANS
+  SubscriptionPeriod
 } from '../../../core/models';
 
 @Component({
@@ -345,7 +344,8 @@ export class SubscriptionComponent implements OnInit {
 
   displayedPlans = computed(() => {
     const period = this.selectedPeriod();
-    return MASTER_PLANS.filter(p =>
+    const plans = this.subscriptionService.availablePlans();
+    return plans.filter(p =>
       p.tier === 'free' || p.period === period
     );
   });
@@ -370,6 +370,7 @@ export class SubscriptionComponent implements OnInit {
   ];
 
   ngOnInit(): void {
+    this.subscriptionService.loadPlans().subscribe();
     this.subscriptionService.loadSubscription().subscribe();
     this.subscriptionService.loadUsageStats().subscribe();
     this.loadReferralStats();

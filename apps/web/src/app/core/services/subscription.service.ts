@@ -15,6 +15,30 @@ import {
   getPlanById
 } from '../models';
 
+/** Map API plan response to SubscriptionPlan, merging with local feature/limit definitions. */
+function mapApiPlan(apiPlan: any): SubscriptionPlan {
+  const tier: SubscriptionTier = apiPlan.tier || 'free';
+  const userType = apiPlan.user_type || 'master';
+  const period = apiPlan.period || 'monthly';
+
+  // Find matching local plan for features/limits
+  const localPlans = userType === 'master' ? MASTER_PLANS : CLIENT_PLANS;
+  const localMatch = localPlans.find(p => p.tier === tier && p.period === period);
+
+  return {
+    id: apiPlan.id,  // Real UUID from server
+    name: localMatch?.name || apiPlan.name,
+    tier,
+    userType,
+    period,
+    price: parseFloat(apiPlan.price) || 0,
+    originalPrice: apiPlan.original_price ? parseFloat(apiPlan.original_price) : localMatch?.originalPrice,
+    features: localMatch?.features || [],
+    limits: localMatch?.limits || getDefaultLimits(userType),
+    isPopular: localMatch?.isPopular || tier === 'pro',
+  };
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -30,6 +54,7 @@ export class SubscriptionService {
     portfolioItemsCount: 0
   });
   private loadingSignal = signal<boolean>(false);
+  private apiPlansSignal = signal<SubscriptionPlan[]>([]);
 
   // Public readonly signals
   readonly subscription = this.subscriptionSignal.asReadonly();
@@ -82,10 +107,13 @@ export class SubscriptionService {
     return null;
   });
 
-  // Available plans based on user type
+  // Available plans based on user type (prefer API plans, fallback to local)
   readonly availablePlans = computed((): SubscriptionPlan[] => {
     const user = this.auth.currentUser();
-    return user?.role === 'master' ? MASTER_PLANS : CLIENT_PLANS;
+    const userType = user?.role === 'master' ? 'master' : 'client';
+    const apiPlans = this.apiPlansSignal().filter(p => p.userType === userType);
+    if (apiPlans.length > 0) return apiPlans;
+    return userType === 'master' ? MASTER_PLANS : CLIENT_PLANS;
   });
 
   // ============ Limit checking methods ============
@@ -139,6 +167,21 @@ export class SubscriptionService {
   }
 
   // ============ API methods ============
+
+  loadPlans(): Observable<SubscriptionPlan[]> {
+    return this.api.getSubscriptionPlans().pipe(
+      tap((response: any) => {
+        const results = Array.isArray(response) ? response : (response?.results || []);
+        const plans = results.map(mapApiPlan);
+        this.apiPlansSignal.set(plans);
+      }),
+      map(() => this.apiPlansSignal()),
+      catchError(error => {
+        console.error('Error loading plans:', error);
+        return of([]);
+      })
+    );
+  }
 
   loadSubscription(): Observable<Subscription | null> {
     this.loadingSignal.set(true);
