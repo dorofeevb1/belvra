@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /admin/
+Disallow: /ws/
+Disallow: /master/
+Disallow: /payment/
+
+Sitemap: https://belvra.ru/sitemap.xml
