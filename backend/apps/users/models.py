@@ -2,12 +2,18 @@
 Custom User model and related models.
 """
 
+import os
 import secrets
 import string
 import uuid
 
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.db import models
+
+
+def avatar_upload_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f"avatars/{uuid.uuid4().hex}{ext}"
 
 from apps.core.models import TimeStampedModel
 
@@ -51,7 +57,7 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     phone = models.CharField(max_length=20, blank=True)
     first_name = models.CharField(max_length=150)
     last_name = models.CharField(max_length=150)
-    avatar = models.ImageField(upload_to="avatars/", null=True, blank=True)
+    avatar = models.ImageField(upload_to=avatar_upload_path, null=True, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.CLIENT)
 
     is_active = models.BooleanField(default=True)

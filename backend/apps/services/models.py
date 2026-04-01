@@ -2,9 +2,19 @@
 Models for beauty services.
 """
 
+import os
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
+
+
+def _unique_upload_path(folder):
+    def _path(instance, filename):
+        ext = os.path.splitext(filename)[1]
+        return f"{folder}/{uuid.uuid4().hex}{ext}"
+    return _path
 
 from apps.core.models import BaseModel
 from apps.users.models import MasterProfile
@@ -16,7 +26,7 @@ class Category(BaseModel):
     name = models.CharField(max_length=100)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to="categories/", null=True, blank=True)
+    image = models.ImageField(upload_to=_unique_upload_path("categories"), null=True, blank=True)
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
 
@@ -40,7 +50,7 @@ class Service(BaseModel):
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to="services/", null=True, blank=True)
+    image = models.ImageField(upload_to=_unique_upload_path("services"), null=True, blank=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     duration = models.PositiveIntegerField(help_text="Duration in minutes")
     is_active = models.BooleanField(default=True)
@@ -179,7 +189,7 @@ class PortfolioItem(BaseModel):
     )
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    image = models.ImageField(upload_to="portfolio/")
+    image = models.ImageField(upload_to=_unique_upload_path("portfolio"))
     service = models.ForeignKey(
         Service,
         on_delete=models.SET_NULL,
