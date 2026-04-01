@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -328,15 +329,20 @@ class UserCreateSerializer(serializers.ModelSerializer):
                 validated_data["referred_by"] = referrer
 
         # Check early adopter (first 50 users) with atomic count
-        from django.db import transaction
+        # Materialize the queryset with list() to ensure row-level locks
+        # are actually acquired before checking the count, preventing
+        # race conditions where concurrent registrations both see < 50.
         with transaction.atomic():
-            early_count = User.objects.select_for_update().filter(
-                is_early_adopter=True
-            ).count()
-            if early_count < 50:
+            early_adopters = list(
+                User.objects.select_for_update()
+                .filter(is_early_adopter=True)
+                .values_list("id", flat=True)
+            )
+            if len(early_adopters) < 50:
                 validated_data["is_early_adopter"] = True
 
-        return User.objects.create_user(**validated_data)
+            user = User.objects.create_user(**validated_data)
+        return user
 
 
 class LoginSerializer(serializers.Serializer):

@@ -62,7 +62,14 @@ export class SubscriptionService {
   readonly loading = this.loadingSignal.asReadonly();
 
   // Computed signals
+  readonly isEarlyAdopter = computed(() => {
+    return this.auth.currentUser()?.isEarlyAdopter === true;
+  });
+
   readonly isPro = computed(() => {
+    // Early adopters have lifetime Pro
+    if (this.isEarlyAdopter()) return true;
+
     const sub = this.subscriptionSignal();
     if (sub && sub.status === 'active' && sub.tier === 'pro') {
       return new Date(sub.currentPeriodEnd) > new Date();

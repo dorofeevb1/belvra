@@ -96,6 +96,7 @@ class RegisterView(generics.CreateAPIView):
             **token_data,
             "verification_email": user.email,
             "is_early_adopter": user.is_early_adopter,
+            "early_adopter_promo_active": user.is_early_adopter,
             "referral_code": user.referral_code,
         }, status=status.HTTP_201_CREATED)
 

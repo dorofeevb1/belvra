@@ -42,6 +42,9 @@ export class AuthService {
     const user = this.currentUserSignal();
     if (!user) return false;
 
+    // Early adopters have lifetime Pro
+    if (user.isEarlyAdopter) return true;
+
     const subscription = (user as Master | Client).subscription;
     if (!subscription) return false;
 
@@ -90,6 +93,7 @@ export class AuthService {
       avatar: backendUser.avatar,
       hasMasterProfile: backendUser.has_master_profile || false,
       isVerified: backendUser.is_verified ?? false,
+      isEarlyAdopter: backendUser.is_early_adopter ?? false,
       createdAt: new Date(backendUser.created_at)
     };
 

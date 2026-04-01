@@ -573,7 +573,7 @@
 
             <div class="form-group">
               <label class="label">Время напоминания</label>
-              <select formControlName="reminderHours" class="input select" style="max-width: 200px;">
+              <select formControlName="reminderHours" class="input select select--narrow">
                 @for (option of reminderOptions; track option.value) {
                   <option [value]="option.value">{{ option.label }}</option>
                 }
@@ -634,7 +634,7 @@
               @if (paymentsForm.get('prepaymentRequired')?.value) {
                 <div class="form-group">
                   <label class="label">Размер предоплаты</label>
-                  <select formControlName="prepaymentPercent" class="input select" style="max-width: 200px;">
+                  <select formControlName="prepaymentPercent" class="input select select--narrow">
                     @for (option of prepaymentOptions; track option.value) {
                       <option [value]="option.value">{{ option.label }}</option>
                     }

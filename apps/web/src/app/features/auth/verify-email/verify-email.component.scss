@@ -134,6 +134,38 @@
   width: 100%;
 }
 
+/* Баннер для early adopter — пожизненная Pro подписка */
+.early-adopter-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: linear-gradient(135deg, var(--color-primary-light, #e0f2fe) 0%, var(--color-success-bg, #dcfce7) 100%);
+  border: 1px solid var(--color-success, #22c55e);
+  border-radius: var(--radius-lg);
+  text-align: left;
+  width: 100%;
+
+  svg {
+    flex-shrink: 0;
+    color: var(--color-warning, #f59e0b);
+    margin-top: 2px;
+  }
+
+  strong {
+    display: block;
+    font-size: 0.9375rem;
+    color: var(--color-text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  p {
+    font-size: 0.8125rem;
+    color: var(--color-text-secondary);
+    margin: 0;
+  }
+}
+
 :host {
   display: block;
 }

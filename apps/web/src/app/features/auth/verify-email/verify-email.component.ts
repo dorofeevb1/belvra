@@ -5,6 +5,7 @@ import {
   AfterViewInit,
   inject,
   signal,
+  computed,
   ViewChildren,
   QueryList,
   ElementRef
@@ -44,6 +45,8 @@ export class VerifyEmailComponent implements OnInit, OnDestroy, AfterViewInit {
   errorMessage = signal('');
   resendCountdown = signal(0);
   isResending = signal(false);
+
+  readonly isEarlyAdopter = computed(() => this.authService.currentUser()?.isEarlyAdopter === true);
 
   private countdownTimer: ReturnType<typeof setInterval> | null = null;
 

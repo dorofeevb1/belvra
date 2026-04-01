@@ -11,6 +11,7 @@ export interface User {
   avatar?: string;
   hasMasterProfile?: boolean;
   isVerified?: boolean;
+  isEarlyAdopter?: boolean;
   createdAt: Date;
 }
 

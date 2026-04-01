@@ -143,6 +143,18 @@ class SubscribeView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        # Early adopters cannot change their lifetime Pro subscription
+        if request.user.is_early_adopter:
+            try:
+                existing = request.user.subscription
+                if existing.plan.is_pro:
+                    return Response(
+                        {"error": "Early adopters cannot change their lifetime Pro subscription."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            except Subscription.DoesNotExist:
+                pass
+
         service = SubscriptionService()
         result = service.subscribe(
             user=request.user,
@@ -184,6 +196,13 @@ class CancelSubscriptionView(APIView):
             return Response(
                 {"error": "Бесплатную подписку нельзя отменить"},
                 status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Early adopters cannot cancel their lifetime Pro subscription
+        if request.user.is_early_adopter and subscription.plan.is_pro:
+            return Response(
+                {"error": "Early adopters cannot change their lifetime Pro subscription."},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         service = SubscriptionService()
@@ -262,6 +281,13 @@ class ChangePlanView(APIView):
             return Response(
                 {"error": "Подписка не найдена"},
                 status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Early adopters cannot change their lifetime Pro subscription
+        if request.user.is_early_adopter and subscription.plan.is_pro:
+            return Response(
+                {"error": "Early adopters cannot change their lifetime Pro subscription."},
+                status=status.HTTP_403_FORBIDDEN
             )
 
         if new_plan.user_type != subscription.plan.user_type:

@@ -802,9 +802,19 @@
   }
 
   // Lightbox
+  .lightbox-overlay {
+    padding: 0.5rem;
+  }
+
   .lightbox-close {
     top: 0.75rem; right: 0.75rem;
     width: 2.25rem; height: 2.25rem;
+  }
+
+  .lightbox-img {
+    max-width: calc(100vw - 1rem);
+    max-height: calc(100vh - 4rem);
+    border-radius: var(--radius-lg);
   }
 
   // Search bar

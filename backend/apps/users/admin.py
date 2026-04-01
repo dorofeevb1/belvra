@@ -10,8 +10,8 @@ from .models import MasterProfile, User
 
 @admin.register(User)
 class UserAdmin(BaseUserAdmin, ModelAdmin):
-    list_display = ["email", "first_name", "last_name", "role_badge", "is_active_badge", "created_at"]
-    list_filter = ["role", "is_active", "is_staff", "is_verified", ("created_at", RangeDateFilter)]
+    list_display = ["email", "first_name", "last_name", "role_badge", "is_active_badge", "is_early_adopter", "created_at"]
+    list_filter = ["role", "is_active", "is_staff", "is_verified", "is_early_adopter", ("created_at", RangeDateFilter)]
     search_fields = ["email", "first_name", "last_name", "phone"]
     ordering = ["-created_at"]
     list_filter_submit = True
@@ -21,6 +21,7 @@ class UserAdmin(BaseUserAdmin, ModelAdmin):
         (None, {"fields": ("email", "password")}),
         ("Личная информация", {"fields": ("first_name", "last_name", "phone", "avatar")}),
         ("Права доступа", {"fields": ("role", "is_active", "is_staff", "is_superuser", "is_verified")}),
+        ("Подписка", {"fields": ("is_early_adopter",)}),
         ("Группы", {"fields": ("groups", "user_permissions")}),
     )
 

@@ -157,7 +157,15 @@ export class RegisterComponent {
       );
 
       if (success) {
-        this.notificationService.success('Регистрация успешна! Подтвердите email.');
+        const user = this.authService.currentUser();
+        if (user?.isEarlyAdopter) {
+          this.notificationService.success(
+            'Поздравляем! Вы в числе первых 50 пользователей и получили пожизненную Pro подписку!',
+            10000
+          );
+        } else {
+          this.notificationService.success('Регистрация успешна! Подтвердите email.');
+        }
         this.router.navigate(['/verify-email'], {
           queryParams: { email: this.form.email.trim() }
         });

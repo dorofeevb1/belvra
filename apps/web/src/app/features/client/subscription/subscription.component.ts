@@ -36,7 +36,7 @@ import {
       </header>
 
       <!-- Current Subscription Status (if PRO) -->
-      @if (subscriptionService.isPro() && subscriptionService.subscription()) {
+      @if (subscriptionService.isPro() && (subscriptionService.subscription() || subscriptionService.isEarlyAdopter())) {
         <div class="current-subscription">
           <div class="subscription-info">
             <div class="subscription-details">
@@ -51,7 +51,9 @@ import {
                   <app-pro-badge [size]="'sm'" [showIcon]="false" />
                 </h3>
                 <p>
-                  @if (subscriptionService.daysUntilExpiry() !== null) {
+                  @if (subscriptionService.isEarlyAdopter()) {
+                    <span class="early-adopter-label">Пожизненная Pro подписка (Early Adopter)</span>
+                  } @else if (subscriptionService.daysUntilExpiry() !== null) {
                     @if (subscriptionService.subscription()?.cancelAtPeriodEnd) {
                       Истекает через {{ subscriptionService.daysUntilExpiry() }} дн.
                     } @else {
@@ -62,27 +64,29 @@ import {
               </div>
             </div>
 
-            <div class="subscription-actions">
-              @if (subscriptionService.subscription()?.cancelAtPeriodEnd) {
-                <button
-                  type="button"
-                  class="btn-reactivate"
-                  [disabled]="subscriptionService.loading()"
-                  (click)="reactivateSubscription()"
-                >
-                  Возобновить подписку
-                </button>
-              } @else {
-                <button
-                  type="button"
-                  class="btn-cancel"
-                  [disabled]="subscriptionService.loading()"
-                  (click)="cancelSubscription()"
-                >
-                  Отменить автопродление
-                </button>
-              }
-            </div>
+            @if (!subscriptionService.isEarlyAdopter()) {
+              <div class="subscription-actions">
+                @if (subscriptionService.subscription()?.cancelAtPeriodEnd) {
+                  <button
+                    type="button"
+                    class="btn-reactivate"
+                    [disabled]="subscriptionService.loading()"
+                    (click)="reactivateSubscription()"
+                  >
+                    Возобновить подписку
+                  </button>
+                } @else {
+                  <button
+                    type="button"
+                    class="btn-cancel"
+                    [disabled]="subscriptionService.loading()"
+                    (click)="cancelSubscription()"
+                  >
+                    Отменить автопродление
+                  </button>
+                }
+              </div>
+            }
           </div>
 
           <!-- PRO Benefits Summary -->
