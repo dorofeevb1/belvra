@@ -48,3 +48,11 @@ Faker==22.2.0
 flake8==7.0.0
 black==23.12.1
 isort==5.13.2
+
+# Channels (WebSocket)
+channels>=4.0
+channels-redis>=4.1
+daphne>=4.0
+
+# Push Notifications
+firebase-admin>=6.2

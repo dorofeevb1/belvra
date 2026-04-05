@@ -43,6 +43,7 @@ services:
     volumes:
       - backend_static_prod:/app/staticfiles
       - backend_media_prod:/app/media
+      - ./firebase-credentials.json:/app/firebase-credentials.json:ro
     env_file:
       - .env
     environment:

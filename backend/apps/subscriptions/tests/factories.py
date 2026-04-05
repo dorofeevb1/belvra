@@ -31,6 +31,14 @@ class SubscriptionPlanFactory(factory.django.DjangoModelFactory):
     max_services_count = 5
     max_portfolio_items = 5
     commission_percent = Decimal("10.00")
+    extended_search = False
+    history_months = 3
+    client_stats_enabled = False
+    max_favorites = 5
+    pro_badge = False
+    client_notes_enabled = False
+    max_pinned_portfolio = 0
+    rebooking_reminder_enabled = False
 
 
 class FreeMasterPlanFactory(SubscriptionPlanFactory):
@@ -44,6 +52,14 @@ class FreeMasterPlanFactory(SubscriptionPlanFactory):
     max_services_count = 5
     max_portfolio_items = 5
     commission_percent = Decimal("10.00")
+    pro_badge = False
+    client_notes_enabled = False
+    max_pinned_portfolio = 0
+    rebooking_reminder_enabled = False
+    extended_search = False
+    history_months = 3
+    client_stats_enabled = False
+    max_favorites = 5
 
 
 class ProMasterPlanFactory(SubscriptionPlanFactory):
@@ -60,6 +76,14 @@ class ProMasterPlanFactory(SubscriptionPlanFactory):
     search_boost_enabled = True
     analytics_level = SubscriptionPlan.AnalyticsLevel.ADVANCED
     ai_assistant_enabled = True
+    pro_badge = True
+    client_notes_enabled = True
+    max_pinned_portfolio = 3
+    rebooking_reminder_enabled = True
+    extended_search = True
+    history_months = 0
+    client_stats_enabled = True
+    max_favorites = 0
 
 
 class FreeClientPlanFactory(SubscriptionPlanFactory):
@@ -72,6 +96,14 @@ class FreeClientPlanFactory(SubscriptionPlanFactory):
     max_appointments_per_month = 0
     max_services_count = 0
     max_portfolio_items = 0
+    extended_search = False
+    history_months = 3
+    client_stats_enabled = False
+    max_favorites = 5
+    pro_badge = False
+    client_notes_enabled = False
+    max_pinned_portfolio = 0
+    rebooking_reminder_enabled = False
 
 
 class ProClientPlanFactory(SubscriptionPlanFactory):
@@ -84,6 +116,14 @@ class ProClientPlanFactory(SubscriptionPlanFactory):
     priority_booking = True
     cashback_percent = Decimal("5.00")
     discount_percent = Decimal("10.00")
+    extended_search = True
+    history_months = 0
+    client_stats_enabled = True
+    max_favorites = 0
+    pro_badge = False
+    client_notes_enabled = False
+    max_pinned_portfolio = 0
+    rebooking_reminder_enabled = False
 
 
 class SubscriptionFactory(factory.django.DjangoModelFactory):

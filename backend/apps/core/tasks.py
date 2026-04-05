@@ -274,3 +274,26 @@ def send_rebooking_reminders():
 
     logger.info(f"Sent {sent} rebooking reminders")
     return sent
+
+
+@shared_task(bind=True, max_retries=2, default_retry_delay=30)
+def send_push_notification_task(self, user_id: str, title: str, body: str, data: dict = None):
+    """Send push notification to user's devices."""
+    from apps.users.models import User
+    try:
+        from apps.core.push_notifications import PushNotificationService
+        user = User.objects.get(id=user_id)
+        PushNotificationService.send_to_user(
+            user_id=str(user.id),
+            title=title,
+            body=body,
+            data=data or {},
+        )
+        logger.info(f"Push notification sent to user {user_id}")
+    except User.DoesNotExist:
+        logger.error(f"User {user_id} not found for push notification")
+    except ImportError:
+        logger.debug("firebase-admin not installed, skipping push notification")
+    except Exception as exc:
+        logger.warning(f"Push notification failed for user {user_id}: {exc}")
+        self.retry(exc=exc)

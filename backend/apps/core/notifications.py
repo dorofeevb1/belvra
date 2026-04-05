@@ -40,13 +40,27 @@ class NotificationService:
                 )
                 return None
 
-        return Notification.objects.create(
+        notification = Notification.objects.create(
             user=user,
             notification_type=notification_type,
             title=title,
             message=message,
             link=link
         )
+
+        # Send push notification asynchronously
+        try:
+            from .tasks import send_push_notification_task
+            send_push_notification_task.delay(
+                user_id=str(user.id),
+                title=title,
+                body=message,
+                data={"type": notification_type, "link": link},
+            )
+        except Exception:
+            pass  # Push is best-effort, don't break in-app notifications
+
+        return notification
 
     @classmethod
     def notify_new_appointment(cls, master_user, client_name: str, service_name: str, date: str, time: str):

@@ -22,6 +22,7 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localho
 
 # Application definition
 DJANGO_APPS = [
+    "daphne",  # ASGI server, must be first
     "unfold",  # Must be before django.contrib.admin
     "unfold.contrib.filters",
     "unfold.contrib.forms",
@@ -41,6 +42,7 @@ THIRD_PARTY_APPS = [
     "django_filters",
     "django_extensions",
     "drf_spectacular",
+    "channels",
 ]
 
 LOCAL_APPS = [
@@ -217,6 +219,17 @@ CELERY_TASK_ACKS_LATE = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
 CELERY_BROKER_CONNECTION_RETRY_ON_STARTUP = True
 
+# Channels (WebSocket)
+ASGI_APPLICATION = "config.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [env.str("REDIS_URL", default="redis://localhost:6379/0")],
+        },
+    },
+}
+
 # Celery Beat Schedule
 from celery.schedules import crontab
 
@@ -305,6 +318,9 @@ TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="")
 TBANK_SEND_RECEIPT = env.bool("TBANK_SEND_RECEIPT", default=False)
 TBANK_TAXATION = env.str("TBANK_TAXATION", default="usn_income")  # Система налогообложения
 TBANK_API_URL = env.str("TBANK_API_URL", default="https://securepay.tinkoff.ru/v2/")
+
+# Firebase Push Notifications
+FIREBASE_CREDENTIALS_PATH = env.str("FIREBASE_CREDENTIALS_PATH", default="")
 
 # Email Settings
 EMAIL_BACKEND = env.str("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
