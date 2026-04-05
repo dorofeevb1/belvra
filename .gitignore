@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+.env.local
+.env.prod
+.env.dev
 
 # IDEs
 .idea/
@@ -12,6 +15,7 @@
 !.vscode/extensions.json
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -27,16 +31,15 @@ yarn-error.log
 .docker/
 docker-compose.override.yml
 
-# SSL certificates
-nginx/ssl/*.pem
-nginx/ssl/*.crt
-nginx/ssl/*.key
+# SSL
+nginx/ssl/
 
 # ===================
 # Python / Django
 # ===================
 __pycache__/
 *.py[cod]
+*.pyo
 *$py.class
 *.so
 .Python
@@ -55,6 +58,7 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.sqlite3
 .pytest_cache/
 .coverage
 htmlcov/
@@ -62,10 +66,13 @@ htmlcov/
 .nox/
 .mypy_cache/
 venv/
+.venv/
 env/
 backend/staticfiles/
 backend/media/
 backend/db.sqlite3
+celerybeat-schedule
+celerybeat.pid
 backend/celerybeat-schedule
 backend/celerybeat.pid
 
@@ -73,6 +80,7 @@ backend/celerybeat.pid
 # Node.js / Angular
 # ===================
 node_modules/
+.angular/
 frontend/node_modules/
 frontend/.angular/
 frontend/dist/
@@ -85,3 +93,20 @@ frontend/typings/
 /tmp
 /out-tsc
 /bazel-out
+
+# ===================
+# iOS / Android
+# ===================
+apps/mobile/ios/App/Pods/
+apps/mobile/android/.gradle/
+apps/mobile/android/app/build/
+
+# ===================
+# Firebase
+# ===================
+firebase-credentials.json
+
+# ===================
+# Testing
+# ===================
+# (.pytest_cache, .coverage, htmlcov already covered above in Python section)
