@@ -22,17 +22,6 @@
       <button
         type="button"
         class="tab"
-        [class.active]="activeTab() === 'cards'"
-        (click)="setTab('cards')"
-      >
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-        </svg>
-        Способы оплаты
-      </button>
-      <button
-        type="button"
-        class="tab"
         [class.active]="activeTab() === 'notifications'"
         (click)="setTab('notifications')"
       >
@@ -191,82 +180,6 @@
       </div>
     }
 
-    <!-- Cards Tab -->
-    @if (activeTab() === 'cards') {
-      <div class="tab-content card">
-        <div class="section-header">
-          <h2 class="section-title">Сохранённые карты</h2>
-          <button type="button" class="btn btn-primary btn-sm" (click)="openAddCard()">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-            Добавить
-          </button>
-        </div>
-
-        @if (savedCards().length === 0) {
-          <div class="empty-state">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-            </svg>
-            <p>У вас пока нет сохранённых карт</p>
-            <button type="button" class="btn btn-primary" (click)="openAddCard()">
-              Добавить карту
-            </button>
-          </div>
-        } @else {
-          <div class="cards-list">
-            @for (card of savedCards(); track card.id) {
-              <div class="card-item" [class.deleting]="cardToDelete() === card.id">
-                <div class="card-brand" [attr.data-brand]="card.brand">
-                  {{ getCardBrandIcon(card.brand) }}
-                </div>
-                <div class="card-info">
-                  <span class="card-number">{{ getCardBrandName(card.brand) }} •••• {{ card.last4 }}</span>
-                  <span class="card-expiry">{{ card.expMonth | number:'2.0-0' }}/{{ card.expYear % 100 }}</span>
-                </div>
-                @if (card.isDefault) {
-                  <span class="card-default">Основная</span>
-                }
-                <div class="card-actions">
-                  @if (!card.isDefault) {
-                    <button type="button" class="action-btn" title="Сделать основной" (click)="setDefaultCard(card.id)">
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                    </button>
-                  }
-                  <button type="button" class="action-btn delete" title="Удалить" (click)="confirmDeleteCard(card.id)">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                    </svg>
-                  </button>
-                </div>
-
-                <!-- Delete confirmation -->
-                @if (cardToDelete() === card.id) {
-                  <div class="delete-confirm">
-                    <p>Удалить карту?</p>
-                    <div class="confirm-actions">
-                      <button type="button" class="btn btn-sm btn-secondary" (click)="cancelDeleteCard()">Отмена</button>
-                      <button type="button" class="btn btn-sm btn-danger" (click)="deleteCard(card.id)">Удалить</button>
-                    </div>
-                  </div>
-                }
-              </div>
-            }
-          </div>
-        }
-
-        <div class="cards-info">
-          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-          </svg>
-          <p>Сохранённые карты используются для быстрой оплаты записей. Данные карт надёжно защищены.</p>
-        </div>
-      </div>
-    }
-
     <!-- Notifications Tab -->
     @if (activeTab() === 'notifications') {
       <div class="tab-content card">
@@ -336,70 +249,4 @@
       </div>
     }
   </div>
-
-  <!-- Add Card Modal -->
-  @if (isAddingCard()) {
-    <div class="modal-overlay" (click)="closeAddCard()">
-      <div class="modal" (click)="$event.stopPropagation()">
-        <div class="modal-header">
-          <h3>Добавить карту</h3>
-          <button type="button" class="modal-close" (click)="closeAddCard()">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Номер карты</label>
-            <input
-              type="text"
-              [ngModel]="newCardNumber"
-              (input)="formatCardNumber($event)"
-              placeholder="0000 0000 0000 0000"
-              maxlength="19"
-              class="input"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Срок действия</label>
-              <input
-                type="text"
-                [ngModel]="newCardExpiry"
-                (input)="formatCardExpiry($event)"
-                placeholder="MM/YY"
-                maxlength="5"
-                class="input"
-              />
-            </div>
-            <div class="form-group">
-              <label>CVV</label>
-              <input
-                type="password"
-                [(ngModel)]="newCardCvv"
-                placeholder="•••"
-                maxlength="3"
-                class="input"
-              />
-            </div>
-          </div>
-
-          <div class="card-secure-info">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-            </svg>
-            <span>Данные карты защищены</span>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="closeAddCard()">Отмена</button>
-          <button type="button" class="btn btn-primary" [disabled]="!canAddCard()" (click)="addCard()">
-            Добавить
-          </button>
-        </div>
-      </div>
-    </div>
-  }
 }

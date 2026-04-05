@@ -538,34 +538,28 @@ export class DataService {
   }
 
   getTransactions(masterId: string): Observable<Transaction[]> {
-    return this.api.getTransactions().pipe(
-      map((transactions: any[]) =>
-        (Array.isArray(transactions) ? transactions : []).map(t => this.mapBackendTransaction(t))
-      ),
-      catchError(() => {
-        // Fallback: calculate from appointments
-        return this.getAppointments(masterId).pipe(
-          map(appointments => {
-            const completed = appointments.filter(a => a.status === 'completed');
-            return completed.map((apt, index) => {
-              const netProfit = calculateNetProfit(apt.price, apt.materialsCost || 0);
-              return {
-                id: `trans-${apt.id}`,
-                masterId: apt.masterId,
-                appointmentId: apt.id,
-                clientName: apt.clientName,
-                serviceName: apt.serviceName,
-                date: apt.date,
-                income: apt.price,
-                materialsCost: apt.materialsCost || 0,
-                netProfit,
-                status: (index === 0 ? 'pending' : 'paid') as TransactionStatus,
-                createdAt: apt.createdAt
-              };
-            });
-          })
-        );
-      })
+    // Derive transactions from completed appointments (payments module removed)
+    return this.getAppointments(masterId).pipe(
+      map(appointments => {
+        const completed = appointments.filter(a => a.status === 'completed');
+        return completed.map((apt, index) => {
+          const netProfit = calculateNetProfit(apt.price, apt.materialsCost || 0);
+          return {
+            id: `trans-${apt.id}`,
+            masterId: apt.masterId,
+            appointmentId: apt.id,
+            clientName: apt.clientName,
+            serviceName: apt.serviceName,
+            date: apt.date,
+            income: apt.price,
+            materialsCost: apt.materialsCost || 0,
+            netProfit,
+            status: (index === 0 ? 'pending' : 'paid') as TransactionStatus,
+            createdAt: apt.createdAt
+          };
+        });
+      }),
+      catchError(() => of([]))
     );
   }
 
@@ -575,13 +569,19 @@ export class DataService {
     lastPayout: number;
     lastPayoutDate?: string;
   }> {
-    return this.api.getTransactionsSummary().pipe(
-      map((summary: any) => ({
-        totalProfit: summary.total_profit,
-        pendingAmount: summary.pending_amount,
-        lastPayout: summary.last_payout,
-        lastPayoutDate: summary.last_payout_date
-      })),
+    // Derive financial summary from completed appointments (payments module removed)
+    return this.getTransactions('').pipe(
+      map(transactions => {
+        const totalProfit = transactions.reduce((sum, t) => sum + t.netProfit, 0);
+        const pendingAmount = transactions
+          .filter(t => t.status === 'pending')
+          .reduce((sum, t) => sum + t.netProfit, 0);
+        return {
+          totalProfit,
+          pendingAmount,
+          lastPayout: 0
+        };
+      }),
       catchError(() => of({
         totalProfit: 0,
         pendingAmount: 0,

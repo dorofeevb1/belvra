@@ -25,6 +25,8 @@ function mapApiPlan(apiPlan: any): SubscriptionPlan {
   const localPlans = userType === 'master' ? MASTER_PLANS : CLIENT_PLANS;
   const localMatch = localPlans.find(p => p.tier === tier && p.period === period);
 
+  const limits = localMatch?.limits || getDefaultLimits(userType);
+
   return {
     id: apiPlan.id,  // Real UUID from server
     name: localMatch?.name || apiPlan.name,
@@ -34,8 +36,16 @@ function mapApiPlan(apiPlan: any): SubscriptionPlan {
     price: parseFloat(apiPlan.price) || 0,
     originalPrice: apiPlan.original_price ? parseFloat(apiPlan.original_price) : localMatch?.originalPrice,
     features: localMatch?.features || [],
-    limits: localMatch?.limits || getDefaultLimits(userType),
+    limits,
     isPopular: localMatch?.isPopular || tier === 'pro',
+    extended_search: localMatch?.extended_search ?? limits.extended_search,
+    history_months: localMatch?.history_months ?? limits.history_months,
+    client_stats_enabled: localMatch?.client_stats_enabled ?? limits.client_stats_enabled,
+    max_favorites: localMatch?.max_favorites ?? limits.max_favorites,
+    pro_badge: localMatch?.pro_badge ?? limits.pro_badge,
+    client_notes_enabled: localMatch?.client_notes_enabled ?? limits.client_notes_enabled,
+    max_pinned_portfolio: localMatch?.max_pinned_portfolio ?? limits.max_pinned_portfolio,
+    rebooking_reminder_enabled: localMatch?.rebooking_reminder_enabled ?? limits.rebooking_reminder_enabled,
   };
 }
 
