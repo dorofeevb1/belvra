@@ -203,6 +203,9 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                     raise ValidationError(
                         {"detail": "Превышен месячный лимит записей для данного мастера."}
                     )
+                # Increment monthly usage counter
+                subscription.appointments_this_month += 1
+                subscription.save(update_fields=["appointments_this_month"])
             except MasterProfile.DoesNotExist:
                 logger.warning("MasterProfile id=%s not found during appointment creation", master_id)
 
