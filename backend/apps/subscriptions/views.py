@@ -7,8 +7,8 @@ import logging
 from datetime import timedelta
 
 from django.conf import settings
-from django.db.models import Avg, Count, Sum
-from django.db.models.functions import TruncDate
+from django.db.models import Avg, Count, F, Sum, Value
+from django.db.models.functions import Coalesce, TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
@@ -414,7 +414,15 @@ class SubscriptionWebhookView(APIView):
         elif tbank_status == "REVERSED":
             payment.status = SubscriptionPayment.Status.CANCELLED
             payment.save()
-            logger.info(f"Subscription payment {payment.id} reversed")
+
+            # Deactivate subscription on chargeback/reversal
+            subscription = payment.subscription
+            if subscription.status == Subscription.Status.ACTIVE:
+                subscription.status = Subscription.Status.CANCELLED
+                subscription.cancelled_at = timezone.now()
+                subscription.auto_renew = False
+                subscription.save()
+            logger.info(f"Subscription payment {payment.id} reversed, subscription deactivated")
 
         # T-Bank requires "OK" in response body
         return Response("OK", status=status.HTTP_200_OK)
@@ -538,7 +546,7 @@ class ExportDataView(APIView):
 
     def get(self, request, export_type):
         sub = getattr(request.user, "subscription", None)
-        if not sub or not sub.plan.export_data_enabled:
+        if not sub or not sub.is_active or not sub.plan.export_data_enabled:
             return Response(
                 {"error": "Экспорт данных доступен только на тарифе PRO"},
                 status=status.HTTP_403_FORBIDDEN,
@@ -621,7 +629,7 @@ class AnalyticsView(APIView):
 
     def get(self, request):
         sub = getattr(request.user, "subscription", None)
-        level = sub.plan.analytics_level if sub else "none"
+        level = sub.plan.analytics_level if (sub and sub.is_active) else "none"
 
         data = {"level": level}
 
@@ -657,7 +665,13 @@ class AnalyticsView(APIView):
 
         from apps.services.models import MasterService
         data["service_popularity"] = list(
-            completed.values("master_service__custom_name")
+            completed.values(
+                name=Coalesce(
+                    F("master_service__custom_name"),
+                    F("master_service__service__name"),
+                    Value("Без названия"),
+                )
+            )
             .annotate(count=Count("id"))
             .order_by("-count")[:10]
         )
@@ -699,7 +713,13 @@ class AnalyticsView(APIView):
 
             # Top services by revenue
             data["top_services_by_revenue"] = list(
-                monthly.values("master_service__custom_name")
+                monthly.values(
+                    name=Coalesce(
+                        F("master_service__custom_name"),
+                        F("master_service__service__name"),
+                        Value("Без названия"),
+                    )
+                )
                 .annotate(revenue=Sum("price"), count=Count("id"))
                 .order_by("-revenue")[:10]
             )

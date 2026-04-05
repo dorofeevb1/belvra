@@ -15,7 +15,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -550,6 +550,10 @@ class MasterGeoSearchView(generics.ListAPIView):
         return queryset
 
 
+class PasswordResetThrottle(AnonRateThrottle):
+    rate = '3/min'
+
+
 @extend_schema(
     tags=["Аутентификация"],
     summary="Запрос сброса пароля",
@@ -559,6 +563,7 @@ class PasswordResetRequestView(APIView):
     """Request password reset - sends email with reset link."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetThrottle]
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -670,6 +675,10 @@ class PasswordResetValidateTokenView(APIView):
         )
 
 
+class EmailVerifyThrottle(AnonRateThrottle):
+    rate = '5/min'
+
+
 @extend_schema(
     tags=["Аутентификация"],
     summary="Подтверждение email",
@@ -679,6 +688,7 @@ class VerifyEmailView(APIView):
     """Verify email address with 6-digit code."""
 
     permission_classes = [AllowAny]
+    throttle_classes = [EmailVerifyThrottle]
 
     def post(self, request):
         serializer = EmailVerificationSerializer(data=request.data)
@@ -1299,7 +1309,7 @@ class FavoriteMasterViewSet(viewsets.ModelViewSet):
 
             # Check favorites limit from subscription
             sub = getattr(request.user, "subscription", None)
-            max_fav = sub.plan.max_favorites if sub else 5
+            max_fav = sub.plan.max_favorites if (sub and sub.is_active) else 5
             if max_fav > 0:  # 0 = unlimited
                 current = FavoriteMaster.objects.filter(user=request.user).count()
                 if current >= max_fav:

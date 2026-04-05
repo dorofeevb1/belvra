@@ -15,7 +15,7 @@ env.read_env()
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Security
-SECRET_KEY = env.str("DJANGO_SECRET_KEY", default="change-me-in-production")
+SECRET_KEY = env.str("DJANGO_SECRET_KEY", default="unsafe-dev-key-do-not-use-in-production")
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=["http://localhost", "http://127.0.0.1", "http://89.223.126.31", "http://89.223.126.31:8080"])
@@ -300,8 +300,8 @@ SPECTACULAR_SETTINGS = {
 }
 
 # T-Bank (Tinkoff) Payment Settings
-TBANK_TERMINAL_KEY = env.str("TBANK_TERMINAL_KEY", default="1774615155386DEMO")
-TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="cAk9hZfCjw6b3gqu")
+TBANK_TERMINAL_KEY = env.str("TBANK_TERMINAL_KEY", default="")
+TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="")
 TBANK_SEND_RECEIPT = env.bool("TBANK_SEND_RECEIPT", default=False)
 TBANK_TAXATION = env.str("TBANK_TAXATION", default="usn_income")  # Система налогообложения
 TBANK_API_URL = env.str("TBANK_API_URL", default="https://securepay.tinkoff.ru/v2/")

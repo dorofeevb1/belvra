@@ -41,10 +41,6 @@ def check_expiring_subscriptions():
                 notification_type="subscription_expiring",
                 title="Подписка скоро истекает",
                 message=f"Ваша подписка {subscription.plan.name} истекает {subscription.current_period_end.strftime('%d.%m.%Y')}. Продлите подписку, чтобы сохранить доступ ко всем функциям.",
-                data={
-                    "subscription_id": str(subscription.id),
-                    "expires_at": subscription.current_period_end.isoformat()
-                }
             )
             sent_count += 1
         except Exception as e:
@@ -208,10 +204,6 @@ def notify_past_due_subscriptions():
                 notification_type="subscription_past_due",
                 title="Проблема с оплатой подписки",
                 message="Не удалось продлить вашу подписку. Пожалуйста, обновите способ оплаты.",
-                data={
-                    "subscription_id": str(subscription.id),
-                    "plan_name": subscription.plan.name
-                }
             )
             sent_count += 1
         except Exception as e:

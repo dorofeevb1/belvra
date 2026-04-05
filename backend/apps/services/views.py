@@ -151,7 +151,7 @@ class MasterServiceViewSet(viewsets.ModelViewSet):
             current_count = MasterService.objects.filter(master=master).count()
 
             # Проверяем лимит услуг по подписке
-            subscription = getattr(master, 'subscription', None)
+            subscription = getattr(master.user, 'subscription', None)
             if subscription and not subscription.can_add_service(current_count):
                 raise PermissionDenied(
                     "Достигнут лимит услуг. Перейдите на PRO для добавления неограниченного количества услуг."
@@ -220,14 +220,16 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
         serializer.save(master=self.request.user.master_profile)
 
     def perform_update(self, serializer):
-        # Ensure master can only update their own items
+        if not hasattr(self.request.user, "master_profile"):
+            raise PermissionDenied("Только мастер может обновлять портфолио")
         instance = self.get_object()
         if instance.master != self.request.user.master_profile:
             raise PermissionDenied("You can only update your own portfolio items")
         serializer.save()
 
     def perform_destroy(self, instance):
-        # Ensure master can only delete their own items
+        if not hasattr(self.request.user, "master_profile"):
+            raise PermissionDenied("Только мастер может удалять из портфолио")
         if instance.master != self.request.user.master_profile:
             raise PermissionDenied("You can only delete your own portfolio items")
         instance.delete()
@@ -309,7 +311,7 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
             return Response({"error": "Нет доступа"}, status=status.HTTP_403_FORBIDDEN)
 
         sub = getattr(request.user, "subscription", None)
-        max_pinned = sub.plan.max_pinned_portfolio if sub else 0
+        max_pinned = sub.plan.max_pinned_portfolio if (sub and sub.is_active) else 0
 
         if max_pinned == 0:
             return Response(

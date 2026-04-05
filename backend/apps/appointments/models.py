@@ -75,7 +75,7 @@ class Appointment(BaseModel):
     )
     service = models.ForeignKey(
         Service,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="appointments",
         null=True,
         blank=True
@@ -187,13 +187,17 @@ class Review(BaseModel):
         self._update_master_rating()
 
     def _update_master_rating(self):
-        master = self.appointment.master
-        result = Review.objects.filter(appointment__master=master).aggregate(
-            avg=models.Avg("rating"), count=models.Count("id")
-        )
-        master.rating = round(result["avg"] or 0, 2)
-        master.reviews_count = result["count"]
-        master.save(update_fields=["rating", "reviews_count"])
+        from django.db import transaction
+        with transaction.atomic():
+            master = MasterProfile.objects.select_for_update().get(
+                pk=self.appointment.master_id
+            )
+            result = Review.objects.filter(appointment__master=master).aggregate(
+                avg=models.Avg("rating"), count=models.Count("id")
+            )
+            master.rating = round(result["avg"] or 0, 2)
+            master.reviews_count = result["count"]
+            master.save(update_fields=["rating", "reviews_count"])
 
 
 class ClientNote(BaseModel):

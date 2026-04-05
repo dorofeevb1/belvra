@@ -44,7 +44,7 @@ class Service(BaseModel):
 
     category = models.ForeignKey(
         Category,
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="services"
     )
     name = models.CharField(max_length=200)
@@ -80,7 +80,7 @@ class MasterService(BaseModel):
     )
     service = models.ForeignKey(
         Service,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="masters",
         null=True,
         blank=True,

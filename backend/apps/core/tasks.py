@@ -15,10 +15,10 @@ logger = logging.getLogger(__name__)
 
 @shared_task
 def cleanup_unverified_accounts():
-    """Delete accounts that were not verified within 5 minutes."""
+    """Delete accounts that were not verified within 15 minutes."""
     from apps.users.models import User
 
-    cutoff = timezone.now() - timedelta(minutes=5)
+    cutoff = timezone.now() - timedelta(minutes=15)
     unverified = User.objects.filter(
         is_verified=False,
         is_staff=False,
@@ -27,7 +27,7 @@ def cleanup_unverified_accounts():
     count = unverified.count()
     if count:
         unverified.delete()
-        logger.info(f"Deleted {count} unverified accounts older than 5 minutes")
+        logger.info(f"Deleted {count} unverified accounts older than 15 minutes")
     return count
 
 

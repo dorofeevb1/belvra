@@ -160,11 +160,6 @@ def send_completion_reminder():
                 notification_type="completion_reminder",
                 title="Не забудьте отметить запись",
                 message=f"Пожалуйста, отметьте запись с {client_name} ({service_name}) как завершённую",
-                data={
-                    "appointment_id": str(appointment.id),
-                    "client_name": client_name,
-                    "service_name": service_name
-                }
             )
             sent_count += 1
         except Exception as e:

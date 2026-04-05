@@ -313,7 +313,11 @@ class SubscriptionService:
             if immediately:
                 message = "Ваша подписка отменена"
             else:
-                message = f"Ваша подписка будет отменена {subscription.current_period_end.strftime('%d.%m.%Y')}"
+                if subscription.current_period_end:
+                    end_date = subscription.current_period_end.strftime('%d.%m.%Y')
+                    message = f"Ваша подписка будет отменена {end_date}"
+                else:
+                    message = "Ваша подписка будет отменена"
 
             NotificationService.create_notification(
                 user=subscription.user,

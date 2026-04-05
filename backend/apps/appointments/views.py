@@ -3,13 +3,13 @@ from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import F, Q
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, generics, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -171,7 +171,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
         # Limit history depth for clients based on subscription
         sub = getattr(user, "subscription", None)
-        history_months = sub.plan.history_months if sub else 3
+        history_months = sub.plan.history_months if (sub and sub.is_active) else 3
         if history_months > 0:
             cutoff = timezone.now().date() - timedelta(days=history_months * 30)
             queryset = queryset.filter(
@@ -198,14 +198,18 @@ class AppointmentViewSet(viewsets.ModelViewSet):
             try:
                 master_profile = MasterProfile.objects.get(id=master_id)
                 subscription_service = SubscriptionService()
-                subscription = subscription_service.get_or_create_free_subscription(master_profile.user)
+                subscription_service.get_or_create_free_subscription(master_profile.user)
+                # Lock subscription row to prevent race condition
+                from apps.subscriptions.models import Subscription
+                subscription = Subscription.objects.select_for_update().get(user=master_profile.user)
                 if not subscription.can_create_appointment():
                     raise ValidationError(
                         {"detail": "Превышен месячный лимит записей для данного мастера."}
                     )
-                # Increment monthly usage counter
-                subscription.appointments_this_month += 1
-                subscription.save(update_fields=["appointments_this_month"])
+                # Atomic increment
+                Subscription.objects.filter(pk=subscription.pk).update(
+                    appointments_this_month=F("appointments_this_month") + 1
+                )
             except MasterProfile.DoesNotExist:
                 logger.warning("MasterProfile id=%s not found during appointment creation", master_id)
 
@@ -709,13 +713,14 @@ class ClientStatsView(APIView):
 
     def get(self, request):
         sub = getattr(request.user, "subscription", None)
-        if not sub or not sub.plan.client_stats_enabled:
+        if not sub or not sub.is_active or not sub.plan.client_stats_enabled:
             return Response(
                 {"error": "Статистика доступна только на тарифе PRO"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        from django.db.models import Avg, Count, F, Sum
+        from django.db.models import Avg, Count, F, Sum, Value
+        from django.db.models.functions import Coalesce, Concat
 
         completed = Appointment.objects.filter(
             client=request.user,
@@ -739,12 +744,24 @@ class ClientStatsView(APIView):
             "yearly_spent": float(yearly.aggregate(t=Sum("price"))["t"] or 0),
             "avg_check": float(completed.aggregate(a=Avg("price"))["a"] or 0),
             "top_masters": list(
-                completed.values(name=F("master__user__full_name"))
+                completed.values(
+                    name=Concat(
+                        F("master__user__first_name"),
+                        Value(" "),
+                        F("master__user__last_name"),
+                    )
+                )
                 .annotate(visits=Count("id"), total=Sum("price"))
                 .order_by("-visits")[:5]
             ),
             "top_services": list(
-                completed.values(name=F("master_service__custom_name"))
+                completed.values(
+                    name=Coalesce(
+                        F("master_service__custom_name"),
+                        F("master_service__service__name"),
+                        Value("Без названия"),
+                    )
+                )
                 .annotate(visits=Count("id"))
                 .order_by("-visits")[:5]
             ),
@@ -808,6 +825,17 @@ class ReviewViewSet(viewsets.ModelViewSet):
             comment=review.comment or ""
         )
 
+    def perform_update(self, serializer):
+        review = self.get_object()
+        if review.appointment.client != self.request.user:
+            raise PermissionDenied("Вы можете редактировать только свои отзывы")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.appointment.client != self.request.user:
+            raise PermissionDenied("Вы можете удалять только свои отзывы")
+        instance.delete()
+
     @extend_schema(
         tags=["Отзывы"],
         summary="Отзывы мастера",
@@ -846,12 +874,12 @@ class ClientNoteViewSet(viewsets.ModelViewSet):
         if not hasattr(self.request.user, "master_profile"):
             raise ValidationError("Только мастер может создавать заметки")
         sub = getattr(self.request.user, "subscription", None)
-        if not sub or not sub.plan.client_notes_enabled:
+        if not sub or not sub.is_active or not sub.plan.client_notes_enabled:
             raise ValidationError("Заметки о клиентах доступны только на тарифе PRO")
         serializer.save(master=self.request.user.master_profile)
 
     def perform_update(self, serializer):
         sub = getattr(self.request.user, "subscription", None)
-        if not sub or not sub.plan.client_notes_enabled:
+        if not sub or not sub.is_active or not sub.plan.client_notes_enabled:
             raise ValidationError("Заметки о клиентах доступны только на тарифе PRO")
         serializer.save()

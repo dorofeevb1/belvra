@@ -250,6 +250,12 @@ class Referral(BaseModel):
         verbose_name_plural = "Рефералы"
         unique_together = ["referrer", "referred_user"]
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                condition=~models.Q(referrer=models.F("referred_user")),
+                name="prevent_self_referral",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.referrer.email} -> {self.referred_user.email}"

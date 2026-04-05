@@ -64,7 +64,7 @@ class ChatSerializer(serializers.ModelSerializer):
 
     master_id = serializers.UUIDField(source="master.id", read_only=True)
     master_name = serializers.CharField(source="master.user.full_name", read_only=True)
-    master_avatar = serializers.ImageField(source="master.avatar", read_only=True)
+    master_avatar = serializers.ImageField(source="master.user.avatar", read_only=True)
     client_id = serializers.UUIDField(source="client.id", read_only=True)
     client_name = serializers.CharField(source="client.full_name", read_only=True)
     client_avatar = serializers.ImageField(source="client.avatar", read_only=True)

@@ -14,4 +14,4 @@ class HasAIAccess(BasePermission):
         sub = getattr(request.user, "subscription", None)
         if sub is None:
             return False
-        return sub.plan.ai_assistant_enabled
+        return sub.is_active and sub.plan.ai_assistant_enabled
