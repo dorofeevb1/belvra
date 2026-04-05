@@ -462,6 +462,23 @@ Celery задача `renew_subscriptions` (ежедневно 06:00):
 - **Уведомления**: in-app нотификация при новом сообщении (превью до 100 символов)
 - **Архитектура**: REST-polling (НЕ WebSocket)
 
+### 9.4 WebSocket (real-time)
+
+Параллельно с REST API, чат поддерживает WebSocket:
+- URL: wss://belvra.ru/ws/chat/{chat_id}/?token=JWT
+- Сервер: Daphne (ASGI) вместо Gunicorn
+- Auth: JWT из query string через JWTAuthMiddleware (apps/chat/middleware.py)
+- Channel Layer: Redis (channels_redis)
+- Consumer: ChatConsumer (apps/chat/consumers.py)
+
+Типы сообщений WS:
+- chat_message — сохраняет в БД, бродкастит группе
+- typing — бродкастит статус набора (не себе)
+- read — помечает сообщения прочитанными
+
+Rate limit: 5 сообщений / 3 секунды.
+REST API остаётся для: загрузки файлов, истории сообщений, поиска.
+
 ---
 
 ## 10. AI-функции
@@ -569,6 +586,15 @@ From: Belvra <noreply@belvra.ru>
 - Фреймворк существует, FCM/APNs НЕ подключены
 - Токены регистрируются/деактивируются через API
 
+### 12.4 Push-уведомления (Firebase FCM)
+
+- firebase-admin в requirements
+- PushNotificationService (apps/core/push_notifications.py): send_to_user, send_to_tokens
+- Интегрирован в NotificationService: после создания in-app нотификации → Celery task send_push_notification_task
+- Требует: FIREBASE_CREDENTIALS_PATH в .env (JSON credentials из Firebase Console)
+- Деактивация невалидных токенов при ошибке (UnregisteredError)
+- Best-effort: ошибка push не ломает in-app уведомления
+
 ---
 
 ## 13. Заметки о клиентах (ClientNote)
@@ -584,6 +610,19 @@ PRO-фича для мастеров (client_notes_enabled).
 - Уникальная пара: (master, client)
 - CRUD через ViewSet
 - FREE → "Заметки о клиентах доступны только на тарифе PRO"
+
+### 3.10 Статистика клиента (ClientStatsView)
+
+PRO-фича (client_stats_enabled). Эндпоинт: GET /api/v1/appointments/client-stats/
+
+Возвращает:
+- total_visits — всего завершённых записей
+- monthly_visits / monthly_spent — за 30 дней
+- quarterly_spent — за 90 дней
+- yearly_spent — за 365 дней  
+- avg_check — средний чек
+- top_masters — топ-5 мастеров по посещениям (Concat first+last name)
+- top_services — топ-5 услуг по частоте (Coalesce custom_name/service.name)
 
 ---
 

@@ -216,3 +216,29 @@
 | todo | 2 файла | Базовое |
 | **core** | **0 файлов** | **Нет тестов** |
 | **ai** | **0 файлов** | **Нет тестов** |
+
+---
+
+## Статус исправлений (обновлено 2026-04-05)
+
+| ID | Severity | Находка | Статус |
+|-----|----------|---------|--------|
+| BUG-01 | CRITICAL | ClientStatsView F("full_name") | ИСПРАВЛЕНО |
+| BUG-02 | CRITICAL | TypeError data= в Celery тасках | ИСПРАВЛЕНО |
+| BUG-03 | CRITICAL | ChatSerializer master.avatar | ИСПРАВЛЕНО |
+| BUG-04 | CRITICAL | Лимит услуг getattr(master) | ИСПРАВЛЕНО |
+| SEC-01 | CRITICAL | T-Bank DEMO креды | ИСПРАВЛЕНО |
+| SEC-02 | CRITICAL | SECRET_KEY дефолт | ИСПРАВЛЕНО |
+| SEC-03 | CRITICAL | Email verify без throttle | ИСПРАВЛЕНО |
+| SEC-04 | CRITICAL | Password reset без throttle | ИСПРАВЛЕНО |
+| BUG-05 | HIGH | cancel_subscription period_end=None | ИСПРАВЛЕНО |
+| BUG-06 | HIGH | PRO фичи без is_active | ИСПРАВЛЕНО |
+| BUG-07 | HIGH | Review update/delete IDOR | ИСПРАВЛЕНО |
+| BUG-08 | HIGH | Portfolio update crash | ИСПРАВЛЕНО |
+| BUG-09 | HIGH | Service CASCADE | ИСПРАВЛЕНО |
+| BUG-10 | HIGH | Cleanup 5 мин vs код 10 мин | ИСПРАВЛЕНО |
+| S-01 | HIGH | appointments_this_month race | ИСПРАВЛЕНО |
+| S-06 | HIGH | REVERSED не деактивирует | ИСПРАВЛЕНО |
+| S-11 | HIGH | Самореферал | ИСПРАВЛЕНО |
+| README | MEDIUM | Устарел (YooKassa, Ionic) | ИСПРАВЛЕНО |
+| Nginx | HIGH | Orphaned payments webhook | ИСПРАВЛЕНО |
