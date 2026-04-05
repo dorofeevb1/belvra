@@ -137,11 +137,9 @@ class TestTodoCreateAPI:
             "title": "New todo task",
             "date": date.today().isoformat()
         }
-        # Client doesn't have master_profile, so create should raise ValueError
-        # which becomes a 500 Internal Server Error
-        import pytest
-        with pytest.raises(ValueError, match="User must have a master profile"):
-            authenticated_client.post(url, data)
+        # Client doesn't have master_profile — should get 403, not 500
+        response = authenticated_client.post(url, data)
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_create_todo_with_time(self, master_client, master_user):
         url = reverse("todo-list")
