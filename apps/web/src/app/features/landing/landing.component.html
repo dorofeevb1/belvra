@@ -1,0 +1,243 @@
+<!-- Header -->
+<header class="landing-header" [class.solid]="headerSolid">
+  <div class="header-inner">
+    <a class="header-logo" routerLink="/">Belvra</a>
+
+    <nav class="header-nav" [class.open]="mobileMenuOpen">
+      <a class="nav-link" (click)="scrollTo('clients')">Для клиентов</a>
+      <a class="nav-link" (click)="scrollTo('masters')">Для мастеров</a>
+      <a class="nav-link" (click)="scrollTo('pricing')">Тарифы</a>
+      <div class="nav-buttons-mobile">
+        <a routerLink="/login" class="btn btn-outline btn-sm">Войти</a>
+        <a routerLink="/register" class="btn btn-primary btn-sm">Регистрация</a>
+      </div>
+    </nav>
+
+    <div class="header-actions">
+      <a routerLink="/login" class="btn btn-ghost btn-sm">Войти</a>
+      <a routerLink="/register" class="btn btn-primary btn-sm">Регистрация</a>
+    </div>
+
+    <button class="burger" [class.active]="mobileMenuOpen" (click)="mobileMenuOpen = !mobileMenuOpen" aria-label="Меню">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+  <div class="hero-content">
+    <h1 class="hero-title">
+      Найдите идеального<br>
+      <span class="accent">мастера красоты</span><br>
+      рядом с вами
+    </h1>
+    <p class="hero-subtitle">
+      Запишитесь к парикмахеру, мастеру маникюра или косметологу без звонков.
+      AI подберёт лучших по вашему описанию.
+    </p>
+    <div class="hero-cta">
+      <a routerLink="/register" class="btn btn-primary btn-lg">Начать бесплатно</a>
+      <p class="hero-note">30 дней PRO бесплатно. Без привязки карты.</p>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="mockup-cards">
+      <div class="mockup-card">
+        <div class="mockup-avatar"></div>
+        <div class="mockup-info">
+          <div class="mockup-name">Анна К.</div>
+          <div class="mockup-spec">Мастер маникюра</div>
+          <div class="mockup-rating">&#9733;&#9733;&#9733;&#9733;&#9733; 4.9</div>
+        </div>
+        <div class="mockup-badge">PRO</div>
+      </div>
+      <div class="mockup-card mockup-card-2">
+        <div class="mockup-avatar"></div>
+        <div class="mockup-info">
+          <div class="mockup-name">Мария С.</div>
+          <div class="mockup-spec">Парикмахер-стилист</div>
+          <div class="mockup-rating">&#9733;&#9733;&#9733;&#9733;&#9733; 5.0</div>
+        </div>
+      </div>
+      <div class="mockup-card mockup-card-3">
+        <div class="mockup-avatar"></div>
+        <div class="mockup-info">
+          <div class="mockup-name">Елена В.</div>
+          <div class="mockup-spec">Косметолог</div>
+          <div class="mockup-rating">&#9733;&#9733;&#9733;&#9733;&#9734; 4.7</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Steps -->
+<section class="steps" id="how">
+  <h2 class="section-title">Как это работает</h2>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-number">1</div>
+      <div class="step-icon">&#128269;</div>
+      <h3>Опишите что нужно</h3>
+      <p>Маникюр в центре, окрашивание недорого — пишите как угодно</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">2</div>
+      <div class="step-icon">&#128105;&#8205;&#127912;</div>
+      <h3>Выберите мастера</h3>
+      <p>Портфолио, отзывы, рейтинг и расстояние — всё перед глазами</p>
+    </div>
+    <div class="step-card">
+      <div class="step-number">3</div>
+      <div class="step-icon">&#128197;</div>
+      <h3>Запишитесь онлайн</h3>
+      <p>Выбирайте свободное время и записывайтесь в 2 клика</p>
+    </div>
+  </div>
+</section>
+
+<!-- For Clients -->
+<section class="features features-dark" id="clients">
+  <div class="features-content">
+    <div class="section-label">Для клиентов</div>
+    <h2 class="section-title light">Забудьте про поиск мастера в Instagram</h2>
+    <p class="section-subtitle light">Всё что нужно — в одном месте</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#129504;</div>
+        <h3>AI-поиск</h3>
+        <p>Опишите что хотите — AI найдёт лучших мастеров</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128506;&#65039;</div>
+        <h3>Мастера на карте</h3>
+        <p>Видите кто рядом с расстоянием в километрах</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#11088;</div>
+        <h3>Отзывы и рейтинги</h3>
+        <p>Реальные оценки от реальных клиентов</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128248;</div>
+        <h3>Портфолио</h3>
+        <p>Фото работ до записи — никаких сюрпризов</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128241;</div>
+        <h3>Онлайн-запись</h3>
+        <p>Свободные слоты в реальном времени. Без звонков</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#10084;&#65039;</div>
+        <h3>Избранное</h3>
+        <p>Сохраняйте лучших и записывайтесь снова в один клик</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- For Masters -->
+<section class="features features-light" id="masters">
+  <div class="features-content">
+    <div class="section-label">Для мастеров</div>
+    <h2 class="section-title">Перестаньте вести записи в блокноте</h2>
+    <p class="section-subtitle">Belvra — ваш личный кабинет</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#128197;</div>
+        <h3>Умный календарь</h3>
+        <p>Клиенты записываются сами — вы видите всё в одном месте</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#129302;</div>
+        <h3>AI-портфолио</h3>
+        <p>Загрузили фото — AI написал описание и подобрал хештеги</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128221;</div>
+        <h3>Заметки о клиентах</h3>
+        <p>Помните предпочтения каждого — мини-CRM для мастера</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128202;</div>
+        <h3>Финансы</h3>
+        <p>Доходы, материалы, средний чек — без Excel</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128172;</div>
+        <h3>Чат</h3>
+        <p>Текст, фото, аудио — прямо на платформе. AI подсказывает ответы</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">&#128276;</div>
+        <h3>Напоминания</h3>
+        <p>Клиенту придёт уведомление записаться снова через 2 недели</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="pricing" id="pricing">
+  <div class="pricing-content">
+    <h2 class="section-title light">Начните бесплатно</h2>
+    <p class="section-subtitle light">PRO — когда будете готовы расти</p>
+    <div class="pricing-cards">
+      <div class="pricing-card pricing-free">
+        <div class="pricing-tier">Бесплатный</div>
+        <div class="pricing-price">0 &#8381;</div>
+        <div class="pricing-period">навсегда</div>
+        <ul class="pricing-list">
+          <li>&#10003; 10 записей в месяц</li>
+          <li>&#10003; До 5 услуг</li>
+          <li>&#10003; 5 работ в портфолио</li>
+          <li>&#10003; Чат с клиентами</li>
+          <li>&#10003; Базовая аналитика</li>
+        </ul>
+        <a routerLink="/register" class="btn btn-outline">Начать бесплатно</a>
+      </div>
+      <div class="pricing-card pricing-pro">
+        <div class="pricing-popular">Популярный</div>
+        <div class="pricing-tier">PRO</div>
+        <div class="pricing-price">от 299 &#8381;</div>
+        <div class="pricing-period">в месяц</div>
+        <ul class="pricing-list">
+          <li>&#10003; <strong>Безлимит</strong> записей, услуг, портфолио</li>
+          <li>&#10003; PRO-бейдж и приоритет в поиске</li>
+          <li>&#10003; AI-ассистент</li>
+          <li>&#10003; Заметки о клиентах</li>
+          <li>&#10003; Расширенная аналитика</li>
+          <li>&#10003; Экспорт в CSV</li>
+          <li>&#10003; Авто-напоминания</li>
+        </ul>
+        <a routerLink="/register" class="btn btn-primary">Попробовать PRO бесплатно</a>
+        <p class="pricing-note">30 дней бесплатно при регистрации</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Final CTA -->
+<section class="cta">
+  <div class="cta-content">
+    <h2 class="cta-title">Присоединяйтесь к Belvra</h2>
+    <p class="cta-subtitle">Первый месяц PRO — бесплатно. Без привязки карты.</p>
+    <a routerLink="/register" class="btn btn-primary btn-xl">Зарегистрироваться</a>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="landing-footer">
+  <div class="footer-content">
+    <div class="footer-logo">Belvra</div>
+    <div class="footer-links">
+      <a routerLink="/privacy-policy">Политика конфиденциальности</a>
+      <a routerLink="/terms">Условия использования</a>
+    </div>
+    <div class="footer-copy">&copy; 2026 Belvra</div>
+  </div>
+</footer>
