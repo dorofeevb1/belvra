@@ -3,6 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -47,7 +48,7 @@ class TodoItemViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not hasattr(self.request.user, "master_profile"):
-            raise ValueError("User must have a master profile")
+            raise PermissionDenied("Только мастер может создавать задачи")
         serializer.save(master=self.request.user.master_profile)
 
     @extend_schema(
