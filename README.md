@@ -27,21 +27,29 @@ Belvra объединяет мастеров красоты и клиентов 
 
 ### Возможности для клиентов
 
-- Поиск мастеров по геолокации (Яндекс Карты)
+- AI-поиск мастеров (Perplexity API)
+- Геопоиск по Яндекс Картам
+- Текстовый поиск с фильтрами
 - Онлайн-бронирование с выбором свободных слотов
-- Чат с мастером
+- Чат с мастером (WebSocket)
 - Отзывы и рейтинги
 - Избранные мастера
-- Подписка PRO (приоритетная запись)
+- Подписка PRO: приоритетная запись, расширенные фильтры поиска, полная история записей, статистика расходов, быстрая перезапись
 
 ### Возможности для мастеров
 
 - Дашборд с аналитикой и статистикой
 - Управление расписанием и услугами
 - Календарь и канбан-доска записей
-- Портфолио работ
+- Портфолио работ с AI-генерацией описаний
+- Финансы (доходы минус материалы)
+- Чат с клиентами (WebSocket)
+- Заметки о клиентах (мини-CRM, PRO)
+- Авто-напоминания клиентам о повторной записи (PRO)
+- Аналитика и экспорт в CSV (PRO)
 - AI-ассистент для анализа фото и генерации контента
-- Подписка PRO (безлимитные записи, расширенная аналитика, PRO-бейдж и приоритет в поиске)
+- Список задач (todo)
+- Подписка PRO: безлимитные записи, расширенная аналитика, PRO-бейдж, закрепление работ в портфолио, приоритет в поиске
 
 ---
 
@@ -57,9 +65,10 @@ Belvra объединяет мастеров красоты и клиентов 
 | Очередь задач | Celery 5.3 |
 | Аутентификация | JWT (SimpleJWT) |
 | Платежи | T-Bank (Tinkoff) |
-| AI | Ollama (анализ изображений) |
+| AI | Perplexity API + Ollama |
+| WebSocket | Django Channels + Daphne |
 | Документация API | drf-spectacular (Swagger / ReDoc) |
-| Сервер | Gunicorn + Nginx |
+| Сервер | Daphne (ASGI) + Nginx |
 
 ### Frontend
 
@@ -211,6 +220,7 @@ Belvra/
 │       └── celery.py           # Конфигурация Celery
 │
 ├── libs/shared/                # Общие TypeScript-модели
+├── docs/                       # Документация (бизнес-логика, аудит, пентесты, роадмап)
 ├── nginx/                      # Конфигурация Nginx
 ├── docker-compose.yml          # Dev-окружение
 ├── docker-compose.prod.yml     # Prod-окружение
@@ -287,16 +297,16 @@ http://localhost:8000/api/v1/
 
 | Группа | Путь | Описание |
 |--------|------|----------|
-| Auth | `/api/v1/auth/` | Регистрация, логин, JWT, сброс пароля |
-| Users | `/api/v1/auth/profile/` | Профиль, аватар, избранное |
+| Auth | `/api/v1/auth/` | Регистрация, логин, JWT, сброс пароля, избранное |
 | Masters | `/api/v1/auth/masters/` | Список мастеров, гео-поиск |
 | Services | `/api/v1/services/` | Категории, услуги, портфолио |
-| Appointments | `/api/v1/appointments/` | Записи, расписание, отзывы |
-| Subscriptions | `/api/v1/subscriptions/` | Тарифы, подписки, лимиты |
-| Chat | `/api/v1/chats/` | Чаты, сообщения |
+| Appointments | `/api/v1/appointments/` | Записи, расписание, отзывы, заметки о клиентах, статистика |
+| Subscriptions | `/api/v1/subscriptions/` | Тарифы, оплата (T-Bank), аналитика, CSV-экспорт |
+| Chat | `/api/v1/chats/` | Чаты, сообщения (REST) |
 | Todos | `/api/v1/todos/` | Задачи мастера |
-| Notifications | `/api/v1/notifications/` | Уведомления |
+| Notifications | `/api/v1/notifications/` | Уведомления, токены устройств |
 | AI | `/api/v1/ai/` | AI-анализ фото, генерация контента |
+| WebSocket | `/ws/chat/{id}/` | Чат в реальном времени |
 
 ### Аутентификация
 
@@ -369,7 +379,7 @@ make prod-logs
 ### Production-стек
 
 - **Nginx** -- reverse proxy с SSL (порты 80/443)
-- **Django + Gunicorn** -- 4 воркера, 2 потока
+- **Django + Daphne** -- ASGI-сервер (WebSocket + HTTP)
 - **Celery** -- 4 конкурентных воркера
 - **Celery Beat** -- планировщик периодических задач
 - **PostgreSQL 16** -- с парольной защитой
@@ -426,14 +436,36 @@ cp .env.example .env
 | `TBANK_TERMINAL_KEY` | Ключ терминала T-Bank |
 | `TBANK_PASSWORD` | Пароль терминала T-Bank |
 
+### Celery
+
+| Переменная | Описание | По умолчанию |
+|-----------|----------|-------------|
+| `CELERY_BROKER_URL` | URL брокера | `redis://localhost:6379/1` |
+| `CELERY_RESULT_BACKEND` | URL результатов | `redis://localhost:6379/2` |
+
+### CORS и Frontend
+
+| Переменная | Описание | По умолчанию |
+|-----------|----------|-------------|
+| `CORS_ALLOWED_ORIGINS` | Разрешённые origins | `http://localhost:4200` |
+| `FRONTEND_URL` | URL фронтенда (для email-ссылок) | `http://localhost:4200` |
+
 ### Email (SMTP)
 
 | Переменная | Описание | По умолчанию |
 |-----------|----------|-------------|
-| `EMAIL_HOST` | SMTP-сервер | `smtp.gmail.com` |
-| `EMAIL_PORT` | Порт | `587` |
+| `EMAIL_HOST` | SMTP-сервер | `smtp.yandex.ru` |
+| `EMAIL_PORT` | Порт | `465` |
+| `EMAIL_USE_SSL` | Использовать SSL | `True` |
 | `EMAIL_HOST_USER` | Email отправителя | -- |
 | `EMAIL_HOST_PASSWORD` | Пароль | -- |
+| `DEFAULT_FROM_EMAIL` | Адрес отправителя | `Belvra <noreply@example.com>` |
+
+### Push-уведомления (Firebase)
+
+| Переменная | Описание |
+|-----------|----------|
+| `FIREBASE_CREDENTIALS_PATH` | Путь к firebase-credentials.json |
 
 ### AI
 
