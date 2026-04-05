@@ -252,7 +252,7 @@ class Referral(BaseModel):
         ordering = ["-created_at"]
         constraints = [
             models.CheckConstraint(
-                condition=~models.Q(referrer=models.F("referred_user")),
+                check=~models.Q(referrer=models.F("referred_user")),
                 name="prevent_self_referral",
             ),
         ]
