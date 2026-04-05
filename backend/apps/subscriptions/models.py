@@ -76,6 +76,34 @@ class SubscriptionPlan(BaseModel):
     advanced_notifications = models.BooleanField(default=False)
     export_data_enabled = models.BooleanField(default=False)
 
+    # Client PRO features
+    extended_search = models.BooleanField(
+        default=False, help_text="Расширенные фильтры поиска мастеров"
+    )
+    history_months = models.PositiveIntegerField(
+        default=3, help_text="Кол-во месяцев истории записей (0 = без ограничений)"
+    )
+    client_stats_enabled = models.BooleanField(
+        default=False, help_text="Доступ к статистике расходов"
+    )
+    max_favorites = models.PositiveIntegerField(
+        default=5, help_text="Макс. избранных мастеров (0 = без ограничений)"
+    )
+
+    # Master PRO features
+    pro_badge = models.BooleanField(
+        default=False, help_text="Бейдж PRO в профиле мастера"
+    )
+    client_notes_enabled = models.BooleanField(
+        default=False, help_text="Заметки о клиентах (мини-CRM)"
+    )
+    max_pinned_portfolio = models.PositiveIntegerField(
+        default=0, help_text="Макс. закреплённых работ в портфолио (0 = нельзя)"
+    )
+    rebooking_reminder_enabled = models.BooleanField(
+        default=False, help_text="Автоматические напоминания клиентам о повторной записи"
+    )
+
     class Meta:
         verbose_name = "План подписки"
         verbose_name_plural = "Планы подписок"
@@ -127,8 +155,8 @@ class Subscription(BaseModel):
     auto_renew = models.BooleanField(default=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
-    # YooKassa payment method for recurring payments
-    yookassa_payment_method_id = models.CharField(max_length=255, blank=True)
+    # T-Bank RebillId for recurring payments
+    tbank_rebill_id = models.CharField(max_length=255, blank=True)
 
     # Usage tracking
     appointments_this_month = models.PositiveIntegerField(default=0)
@@ -265,3 +293,5 @@ class SubscriptionPayment(BaseModel):
 
     def __str__(self):
         return f"Payment {self.id} - {self.subscription.user.email} - {self.amount} {self.currency}"
+
+

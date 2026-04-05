@@ -120,9 +120,10 @@ export class UpgradeBannerComponent {
   dismissible = input<boolean>(false);
   showFeatures = input<boolean>(false);
   features = input<string[]>([
-    'Безлимитные записи',
-    'Сниженная комиссия',
-    'Продвижение в поиске'
+    'Безлимит записей/услуг/портфолио',
+    'PRO-бейдж',
+    'Буст в поиске',
+    'Расширенная аналитика'
   ]);
 
   onDismiss = output<void>();

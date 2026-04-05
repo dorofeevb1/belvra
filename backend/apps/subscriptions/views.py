@@ -2,9 +2,15 @@
 Views for subscription management.
 """
 
+import csv
 import logging
+from datetime import timedelta
 
 from django.conf import settings
+from django.db.models import Avg, Count, Sum
+from django.db.models.functions import TruncDate
+from django.http import HttpResponse
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import generics, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -365,7 +371,7 @@ class SubscriptionWebhookView(APIView):
     def post(self, request):
         data = request.data
 
-        from apps.payments.services import TBankService
+        from apps.core.tbank import TBankService
         tbank = TBankService()
 
         # Verify token signature
@@ -516,3 +522,186 @@ class ReferralListView(generics.ListAPIView):
         return Referral.objects.filter(
             referrer=self.request.user
         ).select_related("referred_user")
+
+
+@extend_schema(
+    tags=["Подписки"],
+    summary="Экспорт данных в CSV",
+    description="Экспорт записей или финансовых данных (только PRO)"
+)
+class ExportDataView(APIView):
+    """Export user data as CSV. Requires export_data_enabled in subscription."""
+
+    permission_classes = [IsAuthenticated]
+
+    VALID_TYPES = ("appointments", "finances")
+
+    def get(self, request, export_type):
+        sub = getattr(request.user, "subscription", None)
+        if not sub or not sub.plan.export_data_enabled:
+            return Response(
+                {"error": "Экспорт данных доступен только на тарифе PRO"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if export_type not in self.VALID_TYPES:
+            return Response(
+                {"error": f"Допустимые типы: {', '.join(self.VALID_TYPES)}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from apps.appointments.models import Appointment
+
+        response = HttpResponse(content_type="text/csv; charset=utf-8")
+        response["Content-Disposition"] = f'attachment; filename="{export_type}.csv"'
+        response.write("\ufeff")  # BOM for Excel
+        writer = csv.writer(response)
+
+        if not hasattr(request.user, "master_profile"):
+            # Client export
+            appointments = Appointment.objects.filter(
+                client=request.user
+            ).select_related("master__user", "service", "master_service").order_by("-date")
+
+            if export_type == "appointments":
+                writer.writerow(["Дата", "Время", "Мастер", "Услуга", "Цена", "Статус"])
+                for a in appointments:
+                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    writer.writerow([
+                        a.date.strftime("%d.%m.%Y"), a.start_time.strftime("%H:%M"),
+                        a.master.user.full_name, svc, a.price,
+                        a.get_status_display(),
+                    ])
+            else:  # finances
+                writer.writerow(["Дата", "Услуга", "Мастер", "Цена"])
+                for a in appointments.filter(status=Appointment.Status.COMPLETED):
+                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    writer.writerow([
+                        a.date.strftime("%d.%m.%Y"), svc, a.master.user.full_name,
+                        a.price,
+                    ])
+        else:
+            # Master export
+            master = request.user.master_profile
+            appointments = Appointment.objects.filter(
+                master=master
+            ).select_related("client", "service", "master_service").order_by("-date")
+
+            if export_type == "appointments":
+                writer.writerow(["Дата", "Время", "Клиент", "Услуга", "Цена", "Статус"])
+                for a in appointments:
+                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    writer.writerow([
+                        a.date.strftime("%d.%m.%Y"), a.start_time.strftime("%H:%M"),
+                        a.client.full_name, svc, a.price, a.get_status_display(),
+                    ])
+            else:  # finances
+                writer.writerow([
+                    "Дата", "Клиент", "Услуга", "Доход", "Материалы", "Чистый доход",
+                ])
+                for a in appointments.filter(status=Appointment.Status.COMPLETED):
+                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    writer.writerow([
+                        a.date.strftime("%d.%m.%Y"), a.client.full_name, svc,
+                        a.price, a.materials_cost, a.price - a.materials_cost,
+                    ])
+
+        return response
+
+
+@extend_schema(
+    tags=["Подписки"],
+    summary="Аналитика",
+    description="Данные аналитики в зависимости от уровня подписки"
+)
+class AnalyticsView(APIView):
+    """Return analytics data based on subscription analytics_level."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sub = getattr(request.user, "subscription", None)
+        level = sub.plan.analytics_level if sub else "none"
+
+        data = {"level": level}
+
+        if level == "none":
+            # Only basic counters
+            if hasattr(request.user, "master_profile"):
+                master = request.user.master_profile
+                data["total_appointments"] = master.master_appointments.filter(
+                    status="completed"
+                ).count()
+                data["rating"] = float(master.rating)
+            return Response(data)
+
+        from apps.appointments.models import Appointment
+
+        if not hasattr(request.user, "master_profile"):
+            return Response(data)
+
+        master = request.user.master_profile
+        completed = Appointment.objects.filter(master=master, status="completed")
+
+        # BASIC: 7-day stats
+        seven_days_ago = timezone.now().date() - timedelta(days=7)
+        weekly = completed.filter(date__gte=seven_days_ago)
+
+        data["weekly_appointments"] = (
+            weekly.annotate(day=TruncDate("date"))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+        data["weekly_revenue"] = float(weekly.aggregate(total=Sum("price"))["total"] or 0)
+
+        from apps.services.models import MasterService
+        data["service_popularity"] = list(
+            completed.values("master_service__custom_name")
+            .annotate(count=Count("id"))
+            .order_by("-count")[:10]
+        )
+
+        if level == "advanced":
+            # ADVANCED: 30/90-day stats
+            thirty_days_ago = timezone.now().date() - timedelta(days=30)
+            ninety_days_ago = timezone.now().date() - timedelta(days=90)
+
+            monthly = completed.filter(date__gte=thirty_days_ago)
+            quarterly = completed.filter(date__gte=ninety_days_ago)
+
+            data["monthly_revenue"] = float(monthly.aggregate(total=Sum("price"))["total"] or 0)
+            data["quarterly_revenue"] = float(quarterly.aggregate(total=Sum("price"))["total"] or 0)
+
+            # Conversion rate: confirmed+completed / total
+            all_monthly = Appointment.objects.filter(master=master, date__gte=thirty_days_ago)
+            total_count = all_monthly.count()
+            if total_count > 0:
+                success_count = all_monthly.filter(
+                    status__in=["confirmed", "completed"]
+                ).count()
+                data["conversion_rate"] = round(success_count / total_count * 100, 1)
+            else:
+                data["conversion_rate"] = 0
+
+            # Rating trend (monthly avg)
+            from apps.appointments.models import Review
+            data["rating_trend"] = list(
+                Review.objects.filter(
+                    appointment__master=master,
+                    created_at__date__gte=ninety_days_ago,
+                )
+                .annotate(month=TruncDate("created_at"))
+                .values("month")
+                .annotate(avg_rating=Avg("rating"))
+                .order_by("month")
+            )
+
+            # Top services by revenue
+            data["top_services_by_revenue"] = list(
+                monthly.values("master_service__custom_name")
+                .annotate(revenue=Sum("price"), count=Count("id"))
+                .order_by("-revenue")[:10]
+            )
+
+        return Response(data)

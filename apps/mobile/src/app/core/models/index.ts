@@ -6,5 +6,4 @@ export * from './portfolio.model';
 export * from './chat.model';
 export * from './review.model';
 export * from './todo.model';
-export * from './wallet.model';
 export * from './subscription.model';

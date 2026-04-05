@@ -215,3 +215,62 @@ def send_review_notification_task(
     except Exception as exc:
         logger.error(f"Failed to send review notification: {exc}")
         self.retry(exc=exc)
+
+
+@shared_task
+def send_rebooking_reminders():
+    """Remind clients to rebook with masters who have rebooking reminders enabled (PRO)."""
+    from apps.appointments.models import Appointment
+    from apps.users.models import MasterProfile
+    from .notifications import NotificationService
+
+    masters = MasterProfile.objects.filter(
+        rebooking_reminder_days__gt=0,
+        user__subscription__status="active",
+        user__subscription__plan__rebooking_reminder_enabled=True,
+    ).select_related("user__subscription__plan")
+
+    now = timezone.now().date()
+    sent = 0
+
+    for master in masters:
+        days = master.rebooking_reminder_days
+        target_date = now - timedelta(days=days)
+
+        appointments = Appointment.objects.filter(
+            master=master,
+            status=Appointment.Status.COMPLETED,
+            date=target_date,
+        ).select_related("client", "master_service", "service")
+
+        for appt in appointments:
+            has_upcoming = Appointment.objects.filter(
+                client=appt.client,
+                master=master,
+                date__gte=now,
+                status__in=[Appointment.Status.PENDING, Appointment.Status.CONFIRMED],
+            ).exists()
+
+            if has_upcoming:
+                continue
+
+            service_name = (
+                appt.master_service.name if appt.master_service
+                else (appt.service.name if appt.service else "услугу")
+            )
+            master_name = master.user.full_name or master.user.email
+
+            NotificationService.create_notification(
+                user=appt.client,
+                notification_type="system",
+                title="Пора записаться снова",
+                message=(
+                    f"Прошло {days} дней с вашего визита на «{service_name}» "
+                    f"к мастеру {master_name}. Запишитесь снова!"
+                ),
+                link=f"/client/master/{master.id}",
+            )
+            sent += 1
+
+    logger.info(f"Sent {sent} rebooking reminders")
+    return sent

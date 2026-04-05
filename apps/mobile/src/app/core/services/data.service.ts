@@ -531,7 +531,6 @@ export class DataService {
       date: t.date,
       income: t.income,
       materialsCost: t.materials_cost,
-      platformFee: t.platform_fee,
       netProfit: t.net_profit,
       status: t.status as TransactionStatus,
       createdAt: new Date(t.created_at)
@@ -549,7 +548,7 @@ export class DataService {
           map(appointments => {
             const completed = appointments.filter(a => a.status === 'completed');
             return completed.map((apt, index) => {
-              const { platformFee, netProfit } = calculateNetProfit(apt.price, apt.materialsCost || 0);
+              const netProfit = calculateNetProfit(apt.price, apt.materialsCost || 0);
               return {
                 id: `trans-${apt.id}`,
                 masterId: apt.masterId,
@@ -559,7 +558,6 @@ export class DataService {
                 date: apt.date,
                 income: apt.price,
                 materialsCost: apt.materialsCost || 0,
-                platformFee,
                 netProfit,
                 status: (index === 0 ? 'pending' : 'paid') as TransactionStatus,
                 createdAt: apt.createdAt
@@ -889,7 +887,7 @@ export class DataService {
 
         const completedAppointments = appointments.filter(a => a.status === 'completed');
         const totalProfit = completedAppointments.reduce((sum, a) => {
-          const { netProfit } = calculateNetProfit(a.price, a.materialsCost || 0);
+          const netProfit = calculateNetProfit(a.price, a.materialsCost || 0);
           return sum + netProfit;
         }, 0);
 

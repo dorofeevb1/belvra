@@ -168,13 +168,11 @@ class MasterProfile(TimeStampedModel):
     push_notifications = models.BooleanField(default=True)
     reminder_hours = models.PositiveIntegerField(default=24)
 
-    # Payment settings
-    online_payments_enabled = models.BooleanField(default=False)
-    prepayment_required = models.BooleanField(default=False)
-    prepayment_percent = models.PositiveIntegerField(default=30)
-    accept_card = models.BooleanField(default=True)
-    accept_sbp = models.BooleanField(default=True)
-    accept_yoomoney = models.BooleanField(default=False)
+    # PRO feature: auto-remind clients to rebook
+    rebooking_reminder_days = models.PositiveIntegerField(
+        default=0,
+        help_text="Через сколько дней напомнить клиенту о повторной записи (0 = выключено)"
+    )
 
     class Meta:
         verbose_name = "Профиль мастера"

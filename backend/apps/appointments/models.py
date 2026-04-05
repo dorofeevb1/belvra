@@ -194,3 +194,28 @@ class Review(BaseModel):
         master.rating = round(result["avg"] or 0, 2)
         master.reviews_count = result["count"]
         master.save(update_fields=["rating", "reviews_count"])
+
+
+class ClientNote(BaseModel):
+    """Master's private notes about clients."""
+
+    master = models.ForeignKey(
+        MasterProfile,
+        on_delete=models.CASCADE,
+        related_name="client_notes",
+    )
+    client = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="master_notes_about_me",
+    )
+    text = models.TextField(help_text="Заметка о клиенте")
+
+    class Meta:
+        verbose_name = "Заметка о клиенте"
+        verbose_name_plural = "Заметки о клиентах"
+        unique_together = ["master", "client"]
+        ordering = ["-updated_at"]
+
+    def __str__(self):
+        return f"Note by {self.master} about {self.client}"

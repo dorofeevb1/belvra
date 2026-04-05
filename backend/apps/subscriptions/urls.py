@@ -5,10 +5,12 @@ URL routes for subscription management.
 from django.urls import path
 
 from .views import (
+    AnalyticsView,
     CancelSubscriptionView,
     ChangePlanView,
     CheckLimitView,
     CurrentSubscriptionView,
+    ExportDataView,
     ReactivateSubscriptionView,
     ReferralListView,
     ReferralStatsView,
@@ -43,6 +45,10 @@ urlpatterns = [
     # Referral program
     path("referrals/", ReferralListView.as_view(), name="referral-list"),
     path("referrals/stats/", ReferralStatsView.as_view(), name="referral-stats"),
+
+    # Analytics & Export
+    path("analytics/", AnalyticsView.as_view(), name="subscription-analytics"),
+    path("export/<str:export_type>/", ExportDataView.as_view(), name="subscription-export"),
 
     # Webhooks
     path("webhook/", SubscriptionWebhookView.as_view(), name="subscription-webhook"),

@@ -13,7 +13,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.core.notifications import NotificationService
-from apps.payments.services import TBankService
+from apps.core.tbank import TBankService
 from apps.services.models import MasterService, PortfolioItem
 from apps.users.models import User
 
@@ -272,7 +272,7 @@ class SubscriptionService:
 
         # Save RebillId for recurring payments via T-Bank Charge
         if rebill_id:
-            subscription.yookassa_payment_method_id = rebill_id  # Reuse field for T-Bank RebillId
+            subscription.tbank_rebill_id = rebill_id  # Reuse field for T-Bank RebillId
 
         subscription.save()
 
@@ -382,7 +382,7 @@ class SubscriptionService:
         """
         Renew subscription using saved RebillId via T-Bank Charge.
         """
-        rebill_id = subscription.yookassa_payment_method_id  # Stores T-Bank RebillId
+        rebill_id = subscription.tbank_rebill_id  # Stores T-Bank RebillId
         if not rebill_id:
             logger.warning(f"No saved RebillId for subscription {subscription.id}")
             return None

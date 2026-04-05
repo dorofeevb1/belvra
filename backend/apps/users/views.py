@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import logout
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import F, FloatField, Value
+from django.db.models import Case, F, FloatField, IntegerField, Value, When
 from django.db.models.functions import ACos, Cos, Radians, Sin
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -70,9 +70,13 @@ class RegisterView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        # Grant early adopter Pro subscription (first 50 users)
+        # Grant Pro subscription
         if user.is_early_adopter:
+            # First 50 users — lifetime Pro
             self._grant_early_adopter_pro(user)
+        else:
+            # All other new users — 1 month free Pro trial
+            self._grant_free_trial_pro(user)
 
         # Create referral record
         if user.referred_by:
@@ -96,7 +100,6 @@ class RegisterView(generics.CreateAPIView):
             **token_data,
             "verification_email": user.email,
             "is_early_adopter": user.is_early_adopter,
-            "early_adopter_promo_active": user.is_early_adopter,
             "referral_code": user.referral_code,
         }, status=status.HTTP_201_CREATED)
 
@@ -126,6 +129,14 @@ class RegisterView(generics.CreateAPIView):
                 "export_data_enabled": True,
                 "priority_booking": True,
                 "cashback_percent": Decimal("5.00"),
+                "extended_search": True,
+                "history_months": 0,
+                "client_stats_enabled": True,
+                "max_favorites": 0,
+                "pro_badge": True,
+                "client_notes_enabled": True,
+                "max_pinned_portfolio": 3,
+                "rebooking_reminder_enabled": True,
             }
         )
 
@@ -136,6 +147,55 @@ class RegisterView(generics.CreateAPIView):
                 "status": Subscription.Status.ACTIVE,
                 "current_period_start": timezone.now(),
                 "current_period_end": None,  # Lifetime — never expires
+                "auto_renew": False,
+            }
+        )
+
+    @staticmethod
+    def _grant_free_trial_pro(user):
+        """Grant 1-month free Pro trial to new user."""
+        from apps.subscriptions.models import Subscription, SubscriptionPlan
+        from decimal import Decimal
+
+        user_type = SubscriptionPlan.UserType.MASTER if user.role == "master" else SubscriptionPlan.UserType.CLIENT
+
+        pro_plan, _ = SubscriptionPlan.objects.get_or_create(
+            tier=SubscriptionPlan.Tier.PRO,
+            user_type=user_type,
+            period=SubscriptionPlan.Period.MONTHLY,
+            defaults={
+                "name": f"Pro ({user_type})",
+                "price": Decimal("0"),
+                "max_appointments_per_month": 0,
+                "max_services_count": 0,
+                "max_portfolio_items": 0,
+                "commission_percent": Decimal("3.00"),
+                "search_boost_enabled": True,
+                "analytics_level": SubscriptionPlan.AnalyticsLevel.ADVANCED,
+                "ai_assistant_enabled": True,
+                "advanced_notifications": True,
+                "export_data_enabled": True,
+                "priority_booking": True,
+                "cashback_percent": Decimal("5.00"),
+                "extended_search": True,
+                "history_months": 0,
+                "client_stats_enabled": True,
+                "max_favorites": 0,
+                "pro_badge": True,
+                "client_notes_enabled": True,
+                "max_pinned_portfolio": 3,
+                "rebooking_reminder_enabled": True,
+            }
+        )
+
+        now = timezone.now()
+        Subscription.objects.get_or_create(
+            user=user,
+            defaults={
+                "plan": pro_plan,
+                "status": Subscription.Status.ACTIVE,
+                "current_period_start": now,
+                "current_period_end": now + timedelta(days=30),
                 "auto_renew": False,
             }
         )
@@ -300,7 +360,56 @@ class MasterListView(generics.ListAPIView):
         return MasterProfile.objects.filter(
             is_available=True,
             user__is_active=True
-        ).select_related("user", "user__subscription", "user__subscription__plan")
+        ).select_related(
+            "user", "user__subscription", "user__subscription__plan"
+        ).annotate(
+            boost=Case(
+                When(
+                    user__subscription__plan__search_boost_enabled=True,
+                    user__subscription__status="active",
+                    then=0,
+                ),
+                default=1,
+                output_field=IntegerField(),
+            )
+        ).order_by("boost", "-rating")
+
+        return self._apply_extended_filters(queryset)
+
+    def _apply_extended_filters(self, queryset):
+        """Apply extended search filters for PRO clients."""
+        user = self.request.user if self.request.user.is_authenticated else None
+        has_extended = False
+        if user:
+            sub = getattr(user, "subscription", None)
+            if sub and sub.is_active:
+                has_extended = sub.plan.extended_search
+
+        if not has_extended:
+            return queryset
+
+        min_rating = self.request.query_params.get("min_rating")
+        min_experience = self.request.query_params.get("min_experience")
+        sort_by = self.request.query_params.get("sort_by")
+
+        if min_rating:
+            try:
+                queryset = queryset.filter(rating__gte=float(min_rating))
+            except (ValueError, TypeError):
+                pass
+        if min_experience:
+            try:
+                queryset = queryset.filter(experience_years__gte=int(min_experience))
+            except (ValueError, TypeError):
+                pass
+        if sort_by == "rating":
+            queryset = queryset.order_by("boost", "-rating")
+        elif sort_by == "experience":
+            queryset = queryset.order_by("boost", "-experience_years")
+        elif sort_by == "reviews":
+            queryset = queryset.order_by("boost", "-reviews_count")
+
+        return queryset
 
 
 @extend_schema(
@@ -359,16 +468,27 @@ class MasterGeoSearchView(generics.ListAPIView):
         lat_rad = math.radians(lat)
         lng_rad = math.radians(lng)
 
-        queryset = queryset.annotate(
+        queryset = queryset.select_related(
+            "user__subscription", "user__subscription__plan"
+        ).annotate(
             distance_km=Value(self.EARTH_RADIUS_KM) * ACos(
                 Sin(Value(lat_rad)) * Sin(Radians(F("latitude"))) +
                 Cos(Value(lat_rad)) * Cos(Radians(F("latitude"))) *
                 Cos(Radians(F("longitude")) - Value(lng_rad)),
                 output_field=FloatField()
+            ),
+            boost=Case(
+                When(
+                    user__subscription__plan__search_boost_enabled=True,
+                    user__subscription__status="active",
+                    then=0,
+                ),
+                default=1,
+                output_field=IntegerField(),
             )
         ).filter(
             distance_km__lte=radius_km
-        ).order_by("distance_km")
+        ).order_by("boost", "distance_km")
 
         return queryset
 
@@ -1119,6 +1239,17 @@ class FavoriteMasterViewSet(viewsets.ModelViewSet):
                     "is_favorite": False,
                     "detail": "Мастер удалён из избранного"
                 })
+
+            # Check favorites limit from subscription
+            sub = getattr(request.user, "subscription", None)
+            max_fav = sub.plan.max_favorites if sub else 5
+            if max_fav > 0:  # 0 = unlimited
+                current = FavoriteMaster.objects.filter(user=request.user).count()
+                if current >= max_fav:
+                    return Response(
+                        {"error": f"Лимит избранных мастеров ({max_fav}). Перейдите на PRO для безлимита."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             FavoriteMaster.objects.create(user=request.user, master=master)
             return Response({

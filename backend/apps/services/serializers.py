@@ -164,7 +164,7 @@ class PortfolioItemSerializer(serializers.ModelSerializer):
         fields = [
             "id", "master", "master_name", "title", "description",
             "image", "service", "service_name", "hashtags",
-            "likes_count", "is_published", "created_at"
+            "likes_count", "is_published", "is_pinned", "created_at"
         ]
         read_only_fields = ["id", "master", "likes_count", "created_at"]
 

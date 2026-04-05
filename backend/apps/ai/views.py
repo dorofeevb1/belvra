@@ -8,13 +8,14 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .permissions import HasAIAccess
 from .services import GeminiService
 
 
 class AnalyzePhotoView(APIView):
     """Analyze photo using AI vision model."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasAIAccess]
 
     @extend_schema(
         tags=["ИИ"],
@@ -75,7 +76,7 @@ class AnalyzePhotoView(APIView):
 class GeneratePortfolioContentView(APIView):
     """Generate portfolio content using AI."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasAIAccess]
 
     @extend_schema(
         tags=["ИИ"],
@@ -126,7 +127,7 @@ class GeneratePortfolioContentView(APIView):
 class GenerateChatSuggestionsView(APIView):
     """Generate chat reply suggestions using AI."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasAIAccess]
 
     @extend_schema(
         tags=["ИИ"],
@@ -184,7 +185,7 @@ class GenerateChatSuggestionsView(APIView):
 class AISearchMastersView(APIView):
     """Search masters using AI-powered natural language query."""
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, HasAIAccess]
 
     @extend_schema(
         tags=["ИИ"],

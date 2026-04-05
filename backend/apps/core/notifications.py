@@ -2,7 +2,17 @@
 Notification service for creating in-app notifications.
 """
 
+import logging
+
 from .models import Notification
+
+logger = logging.getLogger(__name__)
+
+# Notification types that require advanced_notifications in subscription plan
+ADVANCED_NOTIFICATION_TYPES = {
+    Notification.NotificationType.APPOINTMENT_REMINDER,
+    Notification.NotificationType.REVIEW_NEW,
+}
 
 
 class NotificationService:
@@ -15,8 +25,21 @@ class NotificationService:
         title: str,
         message: str,
         link: str = ""
-    ) -> Notification:
-        """Create a new notification for a user."""
+    ) -> Notification | None:
+        """Create a new notification for a user.
+
+        Advanced notification types are only created for users
+        with advanced_notifications enabled in their subscription plan.
+        """
+        if notification_type in ADVANCED_NOTIFICATION_TYPES:
+            sub = getattr(user, "subscription", None)
+            if not sub or not sub.plan.advanced_notifications:
+                logger.debug(
+                    "Skipping advanced notification %s for user %s (no PRO)",
+                    notification_type, user.id,
+                )
+                return None
+
         return Notification.objects.create(
             user=user,
             notification_type=notification_type,
@@ -112,28 +135,6 @@ class NotificationService:
             title="Новый отзыв",
             message=message,
             link="/master/dashboard"
-        )
-
-    @classmethod
-    def notify_payment_received(cls, master_user, amount: str, client_name: str, service_name: str):
-        """Notify master about received payment."""
-        return cls.create_notification(
-            user=master_user,
-            notification_type=Notification.NotificationType.PAYMENT_RECEIVED,
-            title="Платёж получен",
-            message=f"Получен платёж {amount} руб. от {client_name} за услугу «{service_name}»",
-            link="/master/wallet"
-        )
-
-    @classmethod
-    def notify_payment_refunded(cls, client_user, amount: str, service_name: str):
-        """Notify client about refunded payment."""
-        return cls.create_notification(
-            user=client_user,
-            notification_type=Notification.NotificationType.PAYMENT_REFUNDED,
-            title="Возврат средств",
-            message=f"Вам возвращено {amount} руб. за отменённую услугу «{service_name}»",
-            link="/client/my-appointments"
         )
 
     @classmethod

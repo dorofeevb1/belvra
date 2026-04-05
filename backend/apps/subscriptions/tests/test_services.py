@@ -131,7 +131,7 @@ class TestSubscriptionService:
         assert subscription.status == Subscription.Status.ACTIVE
         assert subscription.current_period_start is not None
         assert subscription.current_period_end is not None
-        assert subscription.yookassa_payment_method_id == "test_payment_method_id"
+        assert subscription.tbank_rebill_id == "test_payment_method_id"
 
     def test_cancel_subscription_at_period_end(self):
         """Cancel at period end should set flag but keep active."""
@@ -345,7 +345,7 @@ class TestSubscriptionServiceRenewal:
         subscription = ActiveSubscriptionFactory(
             user=user,
             plan=plan,
-            yookassa_payment_method_id=""
+            tbank_rebill_id=""
         )
 
         service = SubscriptionService()
@@ -361,7 +361,7 @@ class TestSubscriptionServiceRenewal:
             user=user,
             plan=plan,
             auto_renew=False,
-            yookassa_payment_method_id="pm_123"
+            tbank_rebill_id="pm_123"
         )
 
         service = SubscriptionService()
@@ -376,7 +376,7 @@ class TestSubscriptionServiceRenewal:
         subscription = ActiveSubscriptionFactory(
             user=user,
             plan=plan,
-            yookassa_payment_method_id="pm_123"
+            tbank_rebill_id="pm_123"
         )
 
         service = SubscriptionService()

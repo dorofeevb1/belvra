@@ -1,7 +1,6 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService, DataService } from '../../../core/services';
-import { SubscriptionService } from '../../../core/services/subscription.service';
 import {
   Transaction,
   TRANSACTION_STATUS_LABELS
@@ -19,13 +18,9 @@ import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
 export class FinancesComponent implements OnInit {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
-  private subscriptionService = inject(SubscriptionService);
 
   isLoading = signal(true);
   transactions = signal<Transaction[]>([]);
-
-  // Get platform fee from subscription limits
-  platformFee = computed(() => this.subscriptionService.limits().commissionPercent);
 
   summary = computed(() => {
     const txs = this.transactions();
@@ -46,7 +41,6 @@ export class FinancesComponent implements OnInit {
     return {
       income: paidTxs.reduce((sum, t) => sum + t.income, 0),
       materials: paidTxs.reduce((sum, t) => sum + t.materialsCost, 0),
-      fees: paidTxs.reduce((sum, t) => sum + t.platformFee, 0),
       profit: paidTxs.reduce((sum, t) => sum + t.netProfit, 0)
     };
   });

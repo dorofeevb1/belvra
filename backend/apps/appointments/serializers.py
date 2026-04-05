@@ -6,7 +6,7 @@ from rest_framework import serializers
 from apps.services.serializers import ServiceSerializer
 from apps.users.serializers import MasterProfileSerializer, UserSerializer
 
-from .models import Appointment, Review, WorkSchedule
+from .models import Appointment, ClientNote, Review, WorkSchedule
 
 
 class WorkScheduleSerializer(serializers.ModelSerializer):
@@ -33,8 +33,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
         model = Appointment
         fields = [
             "id", "client", "master", "service", "service_name", "date", "start_time",
-            "end_time", "status", "status_display", "price", "notes",
-            "used_materials", "materials_cost",
+            "end_time", "status", "status_display", "price",
+            "notes", "used_materials", "materials_cost",
             "can_cancel", "created_at"
         ]
 
@@ -233,6 +233,17 @@ class ReviewSerializer(serializers.ModelSerializer):
         if hasattr(value, "review"):
             raise serializers.ValidationError("Отзыв для этой записи уже существует")
         return value
+
+
+class ClientNoteSerializer(serializers.ModelSerializer):
+    """Serializer for master's private notes about clients."""
+
+    client_name = serializers.CharField(source="client.full_name", read_only=True)
+
+    class Meta:
+        model = ClientNote
+        fields = ["id", "client", "client_name", "text", "updated_at"]
+        read_only_fields = ["id", "updated_at"]
 
 
 class AvailableSlotsSerializer(serializers.Serializer):

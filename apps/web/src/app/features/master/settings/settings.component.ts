@@ -5,7 +5,7 @@ import { FormBuilder, FormGroup, FormArray, ReactiveFormsModule, Validators } fr
 import { firstValueFrom } from 'rxjs';
 import { AuthService, DataService, NotificationService, ThemeService, ApiService } from '../../../core/services';
 import { SubscriptionService } from '../../../core/services/subscription.service';
-import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings, PaymentSettings, PaymentProvider } from '../../../core/models';
+import { BeautyService, SERVICE_CATEGORIES, WorkSchedule, SocialLinks, NotificationSettings } from '../../../core/models';
 import { PhoneMaskDirective } from '../../../shared/directives/phone-mask.directive';
 
 declare const ymaps: any;
@@ -59,13 +59,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
   scheduleForm!: FormGroup;
   servicesForm!: FormGroup;
   notificationsForm!: FormGroup;
-  paymentsForm!: FormGroup;
-
   // Service to delete confirmation
   serviceToDelete = signal<number | null>(null);
-
-  // Active payment provider for config
-  activePaymentProvider = signal<PaymentProvider | null>(null);
 
   weekDays = [
     { key: 'monday', label: 'Пн', fullLabel: 'Понедельник' },
@@ -83,22 +78,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     { value: 3, label: 'За 3 часа' },
     { value: 12, label: 'За 12 часов' },
     { value: 24, label: 'За 24 часа' }
-  ];
-
-  paymentProviders: { key: PaymentProvider; name: string; logo: string; color: string }[] = [
-    { key: 'yoomoney', name: 'ЮMoney', logo: 'yoomoney', color: '#8b3ffd' },
-    { key: 'tinkoff', name: 'Тинькофф', logo: 'tinkoff', color: '#ffdd2d' },
-    { key: 'sberbank', name: 'СберБанк', logo: 'sberbank', color: '#21a038' },
-    { key: 'alfabank', name: 'Альфа-Банк', logo: 'alfabank', color: '#ef3124' }
-  ];
-
-  prepaymentOptions = [
-    { value: 0, label: 'Без предоплаты' },
-    { value: 10, label: '10%' },
-    { value: 20, label: '20%' },
-    { value: 30, label: '30%' },
-    { value: 50, label: '50%' },
-    { value: 100, label: '100% (полная оплата)' }
   ];
 
   private initialValues: any = {};
@@ -150,31 +129,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       reminderHours: [24]
     });
 
-    this.paymentsForm = this.fb.group({
-      onlinePaymentsEnabled: [false],
-      prepaymentRequired: [false],
-      prepaymentPercent: [30],
-      // Accepted methods
-      acceptCard: [true],
-      acceptSbp: [true],
-      acceptYoomoney: [false],
-      // YooMoney provider
-      yoomoneyEnabled: [false],
-      yoomoneyShopId: [''],
-      yoomoneySecretKey: [''],
-      // Tinkoff provider
-      tinkoffEnabled: [false],
-      tinkoffTerminalKey: [''],
-      tinkoffSecretKey: [''],
-      // Sberbank provider
-      sberbankEnabled: [false],
-      sberbankMerchantLogin: [''],
-      sberbankToken: [''],
-      // Alfabank provider
-      alfabankEnabled: [false],
-      alfabankMerchantLogin: [''],
-      alfabankToken: ['']
-    });
   }
 
   private loadData(): void {
@@ -215,35 +169,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       this.notificationsForm.patchValue(master.notificationSettings);
     }
 
-    // Load payment settings
-    if (master.paymentSettings) {
-      const ps = master.paymentSettings;
-      this.paymentsForm.patchValue({
-        onlinePaymentsEnabled: ps.onlinePaymentsEnabled,
-        prepaymentRequired: ps.prepaymentRequired,
-        prepaymentPercent: ps.prepaymentPercent,
-        acceptCard: ps.acceptedMethods?.card ?? true,
-        acceptSbp: ps.acceptedMethods?.sbp ?? true,
-        acceptYoomoney: ps.acceptedMethods?.yoomoney ?? false,
-        // YooMoney
-        yoomoneyEnabled: ps.providers?.yoomoney?.enabled ?? false,
-        yoomoneyShopId: ps.providers?.yoomoney?.shopId ?? '',
-        yoomoneySecretKey: ps.providers?.yoomoney?.secretKey ?? '',
-        // Tinkoff
-        tinkoffEnabled: ps.providers?.tinkoff?.enabled ?? false,
-        tinkoffTerminalKey: ps.providers?.tinkoff?.terminalKey ?? '',
-        tinkoffSecretKey: ps.providers?.tinkoff?.secretKey ?? '',
-        // Sberbank
-        sberbankEnabled: ps.providers?.sberbank?.enabled ?? false,
-        sberbankMerchantLogin: ps.providers?.sberbank?.merchantLogin ?? '',
-        sberbankToken: ps.providers?.sberbank?.token ?? '',
-        // Alfabank
-        alfabankEnabled: ps.providers?.alfabank?.enabled ?? false,
-        alfabankMerchantLogin: ps.providers?.alfabank?.merchantLogin ?? '',
-        alfabankToken: ps.providers?.alfabank?.token ?? ''
-      });
-    }
-
     // Load services (use masterProfileId for API calls)
     const profileId = master.masterProfileId || master.id;
     this.dataService.getServices(profileId).subscribe(services => {
@@ -259,7 +184,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       schedule: { ...this.scheduleForm.value },
       services: this.servicesArray.value.map((s: any) => ({ ...s })),
       notifications: { ...this.notificationsForm.value },
-      payments: { ...this.paymentsForm.value },
       avatar: this.avatarPreview()
     };
     this.avatarChanged.set(false);
@@ -271,13 +195,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
     const currentSchedule = JSON.stringify(this.scheduleForm.value);
     const currentServices = JSON.stringify(this.servicesArray.value);
     const currentNotifications = JSON.stringify(this.notificationsForm.value);
-    const currentPayments = JSON.stringify(this.paymentsForm.value);
 
     return currentProfile !== JSON.stringify(this.initialValues.profile) ||
            currentSchedule !== JSON.stringify(this.initialValues.schedule) ||
            currentServices !== JSON.stringify(this.initialValues.services) ||
            currentNotifications !== JSON.stringify(this.initialValues.notifications) ||
-           currentPayments !== JSON.stringify(this.initialValues.payments) ||
            this.avatarChanged();
   }
 
@@ -357,19 +279,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
     this.activeTab.set(tab);
   }
 
-  // Payment provider config toggle
-  toggleProviderConfig(provider: PaymentProvider): void {
-    if (this.activePaymentProvider() === provider) {
-      this.activePaymentProvider.set(null);
-    } else {
-      this.activePaymentProvider.set(provider);
-    }
-  }
-
-  isProviderEnabled(provider: PaymentProvider): boolean {
-    return this.paymentsForm.get(provider + 'Enabled')?.value ?? false;
-  }
-
   // Save all
   async saveAll(): Promise<void> {
     if (!this.profileForm.valid) {
@@ -420,40 +329,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
       reminderHours: this.notificationsForm.get('reminderHours')?.value
     };
 
-    // Build payment settings
-    const paymentSettings: PaymentSettings = {
-      onlinePaymentsEnabled: this.paymentsForm.get('onlinePaymentsEnabled')?.value,
-      prepaymentRequired: this.paymentsForm.get('prepaymentRequired')?.value,
-      prepaymentPercent: this.paymentsForm.get('prepaymentPercent')?.value,
-      acceptedMethods: {
-        card: this.paymentsForm.get('acceptCard')?.value,
-        sbp: this.paymentsForm.get('acceptSbp')?.value,
-        yoomoney: this.paymentsForm.get('acceptYoomoney')?.value
-      },
-      providers: {
-        yoomoney: {
-          enabled: this.paymentsForm.get('yoomoneyEnabled')?.value,
-          shopId: this.paymentsForm.get('yoomoneyShopId')?.value,
-          secretKey: this.paymentsForm.get('yoomoneySecretKey')?.value
-        },
-        tinkoff: {
-          enabled: this.paymentsForm.get('tinkoffEnabled')?.value,
-          terminalKey: this.paymentsForm.get('tinkoffTerminalKey')?.value,
-          secretKey: this.paymentsForm.get('tinkoffSecretKey')?.value
-        },
-        sberbank: {
-          enabled: this.paymentsForm.get('sberbankEnabled')?.value,
-          merchantLogin: this.paymentsForm.get('sberbankMerchantLogin')?.value,
-          token: this.paymentsForm.get('sberbankToken')?.value
-        },
-        alfabank: {
-          enabled: this.paymentsForm.get('alfabankEnabled')?.value,
-          merchantLogin: this.paymentsForm.get('alfabankMerchantLogin')?.value,
-          token: this.paymentsForm.get('alfabankToken')?.value
-        }
-      }
-    };
-
     try {
       // Step 1: Upload avatar if changed
       if (this.avatarChanged()) {
@@ -492,13 +367,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
         sms_notifications: this.notificationsForm.get('smsNotifications')?.value,
         push_notifications: this.notificationsForm.get('pushNotifications')?.value,
         reminder_hours: this.notificationsForm.get('reminderHours')?.value,
-        // Payment settings
-        online_payments_enabled: this.paymentsForm.get('onlinePaymentsEnabled')?.value,
-        prepayment_required: this.paymentsForm.get('prepaymentRequired')?.value,
-        prepayment_percent: this.paymentsForm.get('prepaymentPercent')?.value,
-        accept_card: this.paymentsForm.get('acceptCard')?.value,
-        accept_sbp: this.paymentsForm.get('acceptSbp')?.value,
-        accept_yoomoney: this.paymentsForm.get('acceptYoomoney')?.value
       }).toPromise();
 
       // Step 3: Update local state only (API already called in step 2)
@@ -516,7 +384,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
         workSchedule,
         socialLinks,
         notificationSettings,
-        paymentSettings
       }, true).subscribe();
 
       // Step 4: Save schedule to backend API

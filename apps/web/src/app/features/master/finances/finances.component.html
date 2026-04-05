@@ -61,7 +61,7 @@
       <div>
         <p class="info-title">Как рассчитывается прибыль?</p>
         <p class="info-text">
-          Чистая прибыль = Цена услуги - Стоимость материалов - Комиссия платформы ({{ platformFee() }}%)
+          Чистая прибыль = Цена услуги - Стоимость материалов
         </p>
       </div>
     </div>
@@ -91,7 +91,6 @@
                 <th>Дата</th>
                 <th class="text-right">Доход</th>
                 <th class="text-right">Материалы</th>
-                <th class="text-right">Комиссия</th>
                 <th class="text-right">Прибыль</th>
                 <th class="text-center">Статус</th>
               </tr>
@@ -104,7 +103,6 @@
                   <td>{{ tx.date | dateFormat:'short' }}</td>
                   <td class="text-right">{{ tx.income | currencyRub }}</td>
                   <td class="text-right text-error">-{{ tx.materialsCost | currencyRub }}</td>
-                  <td class="text-right text-warning">-{{ tx.platformFee | currencyRub }}</td>
                   <td class="text-right text-success font-semibold">{{ tx.netProfit | currencyRub }}</td>
                   <td class="text-center">
                     <span class="badge" [class.badge-success]="tx.status === 'paid'" [class.badge-warning]="tx.status === 'pending'">
@@ -119,7 +117,6 @@
                 <td colspan="3" class="font-semibold">Итого</td>
                 <td class="text-right font-semibold">{{ totals().income | currencyRub }}</td>
                 <td class="text-right font-semibold text-error">-{{ totals().materials | currencyRub }}</td>
-                <td class="text-right font-semibold text-warning">-{{ totals().fees | currencyRub }}</td>
                 <td class="text-right font-bold text-success">{{ totals().profit | currencyRub }}</td>
                 <td></td>
               </tr>

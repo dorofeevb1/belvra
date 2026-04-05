@@ -48,7 +48,6 @@ LOCAL_APPS = [
     "apps.users",
     "apps.services",
     "apps.appointments",
-    "apps.payments",
     "apps.subscriptions",
     "apps.chat",
     "apps.todo",
@@ -264,27 +263,6 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.subscriptions.tasks.notify_past_due_subscriptions",
         "schedule": crontab(hour=11, minute=0),  # Every day at 11:00
     },
-    # Payment tasks
-    "release-held-funds": {
-        "task": "apps.payments.tasks.release_held_funds",
-        "schedule": crontab(hour="*/1"),  # Every hour
-    },
-    "process-auto-withdrawals": {
-        "task": "apps.payments.tasks.process_auto_withdrawals",
-        "schedule": crontab(hour=6, minute=30),  # Daily at 6:30
-    },
-    "sync-payment-statuses": {
-        "task": "apps.payments.tasks.sync_payment_statuses",
-        "schedule": crontab(minute="*/10"),  # Every 10 minutes
-    },
-    "cleanup-expired-payments": {
-        "task": "apps.payments.tasks.cleanup_expired_payments",
-        "schedule": crontab(hour="*/2"),  # Every 2 hours
-    },
-    "generate-daily-payment-report": {
-        "task": "apps.payments.tasks.generate_daily_report",
-        "schedule": crontab(hour=1, minute=30),  # Daily at 1:30
-    },
     # User tasks
     "cleanup-expired-tokens": {
         "task": "apps.users.tasks.cleanup_expired_tokens",
@@ -304,6 +282,11 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.todo.tasks.cleanup_old_notifications",
         "schedule": crontab(hour=4, minute=0, day_of_week=0),  # Every Sunday at 4:00
     },
+    # PRO feature: rebooking reminders
+    "send-rebooking-reminders": {
+        "task": "apps.core.tasks.send_rebooking_reminders",
+        "schedule": crontab(hour=10, minute=30),  # Every day at 10:30
+    },
 }
 
 # API Documentation
@@ -316,38 +299,12 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": "/api/v1",
 }
 
-# YooKassa Payment Settings
-YOOKASSA_SHOP_ID = env.str("YOOKASSA_SHOP_ID", default="")
-YOOKASSA_SECRET_KEY = env.str("YOOKASSA_SECRET_KEY", default="")
-YOOKASSA_WEBHOOK_SECRET = env.str("YOOKASSA_WEBHOOK_SECRET", default="")
-YOOKASSA_SEND_RECEIPT = env.bool("YOOKASSA_SEND_RECEIPT", default=False)
-
 # T-Bank (Tinkoff) Payment Settings
 TBANK_TERMINAL_KEY = env.str("TBANK_TERMINAL_KEY", default="1774615155386DEMO")
 TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="cAk9hZfCjw6b3gqu")
 TBANK_SEND_RECEIPT = env.bool("TBANK_SEND_RECEIPT", default=False)
 TBANK_TAXATION = env.str("TBANK_TAXATION", default="usn_income")  # Система налогообложения
 TBANK_API_URL = env.str("TBANK_API_URL", default="https://securepay.tinkoff.ru/v2/")
-
-# Active payment provider: "yookassa" or "tinkoff"
-PAYMENT_PROVIDER = env.str("PAYMENT_PROVIDER", default="tinkoff")
-
-# Payment Settings
-PAYMENT_RETURN_URL = env.str("PAYMENT_RETURN_URL", default="http://localhost:4200/payment/success")
-PLATFORM_COMMISSION_RATE = env.decimal("PLATFORM_COMMISSION_RATE", default="0.05")  # 5%
-MIN_COMMISSION = env.decimal("MIN_COMMISSION", default="10.00")  # 10 RUB
-PROVIDER_FEE_RATE = env.decimal("PROVIDER_FEE_RATE", default="0.02")  # ~2%
-PAYMENT_HOLD_DAYS = env.int("PAYMENT_HOLD_DAYS", default=3)
-PREPAYMENT_PERCENT = env.decimal("PREPAYMENT_PERCENT", default="0.20")  # 20%
-
-# Withdrawal Settings
-MIN_WITHDRAWAL_AMOUNT = env.decimal("MIN_WITHDRAWAL_AMOUNT", default="100.00")
-MIN_AUTO_WITHDRAWAL_AMOUNT = env.decimal("MIN_AUTO_WITHDRAWAL_AMOUNT", default="1000.00")
-WITHDRAWAL_FEES = {
-    "card": {"fixed": env.decimal("WITHDRAWAL_FEE_CARD_FIXED", default="50.00"), "percent": env.decimal("WITHDRAWAL_FEE_CARD_PERCENT", default="0.00")},
-    "yoomoney": {"fixed": env.decimal("WITHDRAWAL_FEE_YOOMONEY_FIXED", default="0.00"), "percent": env.decimal("WITHDRAWAL_FEE_YOOMONEY_PERCENT", default="0.03")},
-    "bank_account": {"fixed": env.decimal("WITHDRAWAL_FEE_BANK_FIXED", default="0.00"), "percent": env.decimal("WITHDRAWAL_FEE_BANK_PERCENT", default="0.01")},
-}
 
 # Email Settings
 EMAIL_BACKEND = env.str("EMAIL_BACKEND", default="django.core.mail.backends.console.EmailBackend")
@@ -498,32 +455,6 @@ UNFOLD = {
                         "title": "Отзывы",
                         "icon": "reviews",
                         "link": "/admin/appointments/review/",
-                    },
-                ],
-            },
-            {
-                "title": "Платежи",
-                "separator": True,
-                "items": [
-                    {
-                        "title": "Платежи",
-                        "icon": "payments",
-                        "link": "/admin/payments/payment/",
-                    },
-                    {
-                        "title": "Кошельки",
-                        "icon": "account_balance_wallet",
-                        "link": "/admin/payments/wallet/",
-                    },
-                    {
-                        "title": "Выводы средств",
-                        "icon": "currency_exchange",
-                        "link": "/admin/payments/withdrawal/",
-                    },
-                    {
-                        "title": "Реквизиты выплат",
-                        "icon": "credit_card",
-                        "link": "/admin/payments/payoutdestination/",
                     },
                 ],
             },

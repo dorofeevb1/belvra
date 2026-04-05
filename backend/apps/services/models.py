@@ -200,11 +200,12 @@ class PortfolioItem(BaseModel):
     hashtags = models.JSONField(default=list, blank=True)
     likes_count = models.PositiveIntegerField(default=0)
     is_published = models.BooleanField(default=True)
+    is_pinned = models.BooleanField(default=False, help_text="Закреплено наверху")
 
     class Meta:
         verbose_name = "Работа в портфолио"
         verbose_name_plural = "Работы в портфолио"
-        ordering = ["-created_at"]
+        ordering = ["-is_pinned", "-created_at"]
 
     def __str__(self):
         return f"{self.master.user.full_name} - {self.title}"

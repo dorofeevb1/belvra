@@ -20,7 +20,6 @@ urlpatterns = [
         path("auth/", include("apps.users.urls")),
         path("services/", include("apps.services.urls")),
         path("appointments/", include("apps.appointments.urls")),
-        path("payments/", include("apps.payments.urls")),
         path("subscriptions/", include("apps.subscriptions.urls")),
         path("notifications/", include("apps.core.notification_urls")),
         path("chats/", include("apps.chat.urls")),

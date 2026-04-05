@@ -294,3 +294,39 @@ class PortfolioItemViewSet(viewsets.ModelViewSet):
             PortfolioItem.objects.filter(pk=item.pk).update(likes_count=F("likes_count") - 1)
             item.refresh_from_db(fields=["likes_count"])
         return Response({"likes_count": item.likes_count, "liked": False})
+
+    @extend_schema(
+        tags=["Портфолио"],
+        summary="Закрепить/открепить работу",
+        description="Закрепить работу наверху портфолио (PRO)"
+    )
+    @action(detail=True, methods=["post"])
+    def pin(self, request, pk=None):
+        """Toggle pin status for a portfolio item. PRO only."""
+        item = self.get_object()
+
+        if not hasattr(request.user, "master_profile") or item.master != request.user.master_profile:
+            return Response({"error": "Нет доступа"}, status=status.HTTP_403_FORBIDDEN)
+
+        sub = getattr(request.user, "subscription", None)
+        max_pinned = sub.plan.max_pinned_portfolio if sub else 0
+
+        if max_pinned == 0:
+            return Response(
+                {"error": "Закрепление работ доступно только на тарифе PRO"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        if not item.is_pinned:
+            current_pinned = PortfolioItem.objects.filter(
+                master=item.master, is_pinned=True
+            ).count()
+            if current_pinned >= max_pinned:
+                return Response(
+                    {"error": f"Можно закрепить не более {max_pinned} работ"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        item.is_pinned = not item.is_pinned
+        item.save(update_fields=["is_pinned"])
+        return Response({"is_pinned": item.is_pinned})

@@ -126,14 +126,6 @@ export class AuthService {
         reminderHours: 24
       };
 
-      // Map payment settings
-      const paymentSettings = backendUser.payment_settings || {
-        onlinePaymentsEnabled: false,
-        prepaymentRequired: false,
-        prepaymentPercent: 30,
-        acceptedMethods: { card: true, sbp: true, yoomoney: false }
-      };
-
       return {
         ...baseUser,
         masterProfileId: backendUser.master_profile_id || backendUser.id,
@@ -155,7 +147,6 @@ export class AuthService {
         services: [],
         socialLinks,
         notificationSettings,
-        paymentSettings,
         subscription
       } as Master;
     }

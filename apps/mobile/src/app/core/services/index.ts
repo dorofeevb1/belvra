@@ -5,8 +5,6 @@ export * from './date.service';
 export * from './ai.service';
 export * from './notification.service';
 export * from './theme.service';
-export * from './wallet.service';
-
 // Mobile platform services
 export * from './platform.service';
 export * from './storage.service';

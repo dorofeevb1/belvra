@@ -24,6 +24,9 @@ class SubscriptionPlanSerializer(serializers.ModelSerializer):
             "search_boost_enabled", "analytics_level",
             "priority_booking", "cashback_percent", "discount_percent",
             "ai_assistant_enabled", "advanced_notifications", "export_data_enabled",
+            "extended_search", "history_months", "client_stats_enabled", "max_favorites",
+            "pro_badge", "client_notes_enabled", "max_pinned_portfolio",
+            "rebooking_reminder_enabled",
             "is_free", "is_pro", "discount_percentage"
         ]
         read_only_fields = ["id"]

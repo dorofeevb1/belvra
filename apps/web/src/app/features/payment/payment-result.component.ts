@@ -54,8 +54,12 @@ import { ApiService } from '../../core/services/api.service';
               <span>Безлимитные записи</span>
             </div>
             <div class="feature">
-              <div class="feature-icon">5%</div>
-              <span>Сниженная комиссия</span>
+              <div class="feature-icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/>
+                </svg>
+              </div>
+              <span>PRO-бейдж</span>
             </div>
             <div class="feature">
               <div class="feature-icon">

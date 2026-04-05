@@ -28,7 +28,7 @@ import {
           @if (subscriptionService.isPro()) {
             Управляйте вашей подпиской и пользуйтесь привилегиями
           } @else {
-            Получите скидки, приоритетную запись и кешбэк
+            Приоритетная запись, расширенный поиск и полная история
           }
         </p>
       </div>
@@ -86,16 +86,20 @@ import {
           <!-- PRO Benefits Summary -->
           <div class="mt-4 pt-4 border-t border-amber-200 dark:border-amber-800 grid grid-cols-3 gap-4">
             <div class="text-center">
-              <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">10%</div>
-              <div class="text-xs text-slate-600 dark:text-slate-400">Скидка на услуги</div>
-            </div>
-            <div class="text-center">
-              <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">5%</div>
-              <div class="text-xs text-slate-600 dark:text-slate-400">Кешбэк</div>
-            </div>
-            <div class="text-center">
               <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">VIP</div>
               <div class="text-xs text-slate-600 dark:text-slate-400">Приоритет записи</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">&infin;</div>
+              <div class="text-xs text-slate-600 dark:text-slate-400">Безлимит избранных</div>
+            </div>
+            <div class="text-center">
+              <div class="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                <svg class="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+              </div>
+              <div class="text-xs text-slate-600 dark:text-slate-400">Расширенный поиск</div>
             </div>
           </div>
         </div>
@@ -259,16 +263,6 @@ import {
             <div class="text-center">
               <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-              </div>
-              <h4 class="font-medium text-slate-900 dark:text-white mb-1">Скидка 10%</h4>
-              <p class="text-sm text-slate-600 dark:text-slate-400">На все услуги у любого мастера</p>
-            </div>
-
-            <div class="text-center">
-              <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                 </svg>
               </div>
@@ -279,11 +273,21 @@ import {
             <div class="text-center">
               <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
                 <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
               </div>
-              <h4 class="font-medium text-slate-900 dark:text-white mb-1">Кешбэк 5%</h4>
-              <p class="text-sm text-slate-600 dark:text-slate-400">Возврат с каждой оплаченной услуги</p>
+              <h4 class="font-medium text-slate-900 dark:text-white mb-1">Расширенный поиск</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Находите мастеров по расширенным критериям</p>
+            </div>
+
+            <div class="text-center">
+              <div class="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                <svg class="w-6 h-6 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                </svg>
+              </div>
+              <h4 class="font-medium text-slate-900 dark:text-white mb-1">Полная история</h4>
+              <p class="text-sm text-slate-600 dark:text-slate-400">Доступ к полной истории записей и статистике расходов</p>
             </div>
           </div>
         </div>
@@ -328,20 +332,20 @@ export class ClientSubscriptionComponent implements OnInit {
 
   faqs = [
     {
-      question: 'Как работает скидка 10%?',
-      answer: 'Скидка автоматически применяется при оплате любых услуг у всех мастеров на платформе. Вы сразу видите сниженную цену.'
+      question: 'Что даёт PRO подписка клиенту?',
+      answer: 'PRO подписка даёт приоритетную запись к популярным мастерам, безлимит избранных, расширенный поиск, полную историю записей и статистику расходов.'
     },
     {
       question: 'Что такое приоритетная запись?',
       answer: 'PRO клиенты получают доступ к записи раньше остальных, когда мастер открывает новые слоты. Это особенно удобно для популярных мастеров.'
     },
     {
-      question: 'Как работает кешбэк?',
-      answer: 'После каждой оплаченной услуги 5% возвращается на ваш баланс в приложении. Накопленные средства можно использовать для оплаты следующих услуг.'
+      question: 'Что такое расширенный поиск?',
+      answer: 'Расширенный поиск позволяет находить мастеров по дополнительным критериям: рейтинг, отзывы, доступность, специализация и другие параметры.'
     },
     {
       question: 'Могу ли я отменить подписку?',
-      answer: 'Да, вы можете отменить автопродление в любой момент. Подписка будет действовать до конца оплаченного периода, накопленный кешбэк сохранится.'
+      answer: 'Да, вы можете отменить автопродление в любой момент. Подписка будет действовать до конца оплаченного периода.'
     }
   ];
 

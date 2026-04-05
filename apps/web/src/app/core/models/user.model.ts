@@ -29,34 +29,6 @@ export interface NotificationSettings {
   reminderHours: number; // Hours before appointment to send reminder
 }
 
-export type PaymentProvider = 'yoomoney' | 'tinkoff' | 'sberbank' | 'alfabank';
-
-export interface PaymentProviderConfig {
-  enabled: boolean;
-  shopId?: string;
-  secretKey?: string;
-  terminalKey?: string;
-  merchantLogin?: string;
-  token?: string;
-}
-
-export interface PaymentSettings {
-  onlinePaymentsEnabled: boolean;
-  prepaymentRequired: boolean;
-  prepaymentPercent: number; // 0-100
-  acceptedMethods: {
-    card: boolean;
-    sbp: boolean;
-    yoomoney: boolean;
-  };
-  providers: {
-    yoomoney?: PaymentProviderConfig;
-    tinkoff?: PaymentProviderConfig;
-    sberbank?: PaymentProviderConfig;
-    alfabank?: PaymentProviderConfig;
-  };
-}
-
 export interface Master extends User {
   role: 'master';
   masterProfileId?: string; // ID of master profile (different from user id)
@@ -75,23 +47,12 @@ export interface Master extends User {
   services: string[];
   socialLinks?: SocialLinks;
   notificationSettings?: NotificationSettings;
-  paymentSettings?: PaymentSettings;
   subscription?: UserSubscription;
-}
-
-export interface SavedCard {
-  id: string;
-  last4: string;
-  brand: 'visa' | 'mastercard' | 'mir';
-  expMonth: number;
-  expYear: number;
-  isDefault: boolean;
 }
 
 export interface Client extends User {
   role: 'client';
   favoritesMasters?: string[];
-  savedCards?: SavedCard[];
   notificationSettings?: NotificationSettings;
   subscription?: UserSubscription;
 }

@@ -12,6 +12,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.core.notifications import NotificationService
 
@@ -26,13 +27,14 @@ from apps.services.models import MasterService
 from apps.subscriptions.services import SubscriptionService
 from apps.users.models import MasterProfile
 
-from .models import Appointment, Review, WorkSchedule
+from .models import Appointment, ClientNote, Review, WorkSchedule
 from .serializers import (
     AppointmentCancelSerializer,
     AppointmentCreateSerializer,
     AppointmentRescheduleSerializer,
     AppointmentSerializer,
     AvailableSlotsSerializer,
+    ClientNoteSerializer,
     ReviewSerializer,
     WorkScheduleSerializer,
 )
@@ -167,7 +169,22 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 Q(client=user) | Q(master=user.master_profile)
             )
 
-        return queryset.filter(client=user)
+        queryset = queryset.filter(client=user)
+
+        # Limit history depth for clients based on subscription
+        sub = getattr(user, "subscription", None)
+        history_months = sub.plan.history_months if sub else 3
+        if history_months > 0:
+            cutoff = timezone.now().date() - timedelta(days=history_months * 30)
+            queryset = queryset.filter(
+                Q(date__gte=cutoff) |
+                Q(status__in=[
+                    Appointment.Status.PENDING,
+                    Appointment.Status.CONFIRMED,
+                ])
+            )
+
+        return queryset
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -410,6 +427,44 @@ class AppointmentViewSet(viewsets.ModelViewSet):
 
     @extend_schema(
         tags=["Записи"],
+        summary="Перезаписаться",
+        description="Получить данные для повторной записи на основе прошлой"
+    )
+    @action(detail=True, methods=["post"])
+    def rebook(self, request, pk=None):
+        """Return pre-filled data for rebooking based on a previous appointment."""
+        old = self.get_object()
+
+        if old.client != request.user:
+            return Response(
+                {"error": "Можно перезаписаться только на свою запись"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        master_service = old.master_service
+        if not master_service:
+            return Response(
+                {"error": "Услуга больше недоступна"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not old.master.is_available or not old.master.user.is_active:
+            return Response(
+                {"error": "Мастер больше недоступен"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response({
+            "master_id": str(old.master.id),
+            "service_id": str(master_service.id),
+            "service_name": master_service.name,
+            "price": str(master_service.actual_price),
+            "duration": master_service.actual_duration,
+            "master_name": old.master.user.full_name,
+        })
+
+    @extend_schema(
+        tags=["Записи"],
         summary="Предстоящие записи",
         description="Получение списка предстоящих записей пользователя"
     )
@@ -453,14 +508,19 @@ class AppointmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # Check minimum time before appointment (2 hours)
+        # Check minimum time before appointment (2 hours, or 1 hour for PRO)
+        min_hours = 2
+        client_sub = getattr(request.user, "subscription", None)
+        if client_sub and client_sub.is_active and client_sub.plan.priority_booking:
+            min_hours = 1
+
         appointment_datetime = datetime.combine(appointment.date, appointment.start_time)
         if timezone.is_naive(appointment_datetime):
             appointment_datetime = timezone.make_aware(appointment_datetime)
 
-        if appointment_datetime - timezone.now() < timedelta(hours=2):
+        if appointment_datetime - timezone.now() < timedelta(hours=min_hours):
             return Response(
-                {"error": "Перенос возможен не позднее чем за 2 часа до записи"},
+                {"error": f"Перенос возможен не позднее чем за {min_hours} ч. до записи"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
@@ -594,18 +654,26 @@ class AvailableSlotsView(generics.GenericAPIView):
             is_archived=False
         )
 
+        # PRO clients with priority_booking see slots closer to current time
+        min_advance_hours = 2
+        if request.user.is_authenticated:
+            client_sub = getattr(request.user, "subscription", None)
+            if client_sub and client_sub.is_active and client_sub.plan.priority_booking:
+                min_advance_hours = 1
+
         slots = []
         current_time = timezone.make_aware(datetime.combine(date, schedule.start_time))
         end_datetime = timezone.make_aware(datetime.combine(date, schedule.end_time))
         now = timezone.now()
+        min_booking_time = now + timedelta(hours=min_advance_hours)
         is_today = date == now.date()
 
         while current_time + slot_duration <= end_datetime:
             slot_end = current_time + slot_duration
             is_available = True
 
-            # Skip past time slots for today
-            if is_today and current_time <= now:
+            # Skip slots that don't meet minimum advance booking time
+            if is_today and current_time <= min_booking_time:
                 current_time += timedelta(minutes=30)
                 continue
 
@@ -626,6 +694,60 @@ class AvailableSlotsView(generics.GenericAPIView):
             current_time += timedelta(minutes=30)
 
         return Response({"slots": slots})
+
+
+@extend_schema(
+    tags=["Записи"],
+    summary="Статистика клиента",
+    description="Персональная статистика расходов и визитов (PRO)"
+)
+class ClientStatsView(APIView):
+    """Client spending and visit statistics. PRO only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        sub = getattr(request.user, "subscription", None)
+        if not sub or not sub.plan.client_stats_enabled:
+            return Response(
+                {"error": "Статистика доступна только на тарифе PRO"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        from django.db.models import Avg, Count, F, Sum
+
+        completed = Appointment.objects.filter(
+            client=request.user,
+            status=Appointment.Status.COMPLETED,
+        )
+
+        now = timezone.now().date()
+        thirty = now - timedelta(days=30)
+        ninety = now - timedelta(days=90)
+        year_ago = now - timedelta(days=365)
+
+        monthly = completed.filter(date__gte=thirty)
+        quarterly = completed.filter(date__gte=ninety)
+        yearly = completed.filter(date__gte=year_ago)
+
+        return Response({
+            "total_visits": completed.count(),
+            "monthly_visits": monthly.count(),
+            "monthly_spent": float(monthly.aggregate(t=Sum("price"))["t"] or 0),
+            "quarterly_spent": float(quarterly.aggregate(t=Sum("price"))["t"] or 0),
+            "yearly_spent": float(yearly.aggregate(t=Sum("price"))["t"] or 0),
+            "avg_check": float(completed.aggregate(a=Avg("price"))["a"] or 0),
+            "top_masters": list(
+                completed.values(name=F("master__user__full_name"))
+                .annotate(visits=Count("id"), total=Sum("price"))
+                .order_by("-visits")[:5]
+            ),
+            "top_services": list(
+                completed.values(name=F("master_service__custom_name"))
+                .annotate(visits=Count("id"))
+                .order_by("-visits")[:5]
+            ),
+        })
 
 
 @extend_schema_view(
@@ -696,3 +818,39 @@ class ReviewViewSet(viewsets.ModelViewSet):
         reviews = self.get_queryset().filter(appointment__master_id=master_id)
         serializer = self.get_serializer(reviews, many=True)
         return Response(serializer.data)
+
+
+@extend_schema_view(
+    list=extend_schema(tags=["Заметки о клиентах"], summary="Список заметок"),
+    retrieve=extend_schema(tags=["Заметки о клиентах"], summary="Детали заметки"),
+    create=extend_schema(tags=["Заметки о клиентах"], summary="Создать заметку"),
+    update=extend_schema(tags=["Заметки о клиентах"], summary="Обновить заметку"),
+    partial_update=extend_schema(tags=["Заметки о клиентах"], summary="Частичное обновление"),
+    destroy=extend_schema(tags=["Заметки о клиентах"], summary="Удалить заметку"),
+)
+class ClientNoteViewSet(viewsets.ModelViewSet):
+    """CRUD for master's private notes about clients. PRO only."""
+
+    serializer_class = ClientNoteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if not hasattr(self.request.user, "master_profile"):
+            return ClientNote.objects.none()
+        return ClientNote.objects.filter(
+            master=self.request.user.master_profile
+        ).select_related("client")
+
+    def perform_create(self, serializer):
+        if not hasattr(self.request.user, "master_profile"):
+            raise ValidationError("Только мастер может создавать заметки")
+        sub = getattr(self.request.user, "subscription", None)
+        if not sub or not sub.plan.client_notes_enabled:
+            raise ValidationError("Заметки о клиентах доступны только на тарифе PRO")
+        serializer.save(master=self.request.user.master_profile)
+
+    def perform_update(self, serializer):
+        sub = getattr(self.request.user, "subscription", None)
+        if not sub or not sub.plan.client_notes_enabled:
+            raise ValidationError("Заметки о клиентах доступны только на тарифе PRO")
+        serializer.save()

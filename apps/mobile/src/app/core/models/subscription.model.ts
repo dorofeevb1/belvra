@@ -13,12 +13,17 @@ export interface SubscriptionLimits {
   maxAppointmentsPerMonth: number | null; // null = unlimited
   maxServicesCount: number | null;
   maxPortfolioItems: number | null;
-  commissionPercent: number;
   searchBoostEnabled: boolean;
   analyticsLevel: 'basic' | 'advanced';
   priorityBooking: boolean;
-  cashbackPercent: number;
-  discountPercent: number;
+  extended_search: boolean;
+  history_months: number;
+  client_stats_enabled: boolean;
+  max_favorites: number;
+  pro_badge: boolean;
+  client_notes_enabled: boolean;
+  max_pinned_portfolio: number;
+  rebooking_reminder_enabled: boolean;
 }
 
 export interface SubscriptionPlan {
@@ -32,6 +37,14 @@ export interface SubscriptionPlan {
   features: SubscriptionFeature[];
   limits: SubscriptionLimits;
   isPopular?: boolean;
+  extended_search: boolean;
+  history_months: number;
+  client_stats_enabled: boolean;
+  max_favorites: number;
+  pro_badge: boolean;
+  client_notes_enabled: boolean;
+  max_pinned_portfolio: number;
+  rebooking_reminder_enabled: boolean;
 }
 
 export interface Subscription {
@@ -65,48 +78,68 @@ const FREE_MASTER_LIMITS: SubscriptionLimits = {
   maxAppointmentsPerMonth: 10,
   maxServicesCount: 5,
   maxPortfolioItems: 10,
-  commissionPercent: 10,
   searchBoostEnabled: false,
   analyticsLevel: 'basic',
   priorityBooking: false,
-  cashbackPercent: 0,
-  discountPercent: 0
+  extended_search: false,
+  history_months: 3,
+  client_stats_enabled: false,
+  max_favorites: 5,
+  pro_badge: false,
+  client_notes_enabled: false,
+  max_pinned_portfolio: 0,
+  rebooking_reminder_enabled: false
 };
 
 const PRO_MASTER_LIMITS: SubscriptionLimits = {
   maxAppointmentsPerMonth: null, // Unlimited
   maxServicesCount: null,
   maxPortfolioItems: null,
-  commissionPercent: 5,
   searchBoostEnabled: true,
   analyticsLevel: 'advanced',
   priorityBooking: false,
-  cashbackPercent: 0,
-  discountPercent: 0
+  extended_search: true,
+  history_months: 0, // unlimited
+  client_stats_enabled: true,
+  max_favorites: 0, // unlimited
+  pro_badge: true,
+  client_notes_enabled: true,
+  max_pinned_portfolio: 5,
+  rebooking_reminder_enabled: true
 };
 
 const FREE_CLIENT_LIMITS: SubscriptionLimits = {
   maxAppointmentsPerMonth: null,
   maxServicesCount: null,
   maxPortfolioItems: null,
-  commissionPercent: 0,
   searchBoostEnabled: false,
   analyticsLevel: 'basic',
   priorityBooking: false,
-  cashbackPercent: 0,
-  discountPercent: 0
+  extended_search: false,
+  history_months: 3,
+  client_stats_enabled: false,
+  max_favorites: 5,
+  pro_badge: false,
+  client_notes_enabled: false,
+  max_pinned_portfolio: 0,
+  rebooking_reminder_enabled: false
 };
 
 const PRO_CLIENT_LIMITS: SubscriptionLimits = {
   maxAppointmentsPerMonth: null,
   maxServicesCount: null,
   maxPortfolioItems: null,
-  commissionPercent: 0,
-  searchBoostEnabled: false,
+  searchBoostEnabled: true,
   analyticsLevel: 'basic',
   priorityBooking: true,
-  cashbackPercent: 5,
-  discountPercent: 10
+  extended_search: true,
+  history_months: 0, // unlimited
+  client_stats_enabled: true,
+  max_favorites: 0, // unlimited
+  pro_badge: true,
+  client_notes_enabled: false,
+  max_pinned_portfolio: 0,
+  rebooking_reminder_enabled: false
 };
 
 export const MASTER_PLANS: SubscriptionPlan[] = [
@@ -119,12 +152,20 @@ export const MASTER_PLANS: SubscriptionPlan[] = [
     period: 'monthly',
     price: 0,
     limits: FREE_MASTER_LIMITS,
+    extended_search: false,
+    history_months: 3,
+    client_stats_enabled: false,
+    max_favorites: 5,
+    pro_badge: false,
+    client_notes_enabled: false,
+    max_pinned_portfolio: 0,
+    rebooking_reminder_enabled: false,
     features: [
       { name: 'Записи', description: '10 записей в месяц', included: true, limit: 10 },
       { name: 'Услуги', description: 'До 5 услуг', included: true, limit: 5 },
       { name: 'Портфолио', description: '10 фото в портфолио', included: true, limit: 10 },
-      { name: 'Комиссия', description: 'Комиссия 10%', included: true },
-      { name: 'Продвижение', description: 'Продвижение в поиске', included: false },
+      { name: 'PRO-бейдж', description: 'PRO-бейдж в профиле', included: false },
+      { name: 'Продвижение', description: 'Буст в поиске', included: false },
       { name: 'Аналитика', description: 'Расширенная аналитика', included: false }
     ]
   },
@@ -138,13 +179,25 @@ export const MASTER_PLANS: SubscriptionPlan[] = [
     price: 299,
     limits: PRO_MASTER_LIMITS,
     isPopular: true,
+    extended_search: true,
+    history_months: 0,
+    client_stats_enabled: true,
+    max_favorites: 0,
+    pro_badge: true,
+    client_notes_enabled: true,
+    max_pinned_portfolio: 5,
+    rebooking_reminder_enabled: true,
     features: [
-      { name: 'Записи', description: 'Неограниченные записи', included: true, limit: null },
-      { name: 'Услуги', description: 'Неограниченные услуги', included: true, limit: null },
-      { name: 'Портфолио', description: 'Неограниченное портфолио', included: true, limit: null },
-      { name: 'Комиссия', description: 'Сниженная комиссия 5%', included: true },
-      { name: 'Продвижение', description: 'Продвижение в поиске', included: true },
-      { name: 'Аналитика', description: 'Расширенная аналитика', included: true }
+      { name: 'Записи', description: 'Безлимит записей/услуг/портфолио', included: true, limit: null },
+      { name: 'PRO-бейдж', description: 'PRO-бейдж в профиле', included: true },
+      { name: 'Продвижение', description: 'Буст в поиске', included: true },
+      { name: 'AI-ассистент', description: 'AI-ассистент', included: true },
+      { name: 'Аналитика', description: 'Расширенная аналитика', included: true },
+      { name: 'Заметки', description: 'Заметки о клиентах', included: true },
+      { name: 'Закрепление', description: 'Закрепление работ в портфолио', included: true },
+      { name: 'Напоминания', description: 'Напоминания о перезаписи', included: true },
+      { name: 'Экспорт', description: 'Экспорт CSV', included: true },
+      { name: 'Уведомления', description: 'Расширенные уведомления', included: true }
     ]
   },
   // PRO Master Yearly
@@ -158,13 +211,25 @@ export const MASTER_PLANS: SubscriptionPlan[] = [
     originalPrice: 3588, // 299 * 12
     limits: PRO_MASTER_LIMITS,
     isPopular: true,
+    extended_search: true,
+    history_months: 0,
+    client_stats_enabled: true,
+    max_favorites: 0,
+    pro_badge: true,
+    client_notes_enabled: true,
+    max_pinned_portfolio: 5,
+    rebooking_reminder_enabled: true,
     features: [
-      { name: 'Записи', description: 'Неограниченные записи', included: true, limit: null },
-      { name: 'Услуги', description: 'Неограниченные услуги', included: true, limit: null },
-      { name: 'Портфолио', description: 'Неограниченное портфолио', included: true, limit: null },
-      { name: 'Комиссия', description: 'Сниженная комиссия 5%', included: true },
-      { name: 'Продвижение', description: 'Продвижение в поиске', included: true },
-      { name: 'Аналитика', description: 'Расширенная аналитика', included: true }
+      { name: 'Записи', description: 'Безлимит записей/услуг/портфолио', included: true, limit: null },
+      { name: 'PRO-бейдж', description: 'PRO-бейдж в профиле', included: true },
+      { name: 'Продвижение', description: 'Буст в поиске', included: true },
+      { name: 'AI-ассистент', description: 'AI-ассистент', included: true },
+      { name: 'Аналитика', description: 'Расширенная аналитика', included: true },
+      { name: 'Заметки', description: 'Заметки о клиентах', included: true },
+      { name: 'Закрепление', description: 'Закрепление работ в портфолио', included: true },
+      { name: 'Напоминания', description: 'Напоминания о перезаписи', included: true },
+      { name: 'Экспорт', description: 'Экспорт CSV', included: true },
+      { name: 'Уведомления', description: 'Расширенные уведомления', included: true }
     ]
   }
 ];
@@ -179,11 +244,20 @@ export const CLIENT_PLANS: SubscriptionPlan[] = [
     period: 'monthly',
     price: 0,
     limits: FREE_CLIENT_LIMITS,
+    extended_search: false,
+    history_months: 3,
+    client_stats_enabled: false,
+    max_favorites: 5,
+    pro_badge: false,
+    client_notes_enabled: false,
+    max_pinned_portfolio: 0,
+    rebooking_reminder_enabled: false,
     features: [
       { name: 'Запись', description: 'Запись к мастерам', included: true },
-      { name: 'Скидки', description: 'Скидка 10% на услуги', included: false },
       { name: 'Приоритет', description: 'Приоритетная запись', included: false },
-      { name: 'Кешбэк', description: 'Кешбэк 5%', included: false }
+      { name: 'Избранные', description: 'Безлимит избранных', included: false },
+      { name: 'Поиск', description: 'Расширенный поиск', included: false },
+      { name: 'История', description: 'Полная история записей', included: false }
     ]
   },
   // PRO Client Monthly
@@ -196,11 +270,21 @@ export const CLIENT_PLANS: SubscriptionPlan[] = [
     price: 199,
     limits: PRO_CLIENT_LIMITS,
     isPopular: true,
+    extended_search: true,
+    history_months: 0,
+    client_stats_enabled: true,
+    max_favorites: 0,
+    pro_badge: true,
+    client_notes_enabled: false,
+    max_pinned_portfolio: 0,
+    rebooking_reminder_enabled: false,
     features: [
       { name: 'Запись', description: 'Запись к мастерам', included: true },
-      { name: 'Скидки', description: 'Скидка 10% на услуги', included: true },
       { name: 'Приоритет', description: 'Приоритетная запись', included: true },
-      { name: 'Кешбэк', description: 'Кешбэк 5%', included: true }
+      { name: 'Избранные', description: 'Безлимит избранных', included: true },
+      { name: 'Поиск', description: 'Расширенный поиск', included: true },
+      { name: 'История', description: 'Полная история записей', included: true },
+      { name: 'Статистика', description: 'Статистика расходов', included: true }
     ]
   },
   // PRO Client Yearly
@@ -214,11 +298,21 @@ export const CLIENT_PLANS: SubscriptionPlan[] = [
     originalPrice: 2388, // 199 * 12
     limits: PRO_CLIENT_LIMITS,
     isPopular: true,
+    extended_search: true,
+    history_months: 0,
+    client_stats_enabled: true,
+    max_favorites: 0,
+    pro_badge: true,
+    client_notes_enabled: false,
+    max_pinned_portfolio: 0,
+    rebooking_reminder_enabled: false,
     features: [
       { name: 'Запись', description: 'Запись к мастерам', included: true },
-      { name: 'Скидки', description: 'Скидка 10% на услуги', included: true },
       { name: 'Приоритет', description: 'Приоритетная запись', included: true },
-      { name: 'Кешбэк', description: 'Кешбэк 5%', included: true }
+      { name: 'Избранные', description: 'Безлимит избранных', included: true },
+      { name: 'Поиск', description: 'Расширенный поиск', included: true },
+      { name: 'История', description: 'Полная история записей', included: true },
+      { name: 'Статистика', description: 'Статистика расходов', included: true }
     ]
   }
 ];

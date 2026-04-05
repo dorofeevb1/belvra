@@ -70,9 +70,9 @@ def renew_subscriptions():
         current_period_end__lte=now,
         auto_renew=True,
         cancel_at_period_end=False,
-        yookassa_payment_method_id__isnull=False
+        tbank_rebill_id__isnull=False
     ).exclude(
-        yookassa_payment_method_id=""
+        tbank_rebill_id=""
     ).select_related("user", "plan")
 
     service = SubscriptionService()
