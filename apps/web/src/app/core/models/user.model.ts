@@ -48,6 +48,8 @@ export interface Master extends User {
   socialLinks?: SocialLinks;
   notificationSettings?: NotificationSettings;
   subscription?: UserSubscription;
+  isPro?: boolean;
+  distanceKm?: number | null;
 }
 
 export interface Client extends User {

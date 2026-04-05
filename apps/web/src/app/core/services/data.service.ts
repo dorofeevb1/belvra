@@ -75,6 +75,8 @@ export class DataService {
       isAvailable: backendMaster.is_available !== false,
       rating: parseFloat(backendMaster.rating) || 0,
       reviewsCount: backendMaster.reviews_count || 0,
+      isPro: backendMaster.is_pro || false,
+      distanceKm: backendMaster.distance_km ?? null,
       workSchedule: {
         monday: { start: '09:00', end: '18:00' },
         tuesday: { start: '09:00', end: '18:00' },
@@ -439,6 +441,16 @@ export class DataService {
         return results.map((m: any) => this.mapBackendMaster(m));
       }),
       catchError(() => throwError(() => new Error('Не удалось загрузить мастеров')))
+    );
+  }
+
+  searchMasters(params: any): Observable<Master[]> {
+    return this.api.getMasters(params).pipe(
+      map((response: any) => {
+        const results = response.results || response;
+        return results.map((m: any) => this.mapBackendMaster(m));
+      }),
+      catchError(() => of([]))
     );
   }
 

@@ -351,19 +351,24 @@ class MasterProfileSerializer(serializers.ModelSerializer):
 
     user = UserSerializer(read_only=True)
     is_pro = serializers.SerializerMethodField()
+    distance_km = serializers.SerializerMethodField()
 
     class Meta:
         model = MasterProfile
         fields = [
             "id", "user", "bio", "experience_years",
             "specialization", "rating", "reviews_count", "is_available",
-            "address", "latitude", "longitude", "is_pro"
+            "address", "latitude", "longitude", "is_pro", "distance_km"
         ]
         read_only_fields = ["id", "rating", "reviews_count"]
 
     def get_is_pro(self, obj):
         sub = getattr(obj.user, "subscription", None)
         return bool(sub and sub.is_active and sub.plan.pro_badge)
+
+    def get_distance_km(self, obj):
+        dist = getattr(obj, "distance_km", None)
+        return round(dist, 1) if dist is not None else None
 
 
 class MasterWithDistanceSerializer(serializers.ModelSerializer):

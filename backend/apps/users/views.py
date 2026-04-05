@@ -7,7 +7,7 @@ from django.conf import settings
 from django.contrib.auth import logout
 from django.core.cache import cache
 from django.db import transaction
-from django.db.models import Case, F, FloatField, IntegerField, Value, When
+from django.db.models import Case, F, FloatField, IntegerField, Q, Value, When
 from django.db.models.functions import ACos, Cos, Radians, Sin
 from django.utils import timezone
 from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
@@ -348,16 +348,27 @@ class ChangePasswordView(APIView):
 @extend_schema(
     tags=["Мастера"],
     summary="Список мастеров",
-    description="Получение списка всех доступных мастеров"
+    description="Поиск мастеров по тексту, геолокации и фильтрам",
+    parameters=[
+        OpenApiParameter(name="q", description="Текстовый поиск (имя, специализация, услуги)", required=False, type=str),
+        OpenApiParameter(name="lat", description="Широта для поиска рядом", required=False, type=float),
+        OpenApiParameter(name="lng", description="Долгота для поиска рядом", required=False, type=float),
+        OpenApiParameter(name="radius_km", description="Радиус поиска в км (по умолчанию 10)", required=False, type=float),
+        OpenApiParameter(name="min_rating", description="Мин. рейтинг (PRO)", required=False, type=float),
+        OpenApiParameter(name="min_experience", description="Мин. опыт в годах (PRO)", required=False, type=float),
+        OpenApiParameter(name="sort_by", description="Сортировка: rating, experience, reviews, distance (PRO)", required=False, type=str),
+    ],
 )
 class MasterListView(generics.ListAPIView):
-    """List all available masters."""
+    """List all available masters with text search and geo-search."""
 
     serializer_class = MasterProfileSerializer
     permission_classes = [AllowAny]
 
+    EARTH_RADIUS_KM = 6371.0
+
     def get_queryset(self):
-        return MasterProfile.objects.filter(
+        queryset = MasterProfile.objects.filter(
             is_available=True,
             user__is_active=True
         ).select_related(
@@ -372,7 +383,53 @@ class MasterListView(generics.ListAPIView):
                 default=1,
                 output_field=IntegerField(),
             )
-        ).order_by("boost", "-rating")
+        )
+
+        # Text search (available to everyone)
+        q = self.request.query_params.get("q", "").strip()
+        if q:
+            from apps.services.models import MasterService
+            # Search in name, specialization, bio, and service names
+            master_ids_from_services = MasterService.objects.filter(
+                Q(custom_name__icontains=q) |
+                Q(service__name__icontains=q)
+            ).values_list("master_id", flat=True)
+
+            queryset = queryset.filter(
+                Q(user__first_name__icontains=q) |
+                Q(user__last_name__icontains=q) |
+                Q(specialization__icontains=q) |
+                Q(bio__icontains=q) |
+                Q(address__icontains=q) |
+                Q(id__in=master_ids_from_services)
+            )
+
+        # Geo search (available to everyone)
+        lat = self.request.query_params.get("lat")
+        lng = self.request.query_params.get("lng")
+        if lat and lng:
+            try:
+                lat_f = float(lat)
+                lng_f = float(lng)
+                radius_km = float(self.request.query_params.get("radius_km", 10))
+                lat_rad = math.radians(lat_f)
+                lng_rad = math.radians(lng_f)
+
+                queryset = queryset.filter(
+                    latitude__isnull=False,
+                    longitude__isnull=False,
+                ).annotate(
+                    distance_km=Value(self.EARTH_RADIUS_KM) * ACos(
+                        Sin(Value(lat_rad)) * Sin(Radians(F("latitude"))) +
+                        Cos(Value(lat_rad)) * Cos(Radians(F("latitude"))) *
+                        Cos(Radians(F("longitude")) - Value(lng_rad)),
+                        output_field=FloatField()
+                    )
+                ).filter(distance_km__lte=radius_km).order_by("boost", "distance_km")
+            except (ValueError, TypeError):
+                queryset = queryset.order_by("boost", "-rating")
+        else:
+            queryset = queryset.order_by("boost", "-rating")
 
         return self._apply_extended_filters(queryset)
 
