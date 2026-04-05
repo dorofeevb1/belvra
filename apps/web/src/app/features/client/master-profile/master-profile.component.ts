@@ -5,13 +5,14 @@ import { DataService } from '../../../core/services';
 import { Master, BeautyService, PortfolioItem, Review } from '../../../core/models';
 import { CurrencyRubPipe } from '../../../shared/pipes/currency-rub.pipe';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
+import { FavoriteButtonComponent } from '../../../shared/components/favorite-button/favorite-button.component';
 
 declare const ymaps: any;
 
 @Component({
   selector: 'app-master-profile',
   standalone: true,
-  imports: [CommonModule, CurrencyRubPipe, DateFormatPipe],
+  imports: [CommonModule, CurrencyRubPipe, DateFormatPipe, FavoriteButtonComponent],
   templateUrl: './master-profile.component.html',
   styleUrl: './master-profile.component.scss'
 })

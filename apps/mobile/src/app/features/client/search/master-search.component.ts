@@ -4,13 +4,14 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DataService, AIService } from '../../../core/services';
 import { Master } from '../../../core/models';
+import { FavoriteButtonComponent } from '../../../shared/components/favorite-button/favorite-button.component';
 
 declare const ymaps: any;
 
 @Component({
   selector: 'app-master-search',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, FavoriteButtonComponent],
   templateUrl: './master-search.component.html',
   styleUrl: './master-search.component.scss'
 })

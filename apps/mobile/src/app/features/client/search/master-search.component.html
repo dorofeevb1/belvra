@@ -105,6 +105,7 @@
                   <span>{{ master.name.charAt(0) }}</span>
                 </div>
               }
+              <app-favorite-button [masterId]="master.id" size="small" (click)="$event.stopPropagation()" />
               <div class="master-info">
                 <h3 class="master-name">{{ master.name }}</h3>
                 <p class="master-spec">{{ master.specialization }}</p>
