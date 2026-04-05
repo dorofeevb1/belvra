@@ -24,6 +24,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             await self.close()
             return
 
+        self.last_message_time = 0
+        self.message_count = 0
+        self.window_start = 0
+
         await self.channel_layer.group_add(self.room_group, self.channel_name)
         await self.accept()
 
@@ -40,6 +44,19 @@ class ChatConsumer(AsyncWebsocketConsumer):
         msg_type = data.get("type")
 
         if msg_type == "chat_message":
+            import time
+            now = time.time()
+            if now - self.window_start > 3:
+                self.window_start = now
+                self.message_count = 0
+            self.message_count += 1
+            if self.message_count > 5:
+                await self.send(text_data=json.dumps({
+                    "type": "error",
+                    "message": "Слишком много сообщений. Подождите.",
+                }))
+                return
+
             content = data.get("content", "").strip()
             if not content:
                 return

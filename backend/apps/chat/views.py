@@ -23,6 +23,18 @@ from .serializers import (
 
 TYPING_TTL = 6  # seconds
 
+ALLOWED_CHAT_FILE_TYPES = {
+    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "audio/mpeg", "audio/wav", "audio/ogg", "audio/webm", "audio/mp4",
+    "application/pdf", "text/plain",
+    "video/mp4", "video/webm",
+}
+
+BLOCKED_EXTENSIONS = {
+    ".html", ".htm", ".svg", ".js", ".py", ".sh", ".bat",
+    ".php", ".jsp", ".exe", ".dll",
+}
+
 
 @extend_schema_view(
     list=extend_schema(tags=["Чат"], summary="Список чатов"),
@@ -95,6 +107,21 @@ class ChatViewSet(viewsets.ModelViewSet):
         reply_to_id = serializer.validated_data.get("reply_to_id")
 
         if file:
+            import os
+            content_type = file.content_type or ""
+            _, ext = os.path.splitext(file.name or "")
+
+            if content_type not in ALLOWED_CHAT_FILE_TYPES:
+                return Response(
+                    {"error": f"Тип файла {content_type} не разрешён"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if ext.lower() in BLOCKED_EXTENSIONS:
+                return Response(
+                    {"error": f"Файлы с расширением {ext} запрещены"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             # Validate file size (max 50MB)
             max_size = 50 * 1024 * 1024
             if file.size > max_size:

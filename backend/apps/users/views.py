@@ -15,7 +15,7 @@ from rest_framework import generics, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import AnonRateThrottle, ScopedRateThrottle
+from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -35,6 +35,8 @@ from .serializers import (
     MasterWithDistanceSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
+    PublicMasterProfileSerializer,
+    PublicMasterWithDistanceSerializer,
     TokenSerializer,
     UserCreateSerializer,
     UserSerializer,
@@ -43,12 +45,12 @@ from .serializers import (
 logger = logging.getLogger(__name__)
 
 
-class LoginRateThrottle(ScopedRateThrottle):
-    scope = "login"
+class LoginThrottle(AnonRateThrottle):
+    rate = '10/min'
 
 
-class RegisterRateThrottle(ScopedRateThrottle):
-    scope = "register"
+class RegisterThrottle(AnonRateThrottle):
+    rate = '5/min'
 
 
 @extend_schema(
@@ -63,7 +65,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserCreateSerializer
     permission_classes = [AllowAny]
-    throttle_classes = [RegisterRateThrottle]
+    throttle_classes = [RegisterThrottle]
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -212,7 +214,7 @@ class LoginView(APIView):
     """User login endpoint."""
 
     permission_classes = [AllowAny]
-    throttle_classes = [LoginRateThrottle]
+    throttle_classes = [LoginThrottle]
 
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -362,7 +364,7 @@ class ChangePasswordView(APIView):
 class MasterListView(generics.ListAPIView):
     """List all available masters with text search and geo-search."""
 
-    serializer_class = MasterProfileSerializer
+    serializer_class = PublicMasterProfileSerializer
     permission_classes = [AllowAny]
 
     EARTH_RADIUS_KM = 6371.0
@@ -478,7 +480,7 @@ class MasterDetailView(generics.RetrieveAPIView):
     """Retrieve master details."""
 
     queryset = MasterProfile.objects.select_related("user", "user__subscription", "user__subscription__plan")
-    serializer_class = MasterProfileSerializer
+    serializer_class = PublicMasterProfileSerializer
     permission_classes = [AllowAny]
 
 
@@ -495,7 +497,7 @@ class MasterDetailView(generics.RetrieveAPIView):
 class MasterGeoSearchView(generics.ListAPIView):
     """Search for masters within a given radius using Haversine formula."""
 
-    serializer_class = MasterWithDistanceSerializer
+    serializer_class = PublicMasterWithDistanceSerializer
     permission_classes = [AllowAny]
 
     # Earth radius in kilometers
