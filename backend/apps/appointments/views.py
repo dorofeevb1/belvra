@@ -150,8 +150,6 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         user = self.request.user
         queryset = Appointment.objects.select_related(
             "client", "master__user", "service", "master_service"
-        ).prefetch_related(
-            "payments"
         ).filter(is_archived=False)
 
         if user.is_staff:
