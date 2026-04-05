@@ -291,7 +291,7 @@ import { Appointment } from '../../../../core/models';
       gap: 0.5rem;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .time-grid {
         grid-template-columns: repeat(3, 1fr);
       }
@@ -334,7 +334,7 @@ import { Appointment } from '../../../../core/models';
       flex-shrink: 0;
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .modal-content {
         gap: 1rem;
       }

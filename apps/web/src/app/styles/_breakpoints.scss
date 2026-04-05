@@ -1,0 +1,26 @@
+// Breakpoint mixins — mobile-first approach
+// Usage: @use 'breakpoints' as *; then @include tablet { ... }
+
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+$breakpoint-wide: 1440px;
+
+@mixin mobile-only {
+  @media (max-width: #{$breakpoint-tablet - 1}) { @content; }
+}
+
+@mixin tablet {
+  @media (min-width: $breakpoint-tablet) { @content; }
+}
+
+@mixin tablet-only {
+  @media (min-width: $breakpoint-tablet) and (max-width: #{$breakpoint-desktop - 1}) { @content; }
+}
+
+@mixin desktop {
+  @media (min-width: $breakpoint-desktop) { @content; }
+}
+
+@mixin wide {
+  @media (min-width: $breakpoint-wide) { @content; }
+}

@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 :host {
   display: block;
 }
@@ -1474,7 +1476,7 @@
 }
 
 /* Mobile responsive */
-@media (max-width: 768px) {
+@include mobile-only {
   .page-header {
     flex-direction: column;
     align-items: flex-start;
@@ -1494,7 +1496,7 @@
 }
 
 /* Mobile 320-480px */
-@media (max-width: 480px) {
+@include mobile-only {
   .calendar-page {
     gap: 1rem;
   }

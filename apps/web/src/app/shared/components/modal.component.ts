@@ -116,7 +116,7 @@ import { CommonModule } from '@angular/common';
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .modal-overlay {
         padding: 0;
         align-items: stretch;

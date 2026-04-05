@@ -383,7 +383,7 @@ interface MaterialInput {
       box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .material-fields {
         flex-direction: column;
         align-items: stretch;

@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .profile-page {
   display: flex;
   flex-direction: column;
@@ -36,7 +38,7 @@
   flex-direction: column;
   gap: 1rem;
 
-  @media (min-width: 640px) {
+  @include tablet {
     flex-direction: row;
     align-items: flex-start;
   }
@@ -128,7 +130,7 @@
   gap: 0.5rem;
   width: 100%;
 
-  @media (min-width: 640px) {
+  @include tablet {
     flex-direction: row;
     width: auto;
     align-self: flex-start;
@@ -150,7 +152,7 @@
 .book-btn {
   width: 100%;
 
-  @media (min-width: 640px) {
+  @include tablet {
     width: auto;
   }
 }
@@ -251,11 +253,11 @@
   grid-template-columns: repeat(1, 1fr);
   gap: 1rem;
 
-  @media (min-width: 640px) {
+  @include tablet {
     grid-template-columns: repeat(2, 1fr);
   }
 
-  @media (min-width: 1024px) {
+  @include desktop {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -455,7 +457,7 @@
 }
 
 /* Mobile responsive (320-480px) */
-@media (max-width: 480px) {
+@include mobile-only {
   .profile-page {
     gap: 1rem;
   }

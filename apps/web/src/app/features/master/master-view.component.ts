@@ -43,23 +43,23 @@ import { AuthService, DataService } from '../../core/services';
 
     .app-main {
       flex: 1;
-      padding: 1rem;
-      min-height: calc(100vh - 60px);
+      padding: 0.5rem;
+      min-height: calc(100vh - 56px);
       overflow-x: hidden;
       max-width: 100%;
+    }
+
+    @media (min-width: 768px) {
+      .app-main {
+        padding: 1rem;
+        min-height: calc(100vh - 60px);
+      }
     }
 
     @media (min-width: 1024px) {
       .app-main {
         margin-left: 16rem;
         padding: 1.5rem;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .app-main {
-        padding: 0.5rem;
-        min-height: calc(100vh - 56px);
       }
     }
   `]

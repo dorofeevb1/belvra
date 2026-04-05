@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .register-page {
   min-height: 100vh;
   display: flex;
@@ -344,7 +346,7 @@
 }
 
 /* Mobile responsive */
-@media (max-width: 480px) {
+@include mobile-only {
   .register-page {
     padding: 1rem;
   }

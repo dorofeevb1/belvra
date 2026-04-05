@@ -176,7 +176,7 @@ import { InAppNotificationService, InAppNotification } from '../../../core/servi
       overflow: hidden;
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 767px) {
       .dropdown {
         position: fixed;
         top: 60px;

@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .favorites-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -226,7 +228,7 @@
 }
 
 /* Mobile responsive (320-480px) */
-@media (max-width: 480px) {
+@include mobile-only {
   .favorites-page {
     padding: 0.75rem;
   }

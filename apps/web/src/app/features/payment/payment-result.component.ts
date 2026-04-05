@@ -478,7 +478,7 @@ import { ApiService } from '../../core/services/api.service';
     }
 
     /* ===== RESPONSIVE ===== */
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .page { padding: 1.5rem 1rem; }
 
       .title { font-size: 1.75rem; }

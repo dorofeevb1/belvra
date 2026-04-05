@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .booking-page {
   display: flex;
   flex-direction: column;
@@ -236,7 +238,7 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 0.5rem;
 
-  @media (max-width: 480px) {
+  @include mobile-only {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -730,7 +732,7 @@
 }
 
 /* Mobile responsive (320-480px) */
-@media (max-width: 480px) {
+@include mobile-only {
   .booking-page {
     gap: 1rem;
   }

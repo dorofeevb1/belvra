@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .dashboard {
   display: flex;
   flex-direction: column;
@@ -17,7 +19,7 @@
   border-radius: var(--radius-xl);
   overflow: hidden;
 
-  @media (max-width: 640px) {
+  @include mobile-only {
     flex-direction: column;
     text-align: center;
     padding: 2rem 1.5rem;
@@ -58,7 +60,7 @@
   position: relative;
   z-index: 1;
 
-  @media (max-width: 640px) {
+  @include mobile-only {
     flex-direction: column;
     gap: 0.75rem;
   }
@@ -80,7 +82,7 @@
     color: white;
   }
 
-  @media (max-width: 640px) {
+  @include mobile-only {
     width: 4rem;
     height: 4rem;
     background: rgba(255, 255, 255, 0.25);
@@ -104,7 +106,7 @@
   color: white;
   letter-spacing: -0.025em;
 
-  @media (max-width: 640px) {
+  @include mobile-only {
     font-size: 1.375rem;
   }
 }
@@ -156,7 +158,7 @@
   gap: 1rem;
 }
 
-@media (min-width: 1024px) {
+@include desktop {
   .stats-grid {
     grid-template-columns: repeat(4, 1fr);
   }
@@ -289,7 +291,7 @@
   gap: 1.5rem;
 }
 
-@media (min-width: 1024px) {
+@include desktop {
   .charts-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -301,7 +303,7 @@
   gap: 1.5rem;
 }
 
-@media (min-width: 1024px) {
+@include desktop {
   .activity-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -612,7 +614,7 @@
   padding: 0 1.25rem 1rem 1.25rem;
 }
 
-@media (max-width: 640px) {
+@include mobile-only {
   .usage-limits {
     grid-template-columns: 1fr;
   }
@@ -684,7 +686,7 @@
 }
 
 /* Mobile 320-480px */
-@media (max-width: 480px) {
+@include mobile-only {
   .dashboard {
     gap: 1rem;
   }

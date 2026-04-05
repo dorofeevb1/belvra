@@ -160,7 +160,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       gap: 6px;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .header-right {
         gap: 12px;
       }
@@ -212,7 +212,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       border-radius: 8px;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .logo-icon {
         width: 36px;
         height: 36px;
@@ -226,7 +226,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       color: white;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .logo-icon svg {
         width: 20px;
         height: 20px;
@@ -240,7 +240,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       letter-spacing: -0.025em;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .logo-text {
         font-size: 18px;
       }
@@ -295,7 +295,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       gap: 1px;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .user-info {
         display: flex;
       }
@@ -327,7 +327,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       display: none;
     }
 
-    @media (min-width: 640px) {
+    @media (min-width: 768px) {
       .chevron {
         display: block;
       }

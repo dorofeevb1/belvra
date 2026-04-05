@@ -144,7 +144,7 @@ import { CommonModule } from '@angular/common';
       color: var(--color-text-tertiary);
     }
 
-    @media (max-width: 640px) {
+    @media (max-width: 767px) {
       .donut-chart {
         flex-direction: column;
         align-items: stretch;

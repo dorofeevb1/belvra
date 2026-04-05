@@ -344,8 +344,8 @@ import { PortfolioItem, BeautyService } from '../../../core/models';
       border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
     }
 
-    /* Mobile responsive (320-480px) */
-    @media (max-width: 480px) {
+    /* Mobile responsive (320-767px) */
+    @media (max-width: 767px) {
       .modal-content {
         gap: 1rem;
       }

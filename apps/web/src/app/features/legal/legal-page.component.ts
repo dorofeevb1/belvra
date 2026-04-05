@@ -138,7 +138,7 @@ import { ThemeService } from '../../core/services/theme.service';
       }
     }
 
-    @media (max-width: 480px) {
+    @media (max-width: 767px) {
       .legal-page {
         padding: 1rem;
       }

@@ -327,8 +327,8 @@ import { TodoItem, TodoStatus, TODO_STATUS_LABELS, TODO_PRIORITY_COLORS } from '
       }
     }
 
-    /* Mobile 320-480px */
-    @media (max-width: 480px) {
+    /* Mobile 320-767px */
+    @media (max-width: 767px) {
       .kanban-grid {
         gap: 0.75rem;
       }

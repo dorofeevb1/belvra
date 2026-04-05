@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .loading-container {
   display: flex;
   justify-content: center;
@@ -764,7 +766,7 @@ select.input {
 }
 
 // Responsive
-@media (max-width: 640px) {
+@include mobile-only {
   .profile-page {
     padding: 1rem;
   }
@@ -789,7 +791,7 @@ select.input {
 }
 
 // ========== Mobile Responsive (320-480px) ==========
-@media (max-width: 480px) {
+@include mobile-only {
   .profile-page {
     padding: 0.75rem;
   }

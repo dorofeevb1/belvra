@@ -1,3 +1,5 @@
+@use 'breakpoints' as *;
+
 .finances-page {
   display: flex;
   flex-direction: column;
@@ -35,7 +37,7 @@
   grid-template-columns: repeat(1, 1fr);
   gap: 1rem;
 
-  @media (min-width: 640px) {
+  @include tablet {
     grid-template-columns: repeat(3, 1fr);
   }
 }
@@ -260,7 +262,7 @@
 }
 
 /* Mobile (320-480px) */
-@media (max-width: 480px) {
+@include mobile-only {
   .finances-page {
     gap: 1rem;
   }
