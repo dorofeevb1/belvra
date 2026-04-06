@@ -37,6 +37,10 @@ export const routes: Routes = [
     loadComponent: () => import('./features/payment/payment-result.component').then(m => m.PaymentResultComponent)
   },
   {
+    path: 'download',
+    loadComponent: () => import('./features/download/download.component').then(m => m.DownloadComponent)
+  },
+  {
     path: 'privacy-policy',
     loadComponent: () => import('./features/legal/legal-page.component').then(m => m.LegalPageComponent)
   },
