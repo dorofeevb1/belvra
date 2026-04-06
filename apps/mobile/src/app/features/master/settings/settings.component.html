@@ -157,6 +157,26 @@
             </div>
             <div class="form-grid">
               <div class="form-group">
+                <label class="label">Опыт работы (лет)</label>
+                <input
+                  type="number"
+                  formControlName="experienceYears"
+                  class="input"
+                  min="0"
+                  max="50"
+                  placeholder="0"
+                />
+              </div>
+              <div class="form-group">
+                <label class="label">Статус доступности</label>
+                <label class="toggle-label">
+                  <input type="checkbox" formControlName="isAvailable" />
+                  <span class="toggle-text">Принимаю записи</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group">
                 <label class="label">Email *</label>
                 <input
                   type="email"
@@ -205,6 +225,31 @@
                 <span class="error-text">Некорректный адрес</span>
               }
             </div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="label">Широта</label>
+                <input
+                  type="number"
+                  formControlName="latitude"
+                  class="input"
+                  step="0.000001"
+                  placeholder="55.753215"
+                />
+              </div>
+              <div class="form-group">
+                <label class="label">Долгота</label>
+                <input
+                  type="number"
+                  formControlName="longitude"
+                  class="input"
+                  step="0.000001"
+                  placeholder="37.622504"
+                />
+              </div>
+            </div>
+            @if (profileForm.get('latitude')?.value && profileForm.get('longitude')?.value) {
+              <span class="coordinates-hint">Координаты: {{ profileForm.get('latitude')?.value }}, {{ profileForm.get('longitude')?.value }}</span>
+            }
             <div class="form-group">
               <label class="label">О себе</label>
               <textarea

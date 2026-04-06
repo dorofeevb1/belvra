@@ -396,6 +396,31 @@
   }
 }
 
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    accent-color: var(--color-primary, #7c3aed);
+  }
+}
+
+.toggle-text {
+  font-size: 0.875rem;
+  color: var(--color-text-primary);
+}
+
+.coordinates-hint {
+  font-size: 0.75rem;
+  color: var(--color-text-tertiary, #999);
+  margin-top: 0.25rem;
+  display: block;
+}
+
 .field-disclaimer {
   display: block;
   font-size: 0.65rem;
