@@ -74,7 +74,7 @@
         <div class="stat-content">
           <span class="stat-label">Клиенты</span>
           <span class="stat-value">{{ stats().newClients }}</span>
-          <span class="stat-meta">Постоянные: {{ stats().newClients - 2 }}</span>
+          <span class="stat-meta">Постоянные: {{ stats().newClients > 2 ? stats().newClients - 2 : 0 }}</span>
         </div>
       </div>
 

@@ -67,7 +67,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       z-index: 40;
       background: var(--color-surface-primary);
       border-bottom: 1px solid var(--color-border-secondary);
-      padding-top: var(--ion-safe-area-top, env(safe-area-inset-top));
+      padding-top: max(var(--ion-safe-area-top, env(safe-area-inset-top, 0px)), 24px);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
     }
