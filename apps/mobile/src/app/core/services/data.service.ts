@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, of, delay, map, catchError, forkJoin, switchMap } from 'rxjs';
+import { Observable, of, Subject, delay, map, catchError, forkJoin, switchMap } from 'rxjs';
 import { ApiService } from './api.service';
 import {
   Appointment, AppointmentStatus,
@@ -17,6 +17,8 @@ export class DataService {
   private api = inject(ApiService);
   private readonly DELAY = 300;
   private readonly MEDIA_BASE_URL = 'http://localhost:8000';
+
+  readonly chatRead$ = new Subject<string>();
 
   private getFullMediaUrl(url: string | null): string {
     if (!url) return '';
@@ -756,7 +758,9 @@ export class DataService {
 
   markMessagesAsRead(chatId: string): Observable<void> {
     return this.api.markChatRead(chatId).pipe(
-      map(() => void 0),
+      map(() => {
+        this.chatRead$.next(chatId);
+      }),
       catchError(() => of(void 0))
     );
   }

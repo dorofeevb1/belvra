@@ -1,8 +1,10 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal, OnInit, OnDestroy } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { RouterOutlet } from '@angular/router';
 import { HeaderComponent, SidebarComponent, NavItem } from '../../shared/components';
 import { NotificationToastComponent } from '../../shared/components/notification-toast.component';
+import { AuthService, DataService } from '../../core/services';
 
 @Component({
   selector: 'app-master-view',
@@ -55,7 +57,11 @@ import { NotificationToastComponent } from '../../shared/components/notification
     }
   `]
 })
-export class MasterViewComponent {
+export class MasterViewComponent implements OnInit, OnDestroy {
+  private authService = inject(AuthService);
+  private dataService = inject(DataService);
+  private subs = new Subscription();
+
   sidebarOpen = signal(false);
 
   navItems: NavItem[] = [
@@ -100,4 +106,28 @@ export class MasterViewComponent {
       route: '/master/settings'
     }
   ];
+
+  ngOnInit(): void {
+    this.loadUnreadCount();
+    this.subs.add(
+      this.dataService.chatRead$.subscribe(() => this.loadUnreadCount())
+    );
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
+
+  private loadUnreadCount(): void {
+    const masterId = this.authService.masterApiId();
+    if (!masterId) return;
+
+    this.subs.add(
+      this.dataService.getChats(masterId).subscribe(chats => {
+        const total = chats.reduce((sum, c) => sum + c.unreadCount, 0);
+        const chatItem = this.navItems.find(i => i.route === '/master/chat');
+        if (chatItem) chatItem.badge = total;
+      })
+    );
+  }
 }

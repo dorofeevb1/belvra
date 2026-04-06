@@ -38,7 +38,7 @@ export class PhoneMaskDirective implements ControlValueAccessor {
   }
 
   @HostListener('input', ['$event'])
-  onInput(event: InputEvent): void {
+  onInput(event: Event): void {
     const input = this.el.nativeElement;
     const cursorPosition = input.selectionStart || 0;
     const oldValue = this.previousValue;

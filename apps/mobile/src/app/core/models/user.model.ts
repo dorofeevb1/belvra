@@ -32,6 +32,8 @@ export interface Master extends User {
   masterProfileId?: string; // ID of master profile (different from user id)
   specialization: string;
   description?: string;
+  experienceYears?: number;
+  isAvailable?: boolean;
   address: string;
   coordinates?: {
     lat: number;

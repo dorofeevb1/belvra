@@ -32,6 +32,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/auth/verify-email/verify-email.component').then(m => m.VerifyEmailComponent)
   },
   {
+    path: 'payment/result',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/payment/payment-result.component').then(m => m.PaymentResultComponent)
+  },
+  {
     path: 'privacy-policy',
     loadComponent: () => import('./features/legal/legal-page.component').then(m => m.LegalPageComponent)
   },

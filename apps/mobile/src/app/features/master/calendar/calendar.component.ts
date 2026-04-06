@@ -77,7 +77,17 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
   todayTodos = computed(() => {
     const today = this.dateService.todayStr();
-    return this.allTodos().filter(t => t.date === today);
+    const priorityOrder = { high: 0, medium: 1, low: 2 };
+    return this.allTodos()
+      .filter(t => t.date === today)
+      .sort((a, b) => {
+        const priorityDiff = (priorityOrder[a.priority] ?? 1) - (priorityOrder[b.priority] ?? 1);
+        if (priorityDiff !== 0) return priorityDiff;
+        if (a.time && b.time) return a.time.localeCompare(b.time);
+        if (a.time) return -1;
+        if (b.time) return 1;
+        return 0;
+      });
   });
 
   completedTodosCount = computed(() => {
@@ -136,8 +146,10 @@ export class CalendarComponent implements OnInit, OnDestroy {
     if (!masterId) return;
 
     this.dataService.getAppointments(masterId).subscribe(data => {
+      /** Показываем все активные записи: pending, confirmed, in_progress и completed */
       this.appointments.set(data.filter(a =>
-        a.status === 'confirmed' || a.status === 'in_progress' || a.status === 'completed'
+        a.status === 'pending' || a.status === 'confirmed' ||
+        a.status === 'in_progress' || a.status === 'completed'
       ));
     });
 
@@ -357,6 +369,15 @@ export class CalendarComponent implements OnInit, OnDestroy {
     return false;
   }
 
+  isOverdue(todo: TodoItem): boolean {
+    if (todo.status === 'done') return false;
+    const now = dayjs();
+    if (todo.time) {
+      return dayjs(`${todo.date} ${todo.time}`).isBefore(now);
+    }
+    return dayjs(todo.date).endOf('day').isBefore(now);
+  }
+
   getAppointmentColor(status: string): string {
     return APPOINTMENT_STATUS_COLORS[status as keyof typeof APPOINTMENT_STATUS_COLORS] || 'bg-slate-100';
   }
@@ -453,7 +474,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
     this.dataService.rescheduleAppointment(apt.id, newDate, newTime).subscribe({
       next: (updated) => {
         this.appointments.update(appointments =>
-          appointments.map(a => a.id === apt.id ? { ...a, ...updated } : a)
+          appointments.map(a => a.id === apt.id ? updated : a)
         );
         this.isRescheduling.set(false);
         this.closeRescheduleModal();

@@ -9,6 +9,7 @@ export interface NavItem {
   label: string;
   icon: string;
   route: string;
+  badge?: number;
 }
 
 @Component({
@@ -53,6 +54,9 @@ export interface NavItem {
             >
               <span class="nav-item-icon" [innerHTML]="item.icon"></span>
               <span class="nav-item-label">{{ item.label }}</span>
+              @if (item.badge && item.badge > 0) {
+                <span class="nav-item-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+              }
             </a>
           }
         </div>
@@ -357,6 +361,21 @@ export interface NavItem {
 
     .nav-item-label {
       white-space: nowrap;
+    }
+
+    .nav-item-badge {
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 10px;
+      background: var(--color-primary, #7c3aed);
+      color: white;
+      font-size: 0.7rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: auto;
     }
 
     .sidebar-footer {
