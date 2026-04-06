@@ -7,13 +7,16 @@
       <a class="nav-link" (click)="scrollTo('clients')">Для клиентов</a>
       <a class="nav-link" (click)="scrollTo('masters')">Для мастеров</a>
       <a class="nav-link" (click)="scrollTo('pricing')">Тарифы</a>
+      <a class="nav-link" routerLink="/download">Скачать</a>
       <div class="nav-buttons-mobile">
+        <a routerLink="/download" class="btn btn-outline btn-sm">Скачать приложение</a>
         <a routerLink="/login" class="btn btn-outline btn-sm">Войти</a>
         <a routerLink="/register" class="btn btn-primary btn-sm">Регистрация</a>
       </div>
     </nav>
 
     <div class="header-actions">
+      <a routerLink="/download" class="btn btn-ghost btn-sm">Скачать</a>
       <a routerLink="/login" class="btn btn-ghost btn-sm">Войти</a>
       <a routerLink="/register" class="btn btn-primary btn-sm">Регистрация</a>
     </div>
@@ -235,6 +238,7 @@
   <div class="footer-content">
     <div class="footer-logo">Belvra</div>
     <div class="footer-links">
+      <a routerLink="/download">Скачать приложение</a>
       <a routerLink="/privacy-policy">Политика конфиденциальности</a>
       <a routerLink="/terms">Условия использования</a>
       <a href="https://t.me/Dorof_hanzo" target="_blank" rel="noopener noreferrer">Поддержка</a>
