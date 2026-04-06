@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal } from '@angular/core';
+import { forkJoin } from 'rxjs';
 import { CommonModule } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService, DataService, DateService } from '../../../core/services';
@@ -79,89 +80,74 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   private loadData(): void {
-    const masterId = this.authService.masterData()?.id;
+    const masterId = this.authService.masterApiId();
     if (!masterId) return;
 
-    Promise.all([
-      new Promise<void>(resolve => {
-        this.dataService.getDashboardStats(masterId).subscribe(data => {
-          this.stats.set(data);
-          resolve();
-        });
-      }),
-      new Promise<void>(resolve => {
-        this.dataService.getWeeklyAppointmentsTrend(masterId).subscribe(data => {
-          this.weeklyTrend.set(data);
-          resolve();
-        });
-      }),
-      new Promise<void>(resolve => {
-        this.dataService.getServicesPopularity(masterId).subscribe(data => {
-          this.servicesPopularity.set(data);
-          resolve();
-        });
-      }),
-      new Promise<void>(resolve => {
-        this.loadActivityFeed(masterId);
-        resolve();
-      })
-    ]).then(() => {
-      this.isLoading.set(false);
-      this.initMap();
+    forkJoin({
+      stats: this.dataService.getDashboardStats(masterId),
+      weeklyTrend: this.dataService.getWeeklyAppointmentsTrend(masterId),
+      servicesPopularity: this.dataService.getServicesPopularity(masterId),
+      appointments: this.dataService.getAppointments(masterId),
+      reviews: this.dataService.getReviews(masterId),
+      chats: this.dataService.getChats(masterId),
+    }).subscribe({
+      next: ({ stats, weeklyTrend, servicesPopularity, appointments, reviews, chats }) => {
+        this.stats.set(stats);
+        this.weeklyTrend.set(weeklyTrend);
+        this.servicesPopularity.set(servicesPopularity);
+        this.buildActivityFeed(appointments, reviews, chats);
+        this.isLoading.set(false);
+        this.initMap();
+      },
+      error: () => {
+        this.isLoading.set(false);
+      }
     });
   }
 
-  private loadActivityFeed(masterId: string): void {
+  private buildActivityFeed(appointments: any[], reviews: any[], chats: any[]): void {
     const activities: typeof this.activityFeed extends () => infer T ? T : never = [];
 
-    this.dataService.getAppointments(masterId).subscribe(appointments => {
-      const pending = appointments.filter(a => a.status === 'pending');
-      pending.forEach(apt => {
-        activities.push({
-          id: apt.id,
-          type: 'appointment',
-          title: 'Новая заявка на запись',
-          description: `${apt.clientName} - ${apt.serviceName}`,
-          time: apt.createdAt,
-          iconType: 'appointment',
-          data: apt
-        });
+    const pending = appointments.filter(a => a.status === 'pending');
+    pending.forEach(apt => {
+      activities.push({
+        id: apt.id,
+        type: 'appointment',
+        title: 'Новая заявка на запись',
+        description: `${apt.clientName} - ${apt.serviceName}`,
+        time: apt.createdAt,
+        iconType: 'appointment',
+        data: apt
       });
     });
 
-    this.dataService.getReviews(masterId).subscribe(reviews => {
-      reviews.slice(0, 3).forEach(review => {
-        activities.push({
-          id: review.id,
-          type: 'review',
-          title: 'Новый отзыв',
-          description: `${review.clientName} - ${'★'.repeat(review.rating)}`,
-          time: review.createdAt,
-          iconType: 'review',
-          data: review
-        });
+    reviews.slice(0, 3).forEach(review => {
+      activities.push({
+        id: review.id,
+        type: 'review',
+        title: 'Новый отзыв',
+        description: `${review.clientName} - ${'★'.repeat(review.rating)}`,
+        time: review.createdAt,
+        iconType: 'review',
+        data: review
       });
     });
 
-    this.dataService.getChats(masterId).subscribe(chats => {
-      const unread = chats.filter(c => c.unreadCount > 0);
-      unread.forEach(chat => {
-        activities.push({
-          id: chat.id,
-          type: 'message',
-          title: 'Новое сообщение',
-          description: `${chat.clientName}: ${chat.lastMessage}`,
-          time: chat.lastMessageTime || new Date(),
-          iconType: 'message',
-          data: chat
-        });
+    const unread = chats.filter(c => c.unreadCount > 0);
+    unread.forEach(chat => {
+      activities.push({
+        id: chat.id,
+        type: 'message',
+        title: 'Новое сообщение',
+        description: `${chat.clientName}: ${chat.lastMessage}`,
+        time: chat.lastMessageTime || new Date(),
+        iconType: 'message',
+        data: chat
       });
     });
 
-    setTimeout(() => {
-      activities.sort((a, b) => b.time.getTime() - a.time.getTime());
-      this.activityFeed.set(activities.slice(0, 10));
-    }, 400);
+    activities.sort((a, b) => b.time.getTime() - a.time.getTime());
+    this.activityFeed.set(activities.slice(0, 10));
   }
 
   private initMap(retryCount = 0): void {
