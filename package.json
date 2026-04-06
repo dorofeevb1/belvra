@@ -19,8 +19,9 @@
     "ionic:capacitor:build": "npm run build:prod -w @belvra/mobile"
   },
   "dependencies": {
-    "@capacitor/ios": "^7.2.0",
-    "@capacitor/android": "^7.2.0"
+    "@angular/service-worker": "^21.1.1",
+    "@capacitor/android": "^7.2.0",
+    "@capacitor/ios": "^7.2.0"
   },
   "engines": {
     "node": ">=20.0.0"
