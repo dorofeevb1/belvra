@@ -1046,6 +1046,12 @@ $transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: rgba(255, 255, 255, 0.3);
 }
 
+.footer-disclaimer {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 8px;
+}
+
 // ─── Animations ─────────────────────────────────────────────────────────────
 @keyframes fadeInUp {
   from {

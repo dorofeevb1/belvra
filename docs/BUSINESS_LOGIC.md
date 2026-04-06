@@ -42,7 +42,7 @@
 | is_available | BooleanField | True | Доступен для записи |
 | address | CharField(255) | blank | Адрес |
 | latitude / longitude | Decimal(9,6) | null | Координаты для геопоиска |
-| telegram, instagram, vk, whatsapp | CharField | blank | Соцсети |
+| telegram, instagram*, vk, whatsapp | CharField | blank | Соцсети |
 | email_notifications | BooleanField | True | Уведомления на email |
 | sms_notifications | BooleanField | False | SMS (не реализовано) |
 | push_notifications | BooleanField | True | Push-уведомления |
@@ -737,3 +737,7 @@ rating_trend (помесячный avg рейтинга), top_services_by_revenu
 **Аватар**: JPEG/PNG/GIF/WebP, max 5MB
 
 **Файлы чата**: max 50MB
+
+---
+
+\* *Instagram принадлежит компании Meta, признанной экстремистской организацией на территории РФ.*
