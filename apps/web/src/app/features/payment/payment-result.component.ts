@@ -550,34 +550,44 @@ export class PaymentResultComponent implements OnInit {
     }
     this.orderId.set(params['OrderId'] || params['order_id'] || '');
 
-    // Check real subscription status from API instead of trusting query params
+    const successParam = params['success'] || params['Success'];
+    const statusParam = params['Status'] || params['status'];
+
+    // If T-Bank redirected with explicit failure, show error immediately
+    if (successParam === 'false' || statusParam === 'REJECTED' || statusParam === 'DEADLINE_EXPIRED') {
+      this.isSuccess.set(false);
+      if (statusParam === 'REJECTED') {
+        this.errorMessage.set('Платёж отклонён банком. Проверьте данные карты и попробуйте снова.');
+      } else if (statusParam === 'DEADLINE_EXPIRED') {
+        this.errorMessage.set('Время на оплату истекло. Попробуйте оформить подписку заново.');
+      }
+      this.isLoading.set(false);
+      return;
+    }
+
+    // For success — check API with retry (webhook may not have arrived yet)
+    this.checkSubscriptionWithRetry(3, 2000);
+  }
+
+  private checkSubscriptionWithRetry(retriesLeft: number, delayMs: number): void {
     this.api.getSubscription().subscribe({
       next: (sub: any) => {
-        if (sub && sub.status === 'active' && sub.plan?.tier === 'pro') {
+        if (sub && sub.status === 'active' && sub.plan?.is_pro) {
           this.isSuccess.set(true);
+          this.isLoading.set(false);
+        } else if (retriesLeft > 0) {
+          setTimeout(() => this.checkSubscriptionWithRetry(retriesLeft - 1, delayMs), delayMs);
         } else {
-          this.isSuccess.set(false);
+          // After all retries, trust success query param
+          const successParam = this.route.snapshot.queryParams['success'] || this.route.snapshot.queryParams['Success'];
+          this.isSuccess.set(successParam === 'true');
+          this.isLoading.set(false);
         }
-        this.isLoading.set(false);
       },
       error: () => {
-        // Fallback to query params if API fails (e.g. token expired)
-        const success = params['success'] || params['Success'];
-        const status = params['Status'] || params['status'];
-
-        if (success === 'true' && !status) {
-          // T-Bank redirected with success=true, trust it
-          this.isSuccess.set(true);
-        } else if (success === 'false' || status === 'REJECTED' || status === 'DEADLINE_EXPIRED') {
-          this.isSuccess.set(false);
-          if (status === 'REJECTED') {
-            this.errorMessage.set('Платёж отклонён банком. Проверьте данные карты и попробуйте снова.');
-          } else if (status === 'DEADLINE_EXPIRED') {
-            this.errorMessage.set('Время на оплату истекло. Попробуйте оформить подписку заново.');
-          }
-        } else {
-          this.isSuccess.set(false);
-        }
+        // API error (e.g. token expired) — trust query param
+        const successParam = this.route.snapshot.queryParams['success'] || this.route.snapshot.queryParams['Success'];
+        this.isSuccess.set(successParam === 'true');
         this.isLoading.set(false);
       }
     });
