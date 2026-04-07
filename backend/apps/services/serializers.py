@@ -63,7 +63,7 @@ class MasterServiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = MasterService
         fields = [
-            "id", "master", "service", "price", "duration",
+            "id", "master", "service", "price", "duration", "materials_cost",
             "actual_price", "actual_duration", "name", "description",
             "custom_name", "custom_description", "category", "category_name",
             "is_custom", "is_active"
@@ -91,7 +91,7 @@ class MasterServiceCreateSerializer(serializers.ModelSerializer):
         model = MasterService
         fields = [
             "id", "service_id", "custom_name", "custom_description",
-            "category", "price", "duration", "is_active"
+            "category", "price", "duration", "materials_cost", "is_active"
         ]
         read_only_fields = ["id"]
 

@@ -117,6 +117,12 @@ class MasterService(BaseModel):
         blank=True,
         help_text="Duration in minutes"
     )
+    materials_cost = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0,
+        help_text="Cost of materials for this service"
+    )
     is_active = models.BooleanField(default=True)
 
     class Meta:

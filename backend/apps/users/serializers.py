@@ -49,7 +49,8 @@ class UserSerializer(serializers.ModelSerializer):
     push_notifications = serializers.BooleanField(write_only=True, required=False)
     reminder_hours = serializers.IntegerField(write_only=True, required=False)
     # Master profile extra fields
-    experience_years = serializers.IntegerField(write_only=True, required=False, min_value=0)
+    experience_years = serializers.SerializerMethodField()
+    experience_years_write = serializers.IntegerField(write_only=True, required=False, min_value=0)
     is_available = serializers.BooleanField(write_only=True, required=False)
 
     class Meta:
@@ -65,7 +66,7 @@ class UserSerializer(serializers.ModelSerializer):
             "social_links", "notification_settings",
             "telegram", "instagram", "vk", "whatsapp",
             "email_notifications", "sms_notifications", "push_notifications", "reminder_hours",
-            "experience_years", "is_available",
+            "experience_years", "experience_years_write", "is_available",
             "subscription"
         ]
         read_only_fields = ["id", "email", "role", "is_verified", "referral_code", "is_early_adopter", "created_at"]
@@ -79,6 +80,11 @@ class UserSerializer(serializers.ModelSerializer):
     def get_has_master_profile(self, obj):
         """Return True if user has a master profile (can switch to master mode)."""
         return hasattr(obj, 'master_profile') and obj.master_profile is not None
+
+    def get_experience_years(self, obj):
+        if obj.role == 'master' and hasattr(obj, 'master_profile'):
+            return obj.master_profile.experience_years or 0
+        return 0
 
     def get_specialization(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
@@ -169,7 +175,7 @@ class UserSerializer(serializers.ModelSerializer):
         sms_notifications = validated_data.pop('sms_notifications', None)
         push_notifications = validated_data.pop('push_notifications', None)
         reminder_hours = validated_data.pop('reminder_hours', None)
-        experience_years = validated_data.pop('experience_years', None)
+        experience_years = validated_data.pop('experience_years_write', None)
         is_available = validated_data.pop('is_available', None)
 
         # Update user fields
