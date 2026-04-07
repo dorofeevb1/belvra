@@ -97,7 +97,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
         this.servicesPopularity.set(servicesPopularity);
         this.buildActivityFeed(appointments, reviews, chats);
         this.isLoading.set(false);
-        this.initMap();
+        setTimeout(() => this.initMap(), 100);
       },
       error: () => {
         this.isLoading.set(false);
