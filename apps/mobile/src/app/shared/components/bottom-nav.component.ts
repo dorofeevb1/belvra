@@ -112,7 +112,7 @@ export interface BottomNavItem {
       position: relative;
     }
 
-    .nav-tab-icon :deep(svg) {
+    ::ng-deep .nav-tab-icon svg {
       width: 24px;
       height: 24px;
     }
