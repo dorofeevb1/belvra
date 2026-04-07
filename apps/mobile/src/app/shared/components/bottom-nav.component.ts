@@ -1,5 +1,6 @@
-import { Component, input, output } from '@angular/core';
+import { Component, ViewEncapsulation, inject, input, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 
 export interface BottomNavItem {
@@ -15,41 +16,38 @@ export interface BottomNavItem {
   selector: 'app-bottom-nav',
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive],
+  encapsulation: ViewEncapsulation.None,
   template: `
-    <nav class="bottom-nav">
+    <nav class="belvra-bottom-nav">
       @for (item of items(); track item.label) {
         @if (item.route) {
           <a
             [routerLink]="item.route"
             routerLinkActive="active"
             [routerLinkActiveOptions]="{ exact: item.exact ?? false }"
-            class="nav-tab"
+            class="belvra-bottom-nav__tab"
           >
-            <span class="nav-tab-icon" [innerHTML]="item.icon"></span>
+            <span class="belvra-bottom-nav__icon" [innerHTML]="safeIcon(item.icon)"></span>
             @if (item.badge && item.badge > 0) {
-              <span class="nav-tab-badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
+              <span class="belvra-bottom-nav__badge">{{ item.badge > 99 ? '99+' : item.badge }}</span>
             }
-            <span class="nav-tab-label">{{ item.label }}</span>
+            <span class="belvra-bottom-nav__label">{{ item.label }}</span>
           </a>
         } @else {
           <button
-            class="nav-tab"
+            class="belvra-bottom-nav__tab"
             type="button"
             (click)="actionClick.emit(item.action!)"
           >
-            <span class="nav-tab-icon" [innerHTML]="item.icon"></span>
-            <span class="nav-tab-label">{{ item.label }}</span>
+            <span class="belvra-bottom-nav__icon" [innerHTML]="safeIcon(item.icon)"></span>
+            <span class="belvra-bottom-nav__label">{{ item.label }}</span>
           </button>
         }
       }
     </nav>
   `,
   styles: [`
-    :host {
-      display: block;
-    }
-
-    .bottom-nav {
+    .belvra-bottom-nav {
       position: fixed;
       bottom: 0;
       left: 0;
@@ -62,17 +60,14 @@ export interface BottomNavItem {
       padding-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-    }
-
-    :host-context(:not(.dark)) .bottom-nav {
       background: rgba(253, 252, 251, 0.92);
     }
 
-    :host-context(.dark) .bottom-nav {
+    .dark .belvra-bottom-nav {
       background: rgba(24, 24, 27, 0.92);
     }
 
-    .nav-tab {
+    .belvra-bottom-nav__tab {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -91,19 +86,19 @@ export interface BottomNavItem {
       -webkit-tap-highlight-color: transparent;
     }
 
-    .nav-tab:active {
+    .belvra-bottom-nav__tab:active {
       opacity: 0.7;
     }
 
-    .nav-tab.active {
+    .belvra-bottom-nav__tab.active {
       color: var(--color-brand-500);
     }
 
-    :host-context(.dark) .nav-tab.active {
+    .dark .belvra-bottom-nav__tab.active {
       color: var(--color-brand-400);
     }
 
-    .nav-tab-icon {
+    .belvra-bottom-nav__icon {
       width: 24px;
       height: 24px;
       display: flex;
@@ -112,12 +107,12 @@ export interface BottomNavItem {
       position: relative;
     }
 
-    ::ng-deep .nav-tab-icon svg {
+    .belvra-bottom-nav__icon svg {
       width: 24px;
       height: 24px;
     }
 
-    .nav-tab-badge {
+    .belvra-bottom-nav__badge {
       position: absolute;
       top: 2px;
       right: 50%;
@@ -136,7 +131,7 @@ export interface BottomNavItem {
       line-height: 1;
     }
 
-    .nav-tab-label {
+    .belvra-bottom-nav__label {
       font-size: 10px;
       font-weight: 500;
       line-height: 1.2;
@@ -148,13 +143,18 @@ export interface BottomNavItem {
     }
 
     @media (min-width: 1024px) {
-      :host {
+      .belvra-bottom-nav {
         display: none;
       }
     }
   `]
 })
 export class BottomNavComponent {
+  private sanitizer = inject(DomSanitizer);
   items = input<BottomNavItem[]>([]);
   actionClick = output<string>();
+
+  safeIcon(icon: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(icon);
+  }
 }
