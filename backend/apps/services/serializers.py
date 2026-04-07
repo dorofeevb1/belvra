@@ -149,6 +149,7 @@ class MasterServiceCreateSerializer(serializers.ModelSerializer):
         instance.price = validated_data.get('price', instance.price)
         instance.duration = validated_data.get('duration', instance.duration)
         instance.is_active = validated_data.get('is_active', instance.is_active)
+        instance.materials_cost = validated_data.get('materials_cost', instance.materials_cost)
         instance.save()
         return instance
 

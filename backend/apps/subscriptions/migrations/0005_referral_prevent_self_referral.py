@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="referral",
             constraint=models.CheckConstraint(
-                condition=~models.Q(referrer=models.F("referred_user")),
+                check=~models.Q(referrer=models.F("referred_user")),
                 name="prevent_self_referral",
             ),
         ),

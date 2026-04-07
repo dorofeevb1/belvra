@@ -177,7 +177,7 @@ export class DataService {
           description: ms.description || ms.service?.description || '',
           duration: ms.actual_duration || ms.duration || ms.service?.duration || 60,
           price: parseFloat(ms.actual_price || ms.price || ms.service?.price || 0),
-          defaultMaterialsCost: 0,
+          defaultMaterialsCost: parseFloat(ms.materials_cost || 0),
           category: 'other' as ServiceCategory,
           isActive: ms.is_active !== false
         }));
@@ -190,7 +190,8 @@ export class DataService {
     // Prepare request data
     const requestData: any = {
       price: service.price,
-      duration: service.duration
+      duration: service.duration,
+      materials_cost: service.defaultMaterialsCost || 0
     };
 
     if (service.serviceId) {
@@ -210,7 +211,7 @@ export class DataService {
         description: response.description || response.service?.description || service.description,
         duration: response.actual_duration || response.duration || service.duration,
         price: parseFloat(response.actual_price || response.price || service.price),
-        defaultMaterialsCost: 0,
+        defaultMaterialsCost: parseFloat(response.materials_cost || 0),
         category: (service.category || 'other') as ServiceCategory,
         isActive: response.is_active ?? true
       })),
@@ -226,7 +227,8 @@ export class DataService {
     // Prepare update data
     const updateData: any = {
       price: updates.price,
-      duration: updates.duration
+      duration: updates.duration,
+      materials_cost: updates.defaultMaterialsCost ?? 0
     };
 
     // If we have a name, update custom_name (for custom services)
@@ -245,7 +247,7 @@ export class DataService {
         description: response.description || response.service?.description || updates.description || '',
         duration: response.actual_duration || response.duration || updates.duration || 60,
         price: parseFloat(response.actual_price || response.price || updates.price || 0),
-        defaultMaterialsCost: 0,
+        defaultMaterialsCost: parseFloat(response.materials_cost || 0),
         category: (updates.category || 'other') as ServiceCategory,
         isActive: response.is_active ?? true
       })),

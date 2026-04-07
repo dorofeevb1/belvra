@@ -338,7 +338,7 @@ export class SettingsComponent implements OnInit {
         phone: this.profileForm.get('phone')?.value || '',
         specialization_write: this.profileForm.get('specialization')?.value || '',
         bio_write: this.profileForm.get('description')?.value || '',
-        experience_years: this.profileForm.get('experienceYears')?.value || 0,
+        experience_years_write: this.profileForm.get('experienceYears')?.value ?? 0,
         is_available: this.profileForm.get('isAvailable')?.value ?? true,
         address_write: this.profileForm.get('address')?.value || '',
         latitude_write: this.profileForm.get('latitude')?.value ?? null,
