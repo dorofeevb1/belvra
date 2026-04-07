@@ -22,7 +22,7 @@ import { Component } from '@angular/core';
       position: fixed;
       bottom: 24px;
       right: 24px;
-      z-index: 1000;
+      z-index: 35;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -55,7 +55,7 @@ import { Component } from '@angular/core';
 
     @media (max-width: 1023px) {
       .support-fab {
-        bottom: calc(120px + env(safe-area-inset-bottom, 0px) + 16px);
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
       }
     }
 
