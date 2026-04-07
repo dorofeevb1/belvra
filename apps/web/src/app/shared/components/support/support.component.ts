@@ -53,11 +53,16 @@ import { Component } from '@angular/core';
       white-space: nowrap;
     }
 
+    @media (max-width: 1023px) {
+      .support-fab {
+        bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+      }
+    }
+
     @media (max-width: 767px) {
       .support-fab {
         padding: 14px;
         border-radius: 50%;
-        bottom: 16px;
         right: 16px;
       }
 
