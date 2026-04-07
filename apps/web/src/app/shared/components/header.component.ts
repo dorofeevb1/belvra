@@ -131,6 +131,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       z-index: 40;
       background: var(--color-surface-primary);
       border-bottom: 1px solid var(--color-border-secondary);
+      padding-top: env(safe-area-inset-top, 0px);
     }
 
     .header-content {
