@@ -157,7 +157,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     .header-right {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     @media (min-width: 768px) {
@@ -250,6 +250,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       align-items: center;
       gap: 8px;
       padding: 4px 8px 4px 4px;
+      min-height: 44px;
       border: 1px solid transparent;
       background: transparent;
       border-radius: 12px;
