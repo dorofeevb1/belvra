@@ -1,5 +1,6 @@
 export * from './header.component';
 export * from './sidebar.component';
+export * from './bottom-nav.component';
 export * from './modal.component';
 export * from './notification-toast.component';
 export * from './loading-spinner.component';
