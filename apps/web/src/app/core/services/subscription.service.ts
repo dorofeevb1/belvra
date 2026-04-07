@@ -270,21 +270,35 @@ export class SubscriptionService {
     );
   }
 
-  openPaymentWidget(paymentId: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      const win = window as any;
-      if (win.pay && typeof win.pay === 'function') {
-        win.pay({
-          paymentId,
-          onSuccess: () => resolve(true),
-          onFail: () => resolve(false),
-          onClose: () => resolve(false),
-        });
-      } else {
-        console.error('T-Bank widget not loaded');
-        resolve(false);
-      }
-    });
+  openPaymentWidget(paymentId: string, paymentUrl: string): Promise<boolean> {
+    const win = window as any;
+
+    // Try Integration.js iframe first
+    if (win.__tbankReady && win.__tbankIntegration) {
+      return new Promise((resolve) => {
+        try {
+          win.__tbankIntegration.openIframe({
+            paymentId,
+            onSuccess: () => resolve(true),
+            onFail: () => resolve(false),
+            onClose: () => resolve(false),
+          });
+        } catch (e) {
+          console.error('T-Bank iframe error:', e);
+          // Fallback to redirect
+          if (paymentUrl) {
+            window.location.href = paymentUrl;
+          }
+          resolve(false);
+        }
+      });
+    }
+
+    // Fallback: redirect to payment URL
+    if (paymentUrl) {
+      window.location.href = paymentUrl;
+    }
+    return Promise.resolve(false);
   }
 
   cancelSubscription(): Observable<boolean> {

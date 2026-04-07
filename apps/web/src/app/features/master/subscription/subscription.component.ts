@@ -384,9 +384,12 @@ export class SubscriptionComponent implements OnInit {
     const returnUrl = window.location.origin + '/payment/result?success=true';
 
     this.subscriptionService.subscribeToPlan(plan.id, returnUrl).subscribe({
-      next: async (response) => {
+      next: async (response: any) => {
         if (response?.payment_id) {
-          const success = await this.subscriptionService.openPaymentWidget(response.payment_id);
+          const success = await this.subscriptionService.openPaymentWidget(
+            response.payment_id,
+            response.payment_url || ''
+          );
           if (success) {
             this.notificationService.success('Оплата прошла успешно!');
             this.subscriptionService.loadSubscription().subscribe();
@@ -396,7 +399,7 @@ export class SubscriptionComponent implements OnInit {
           window.location.href = response.payment_url;
         }
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Subscription error:', error);
         this.notificationService.error('Не удалось оформить подписку. Попробуйте позже.');
       }

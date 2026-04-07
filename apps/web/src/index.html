@@ -63,7 +63,27 @@
   <!-- Yandex Maps API - loaded at the end for better performance -->
   <script src="https://api-maps.yandex.ru/2.1/?apikey=56a82b8a-570f-4c39-91c7-db9eeed30977&lang=ru_RU" type="text/javascript"></script>
 
-  <!-- T-Bank Payment Widget -->
-  <script src="https://securepay.tinkoff.ru/html/payForm/js/tinkoff_v2.js"></script>
+  <!-- T-Bank Payment Integration -->
+  <script src="https://integrationjs.t-static.ru/integration.js" onload="onPaymentIntegrationLoad()" async></script>
+  <script>
+    window.__tbankReady = false;
+    window.__tbankIntegration = null;
+    function onPaymentIntegrationLoad() {
+      var initConfig = {
+        terminalKey: '1774933914193DEMO',
+        product: 'eacq',
+        features: {
+          payment: {},
+          iframe: {}
+        }
+      };
+      PaymentIntegration.init(initConfig).then(function(integration) {
+        window.__tbankIntegration = integration;
+        window.__tbankReady = true;
+      }).catch(function(err) {
+        console.error('T-Bank integration init error:', err);
+      });
+    }
+  </script>
 </body>
 </html>
