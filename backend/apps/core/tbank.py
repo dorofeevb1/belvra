@@ -80,7 +80,11 @@ class TBankService:
                 continue
             if isinstance(value, (dict, list)):
                 continue
-            check_params[key] = str(value)
+            # T-Bank uses lowercase "true"/"false" for booleans in token generation
+            if isinstance(value, bool):
+                check_params[key] = "true" if value else "false"
+            else:
+                check_params[key] = str(value)
 
         check_params["Password"] = self.password
 

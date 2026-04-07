@@ -376,10 +376,8 @@ class SubscriptionWebhookView(APIView):
 
         # Verify token signature
         if not tbank.test_mode and not tbank.verify_notification_token(data):
-            logger.warning(f"Invalid T-Bank subscription notification token. Data keys: {list(data.keys())}")
-            # Accept anyway for now — T-Bank DEMO terminals may send different token format
-            # TODO: re-enable strict validation for production terminal
-            logger.info(f"Proceeding with unverified notification: OrderId={data.get('OrderId')}, Status={data.get('Status')}")
+            logger.warning(f"Invalid T-Bank subscription notification token. OrderId={data.get('OrderId')}")
+            return Response("INVALID TOKEN", status=status.HTTP_401_UNAUTHORIZED)
 
         order_id = data.get("OrderId")
         tbank_status = data.get("Status")
