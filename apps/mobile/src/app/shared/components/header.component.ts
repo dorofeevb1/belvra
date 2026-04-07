@@ -116,7 +116,7 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     }
 
     .menu-btn {
-      display: flex;
+      display: none;
       align-items: center;
       justify-content: center;
       width: 40px;
@@ -141,12 +141,6 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     .menu-btn svg {
       width: 20px;
       height: 20px;
-    }
-
-    @media (min-width: 1024px) {
-      .menu-btn {
-        display: none;
-      }
     }
 
     .logo {
