@@ -380,6 +380,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         address: this.profileForm.get('address')?.value,
         coordinates: lat && lng ? { lat, lng } : undefined,
         description: this.profileForm.get('description')?.value,
+        experienceYears: this.profileForm.get('experienceYears')?.value ?? 0,
         avatar: this.avatarPreview() || undefined,
         workSchedule,
         socialLinks,

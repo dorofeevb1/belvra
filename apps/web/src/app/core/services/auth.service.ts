@@ -133,6 +133,7 @@ export class AuthService {
         description: backendUser.bio || '',
         address: backendUser.address || '',
         coordinates,
+        experienceYears: backendUser.experience_years || 0,
         rating: parseFloat(backendUser.rating) || 0,
         reviewsCount: backendUser.reviews_count || 0,
         workSchedule: {

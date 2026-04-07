@@ -361,6 +361,7 @@ export class SettingsComponent implements OnInit {
         specialization: this.profileForm.get('specialization')?.value,
         address: this.profileForm.get('address')?.value,
         description: this.profileForm.get('description')?.value,
+        experienceYears: this.profileForm.get('experienceYears')?.value ?? 0,
         avatar: this.avatarPreview() || undefined,
         workSchedule,
         socialLinks,
