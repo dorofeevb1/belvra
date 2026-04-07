@@ -85,6 +85,7 @@ class SubscribeResponseSerializer(serializers.Serializer):
     """Serializer for subscription response."""
 
     subscription_id = serializers.UUIDField()
+    payment_id = serializers.CharField(allow_null=True, required=False)
     payment_url = serializers.URLField(allow_null=True)
     status = serializers.CharField()
     message = serializers.CharField()

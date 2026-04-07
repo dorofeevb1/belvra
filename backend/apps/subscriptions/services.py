@@ -87,6 +87,7 @@ class SubscriptionService:
             if existing_subscription.plan == plan and existing_subscription.is_active:
                 return {
                     "subscription_id": str(existing_subscription.id),
+                    "payment_id": None,
                     "payment_url": None,
                     "status": "already_subscribed",
                     "message": "Вы уже подписаны на этот план"
@@ -106,6 +107,7 @@ class SubscriptionService:
 
             return {
                 "subscription_id": str(subscription.id),
+                "payment_id": None,
                 "payment_url": None,
                 "status": "active",
                 "message": "Подписка на бесплатный план активирована"
@@ -142,6 +144,7 @@ class SubscriptionService:
 
         return {
             "subscription_id": str(subscription.id),
+            "payment_id": result.get("payment_id"),
             "payment_url": result.get("confirmation_url"),
             "status": "pending",
             "message": "Перейдите по ссылке для оплаты"

@@ -252,7 +252,7 @@ export class SubscriptionService {
     );
   }
 
-  subscribeToPlan(planId: string, returnUrl?: string): Observable<{ payment_url: string } | null> {
+  subscribeToPlan(planId: string, returnUrl?: string): Observable<{ payment_id: string; payment_url: string } | null> {
     this.loadingSignal.set(true);
 
     return this.api.createSubscription({
@@ -268,6 +268,23 @@ export class SubscriptionService {
         throw error;
       })
     );
+  }
+
+  openPaymentWidget(paymentId: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const win = window as any;
+      if (win.pay && typeof win.pay === 'function') {
+        win.pay({
+          paymentId,
+          onSuccess: () => resolve(true),
+          onFail: () => resolve(false),
+          onClose: () => resolve(false),
+        });
+      } else {
+        console.error('T-Bank widget not loaded');
+        resolve(false);
+      }
+    });
   }
 
   cancelSubscription(): Observable<boolean> {
