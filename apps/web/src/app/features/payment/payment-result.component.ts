@@ -561,11 +561,14 @@ export class PaymentResultComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: () => {
-        // Fallback to query params if API fails
-        const success = params['Success'] || params['success'];
+        // Fallback to query params if API fails (e.g. token expired)
+        const success = params['success'] || params['Success'];
         const status = params['Status'] || params['status'];
 
-        if (success === 'false' || status === 'REJECTED' || status === 'DEADLINE_EXPIRED') {
+        if (success === 'true' && !status) {
+          // T-Bank redirected with success=true, trust it
+          this.isSuccess.set(true);
+        } else if (success === 'false' || status === 'REJECTED' || status === 'DEADLINE_EXPIRED') {
           this.isSuccess.set(false);
           if (status === 'REJECTED') {
             this.errorMessage.set('Платёж отклонён банком. Проверьте данные карты и попробуйте снова.');
@@ -573,7 +576,7 @@ export class PaymentResultComponent implements OnInit {
             this.errorMessage.set('Время на оплату истекло. Попробуйте оформить подписку заново.');
           }
         } else {
-          this.isSuccess.set(success === 'true');
+          this.isSuccess.set(false);
         }
         this.isLoading.set(false);
       }
