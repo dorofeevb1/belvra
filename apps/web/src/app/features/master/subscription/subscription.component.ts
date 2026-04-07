@@ -384,18 +384,8 @@ export class SubscriptionComponent implements OnInit {
     const returnUrl = window.location.origin + '/payment/result?success=true';
 
     this.subscriptionService.subscribeToPlan(plan.id, returnUrl).subscribe({
-      next: async (response: any) => {
-        if (response?.payment_id) {
-          const success = await this.subscriptionService.openPaymentWidget(
-            response.payment_id,
-            response.payment_url || ''
-          );
-          if (success) {
-            this.notificationService.success('Оплата прошла успешно!');
-            this.subscriptionService.loadSubscription().subscribe();
-            this.subscriptionService.loadUsageStats().subscribe();
-          }
-        } else if (response?.payment_url) {
+      next: (response: any) => {
+        if (response?.payment_url) {
           window.location.href = response.payment_url;
         }
       },
