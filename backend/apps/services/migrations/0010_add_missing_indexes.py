@@ -14,7 +14,7 @@ class Migration(migrations.Migration):
             model_name="masterservice",
             index=models.Index(
                 fields=["master", "is_active"],
-                name="idx_masterservice_master_active",
+                name="idx_msvc_master_active",
             ),
         ),
         migrations.AddIndex(

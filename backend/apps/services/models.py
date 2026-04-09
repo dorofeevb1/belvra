@@ -129,7 +129,7 @@ class MasterService(BaseModel):
         verbose_name = "Услуга мастера"
         verbose_name_plural = "Услуги мастеров"
         indexes = [
-            models.Index(fields=["master", "is_active"], name="idx_masterservice_master_active"),
+            models.Index(fields=["master", "is_active"], name="idx_msvc_master_active"),
         ]
         constraints = [
             models.UniqueConstraint(
