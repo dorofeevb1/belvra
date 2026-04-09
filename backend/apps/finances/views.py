@@ -82,8 +82,9 @@ class AnalyticsView(APIView):
         avg_check = agg['avg_check'] or Decimal('0')
 
         # Manual expenses
+        master_profile = getattr(user, 'master_profile', None)
         manual_expenses_total = Expense.objects.filter(
-            master=user,
+            master=master_profile,
             date__range=(start, end),
         ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
 
@@ -112,7 +113,7 @@ class AnalyticsView(APIView):
                 .values_list('month', 'income')
             )
             monthly_expenses = dict(
-                Expense.objects.filter(master=user, date__range=(start, end))
+                Expense.objects.filter(master=master_profile, date__range=(start, end))
                 .annotate(month=TruncMonth('date'))
                 .values('month')
                 .annotate(total=Sum('amount'))
@@ -148,7 +149,7 @@ class AnalyticsView(APIView):
                 .values_list('day', 'income')
             )
             daily_expenses = dict(
-                Expense.objects.filter(master=user, date__range=(start, end))
+                Expense.objects.filter(master=master_profile, date__range=(start, end))
                 .values('date')
                 .annotate(total=Sum('amount'))
                 .values_list('date', 'total')
@@ -209,7 +210,7 @@ class AnalyticsView(APIView):
         # Goal
         goal_data = None
         goal = FinancialGoal.objects.filter(
-            master=user, is_active=True
+            master=master_profile, is_active=True
         ).first()
         if goal:
             days_in_period = (end - start).days + 1
@@ -262,7 +263,7 @@ class AnalyticsView(APIView):
 
         # Expense breakdown by category
         expense_breakdown = list(
-            Expense.objects.filter(master=user, date__range=(start, end))
+            Expense.objects.filter(master=master_profile, date__range=(start, end))
             .values('category')
             .annotate(total=Sum('amount'))
             .order_by('-total')
@@ -303,7 +304,10 @@ class ExpenseViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        qs = Expense.objects.filter(master=self.request.user)
+        master_profile = getattr(self.request.user, 'master_profile', None)
+        if not master_profile:
+            return Expense.objects.none()
+        qs = Expense.objects.filter(master=master_profile)
         category = self.request.query_params.get('category')
         date_from = self.request.query_params.get('date_from')
         date_to = self.request.query_params.get('date_to')
@@ -320,8 +324,9 @@ class GoalView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
+        master_profile = getattr(request.user, 'master_profile', None)
         goal = FinancialGoal.objects.filter(
-            master=request.user, is_active=True
+            master=master_profile, is_active=True
         ).first()
         if not goal:
             return Response({'detail': 'No active goal'}, status=404)
@@ -336,7 +341,8 @@ class GoalView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def delete(self, request):
+        master_profile = getattr(request.user, 'master_profile', None)
         FinancialGoal.objects.filter(
-            master=request.user, is_active=True
+            master=master_profile, is_active=True
         ).update(is_active=False)
         return Response(status=status.HTTP_204_NO_CONTENT)

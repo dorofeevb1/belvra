@@ -32,7 +32,9 @@ class Chat(BaseModel):
         verbose_name = "Чат"
         verbose_name_plural = "Чаты"
         ordering = ["-updated_at"]
-        unique_together = ["master", "client"]
+        constraints = [
+            models.UniqueConstraint(fields=["master", "client"], name="unique_chat_master_client"),
+        ]
 
     def __str__(self):
         return f"Чат: {self.master.user.full_name} - {self.client.full_name}"
@@ -80,7 +82,9 @@ class ChatMessage(BaseModel):
     )
     sender = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="sent_messages",
         verbose_name="Отправитель"
     )
@@ -143,7 +147,8 @@ class ChatMessage(BaseModel):
         ]
 
     def __str__(self):
-        return f"{self.sender.full_name}: {self.content[:50] or '[файл]'}"
+        sender_name = self.sender.full_name if self.sender else "Удалённый пользователь"
+        return f"{sender_name}: {self.content[:50] or '[файл]'}"
 
     def mark_as_read(self):
         """Mark message as read."""

@@ -218,20 +218,16 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         # Send email notification to master
         master = appointment.master
         client = appointment.client
-        # Get service name from master_service (for custom) or service (for catalog)
-        if appointment.master_service:
-            service_name = appointment.master_service.name
-        elif appointment.service:
-            service_name = appointment.service.name
-        else:
-            service_name = "Услуга"
+        service_name = appointment.service_name
         date_str = appointment.date.strftime("%d.%m.%Y")
         time_str = appointment.start_time.strftime("%H:%M")
+
+        client_name = (client.full_name or client.email) if client else appointment.display_client_name
 
         send_new_appointment_to_master_task.delay(
             master_email=master.user.email,
             master_name=master.user.full_name or master.user.email,
-            client_name=client.full_name or client.email,
+            client_name=client_name,
             service_name=service_name,
             date=date_str,
             time=time_str,
@@ -241,7 +237,7 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         # Create in-app notification for master
         NotificationService.notify_new_appointment(
             master_user=master.user,
-            client_name=client.full_name or client.email,
+            client_name=client_name,
             service_name=service_name,
             date=date_str,
             time=time_str
@@ -283,29 +279,24 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         date_str = appointment.date.strftime("%d.%m.%Y")
         time_str = appointment.start_time.strftime("%H:%M")
 
-        # Get service name (custom service or catalog service)
-        if appointment.master_service:
-            service_name = appointment.master_service.name
-        elif appointment.service:
-            service_name = appointment.service.name
-        else:
-            service_name = "Услуга"
+        service_name = appointment.service_name
 
-        client_email = appointment.client.email
-        client_name = appointment.client.full_name or appointment.client.email
+        client_email = appointment.client.email if appointment.client else None
+        client_name = (appointment.client.full_name or appointment.client.email) if appointment.client else appointment.display_client_name
         master_email = appointment.master.user.email
         master_name = appointment.master.user.full_name or appointment.master.user.email
 
         # Send cancellation email to BOTH parties
-        send_appointment_cancelled_task.delay(
-            recipient_email=client_email,
-            recipient_name=client_name,
-            service_name=service_name,
-            date=date_str,
-            time=time_str,
-            cancelled_by=cancelled_by,
-            reason=appointment.cancellation_reason
-        )
+        if client_email:
+            send_appointment_cancelled_task.delay(
+                recipient_email=client_email,
+                recipient_name=client_name,
+                service_name=service_name,
+                date=date_str,
+                time=time_str,
+                cancelled_by=cancelled_by,
+                reason=appointment.cancellation_reason
+            )
         send_appointment_cancelled_task.delay(
             recipient_email=master_email,
             recipient_name=master_name,
@@ -317,15 +308,16 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         )
 
         # Create in-app notification for the other party
-        notify_user = appointment.client if is_master else appointment.master.user
-        NotificationService.notify_appointment_cancelled(
-            user=notify_user,
-            cancelled_by=cancelled_by,
-            service_name=service_name,
-            date=date_str,
-            time=time_str,
-            reason=appointment.cancellation_reason
-        )
+        notify_user = (appointment.client if is_master else appointment.master.user) if appointment.client or not is_master else None
+        if notify_user:
+            NotificationService.notify_appointment_cancelled(
+                user=notify_user,
+                cancelled_by=cancelled_by,
+                service_name=service_name,
+                date=date_str,
+                time=time_str,
+                reason=appointment.cancellation_reason
+            )
 
         return Response(AppointmentSerializer(appointment).data)
 
@@ -370,33 +362,28 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         time_str = appointment.start_time.strftime("%H:%M")
         master_name = master.user.full_name or master.user.email
 
-        # Get service name (custom service or catalog service)
-        if appointment.master_service:
-            service_name = appointment.master_service.name
-        elif appointment.service:
-            service_name = appointment.service.name
-        else:
-            service_name = "Услуга"
+        service_name = appointment.service_name
 
-        send_appointment_confirmation_task.delay(
-            client_email=client.email,
-            client_name=client.full_name or client.email,
-            master_name=master_name,
-            service_name=service_name,
-            date=date_str,
-            time=time_str,
-            price=str(appointment.price),
-            address=master.address or ""
-        )
+        if client:
+            send_appointment_confirmation_task.delay(
+                client_email=client.email,
+                client_name=client.full_name or client.email,
+                master_name=master_name,
+                service_name=service_name,
+                date=date_str,
+                time=time_str,
+                price=str(appointment.price),
+                address=master.address or ""
+            )
 
-        # Create in-app notification for client
-        NotificationService.notify_appointment_confirmed(
-            client_user=client,
-            master_name=master_name,
-            service_name=service_name,
-            date=date_str,
-            time=time_str
-        )
+            # Create in-app notification for client
+            NotificationService.notify_appointment_confirmed(
+                client_user=client,
+                master_name=master_name,
+                service_name=service_name,
+                date=date_str,
+                time=time_str
+            )
 
         return Response(AppointmentSerializer(appointment).data)
 
@@ -549,16 +536,10 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         new_date_str = appointment.date.strftime("%d.%m.%Y")
         new_time_str = appointment.start_time.strftime("%H:%M")
 
-        # Get service name (custom service or catalog service)
-        if appointment.master_service:
-            service_name = appointment.master_service.name
-        elif appointment.service:
-            service_name = appointment.service.name
-        else:
-            service_name = "Услуга"
+        service_name = appointment.service_name
 
         # Determine who rescheduled and send notifications
-        if is_master:
+        if is_master and appointment.client:
             # Master rescheduled - notify client
             NotificationService.notify_appointment_rescheduled(
                 user=appointment.client,
@@ -807,7 +788,7 @@ class ReviewViewSet(viewsets.ModelViewSet):
         appointment = review.appointment
         master = appointment.master
         client = appointment.client
-        client_name = client.full_name or client.email
+        client_name = (client.full_name or client.email) if client else appointment.display_client_name
 
         send_review_notification_task.delay(
             master_email=master.user.email,

@@ -38,8 +38,11 @@ class WorkSchedule(BaseModel):
     class Meta:
         verbose_name = "Расписание"
         verbose_name_plural = "Расписания"
-        unique_together = ["master", "weekday"]
         ordering = ["weekday", "start_time"]
+        constraints = [
+            models.UniqueConstraint(fields=["master", "weekday"], name="unique_master_weekday"),
+            models.CheckConstraint(check=models.Q(start_time__lt=models.F("end_time")), name="schedule_start_before_end"),
+        ]
 
     def clean(self):
         if self.start_time and self.end_time and self.start_time >= self.end_time:
@@ -69,10 +72,11 @@ class Appointment(BaseModel):
 
     client = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name="client_appointments",
         null=True,
         blank=True,
+        db_index=True,
     )
     # For manual appointments without registered client
     client_name = models.CharField(max_length=150, blank=True, default="")
@@ -133,6 +137,25 @@ class Appointment(BaseModel):
         indexes = [
             models.Index(fields=["master", "date", "status"]),
         ]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(start_time__lt=models.F("end_time")),
+                name="appt_start_before_end"
+            ),
+            models.CheckConstraint(
+                check=models.Q(price__gte=0),
+                name="appt_price_non_negative"
+            ),
+        ]
+
+    @property
+    def service_name(self):
+        """Get service name — always through master_service, fallback to service."""
+        if self.master_service:
+            return self.master_service.name
+        if self.service:
+            return self.service.name
+        return "Услуга удалена"
 
     @property
     def display_client_name(self):
@@ -195,9 +218,16 @@ class Review(BaseModel):
         verbose_name = "Отзыв"
         verbose_name_plural = "Отзывы"
         ordering = ["-created_at"]
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(rating__gte=1, rating__lte=5),
+                name="review_rating_1_to_5"
+            ),
+        ]
 
     def __str__(self):
-        return f"Отзыв от {self.appointment.client.full_name}"
+        client_name = self.appointment.client.full_name if self.appointment.client else self.appointment.display_client_name
+        return f"Отзыв от {client_name}"
 
     def clean(self):
         if not 1 <= self.rating <= 5:
@@ -208,20 +238,7 @@ class Review(BaseModel):
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)
-        self._update_master_rating()
-
-    def _update_master_rating(self):
-        from django.db import transaction
-        with transaction.atomic():
-            master = MasterProfile.objects.select_for_update().get(
-                pk=self.appointment.master_id
-            )
-            result = Review.objects.filter(appointment__master=master).aggregate(
-                avg=models.Avg("rating"), count=models.Count("id")
-            )
-            master.rating = round(result["avg"] or 0, 2)
-            master.reviews_count = result["count"]
-            master.save(update_fields=["rating", "reviews_count"])
+        # Rating recalculation is handled by post_save signal in signals.py
 
 
 class ClientNote(BaseModel):
@@ -242,8 +259,10 @@ class ClientNote(BaseModel):
     class Meta:
         verbose_name = "Заметка о клиенте"
         verbose_name_plural = "Заметки о клиентах"
-        unique_together = ["master", "client"]
         ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["master", "client"], name="unique_master_client_note"),
+        ]
 
     def __str__(self):
         return f"Note by {self.master} about {self.client}"

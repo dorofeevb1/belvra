@@ -6,7 +6,7 @@ from .models import Expense, FinancialGoal
 class ExpenseAdmin(admin.ModelAdmin):
     list_display = ['master', 'category', 'amount', 'date', 'is_recurring']
     list_filter = ['category', 'is_recurring', 'date']
-    search_fields = ['master__name', 'description']
+    search_fields = ['master__user__email', 'master__user__first_name', 'description']
 
 
 @admin.register(FinancialGoal)

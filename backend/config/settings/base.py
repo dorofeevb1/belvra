@@ -313,6 +313,9 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": "/api/v1",
 }
 
+# Field-level encryption key (Fernet) for sensitive data
+FIELD_ENCRYPTION_KEY = env.str("FIELD_ENCRYPTION_KEY", default="")
+
 # T-Bank (Tinkoff) Payment Settings
 TBANK_TERMINAL_KEY = env.str("TBANK_TERMINAL_KEY", default="")
 TBANK_PASSWORD = env.str("TBANK_PASSWORD", default="")

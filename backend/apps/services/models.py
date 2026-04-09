@@ -128,6 +128,9 @@ class MasterService(BaseModel):
     class Meta:
         verbose_name = "Услуга мастера"
         verbose_name_plural = "Услуги мастеров"
+        indexes = [
+            models.Index(fields=["master", "is_active"], name="idx_masterservice_master_active"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["master", "service"],
@@ -212,6 +215,9 @@ class PortfolioItem(BaseModel):
         verbose_name = "Работа в портфолио"
         verbose_name_plural = "Работы в портфолио"
         ordering = ["-is_pinned", "-created_at"]
+        indexes = [
+            models.Index(fields=["master", "-created_at"], name="idx_portfolio_master_created"),
+        ]
 
     def __str__(self):
         return f"{self.master.user.full_name} - {self.title}"
@@ -235,7 +241,9 @@ class PortfolioLike(models.Model):
     class Meta:
         verbose_name = "Лайк портфолио"
         verbose_name_plural = "Лайки портфолио"
-        unique_together = ("user", "portfolio_item")
+        constraints = [
+            models.UniqueConstraint(fields=["user", "portfolio_item"], name="unique_user_portfolio_like"),
+        ]
 
     def __str__(self):
         return f"{self.user} -> {self.portfolio_item}"

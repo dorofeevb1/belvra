@@ -19,7 +19,7 @@ from apps.core.models import TimeStampedModel
 
 
 class UserManager(BaseUserManager):
-    """Custom user manager."""
+    """Custom user manager — returns all users including soft-deleted."""
 
     def create_user(self, email, password=None, **extra_fields):
         if not email:
@@ -42,6 +42,13 @@ class UserManager(BaseUserManager):
             raise ValueError("Superuser must have is_superuser=True")
 
         return self.create_user(email, password, **extra_fields)
+
+
+class ActiveUserManager(UserManager):
+    """Default manager — excludes soft-deleted users."""
+
+    def get_queryset(self):
+        return super().get_queryset().filter(is_deleted=False)
 
 
 class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
@@ -102,7 +109,12 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     is_online = models.BooleanField(default=False)
     last_seen = models.DateTimeField(null=True, blank=True)
 
-    objects = UserManager()
+    # Soft delete
+    is_deleted = models.BooleanField(default=False, db_index=True)
+    deleted_at = models.DateTimeField(null=True, blank=True)
+
+    objects = ActiveUserManager()
+    all_objects = UserManager()
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
@@ -128,6 +140,24 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
     def __str__(self):
         return self.email
 
+    def soft_delete(self):
+        """Soft delete user — anonymize PII (ФЗ-152), deactivate tokens."""
+        from django.utils import timezone
+        self.is_deleted = True
+        self.deleted_at = timezone.now()
+        self.is_active = False
+        # Anonymize personal data (ФЗ-152 compliance)
+        self.email = f"deleted_{self.id}@deleted.local"
+        self.phone = ""
+        self.first_name = "Удалён"
+        self.last_name = ""
+        if self.avatar:
+            self.avatar = None
+        self.save()
+        # Deactivate push tokens
+        from apps.core.models import DeviceToken
+        DeviceToken.objects.filter(user=self).update(is_active=False)
+
     @property
     def full_name(self):
         return f"{self.first_name} {self.last_name}".strip()
@@ -142,7 +172,13 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
 
 
 class MasterProfile(TimeStampedModel):
-    """Extended profile for masters."""
+    """Extended profile for masters — core data only."""
+
+    class TaxSystem(models.TextChoices):
+        NONE = 'none', 'Не указано'
+        SELF_EMPLOYED = 'self_employed', 'Самозанятый (НПД)'
+        IP_USN6 = 'ip_usn6', 'ИП УСН 6%'
+        IP_USN15 = 'ip_usn15', 'ИП УСН 15%'
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.OneToOneField(
@@ -156,40 +192,31 @@ class MasterProfile(TimeStampedModel):
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     reviews_count = models.PositiveIntegerField(default=0)
     is_available = models.BooleanField(default=True)
-    address = models.CharField(max_length=255, blank=True)
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
-
-    # Social links
-    telegram = models.CharField(max_length=100, blank=True)
-    instagram = models.CharField(max_length=100, blank=True)
-    vk = models.CharField(max_length=200, blank=True)
-    whatsapp = models.CharField(max_length=20, blank=True)
-
-    # Notification settings
-    email_notifications = models.BooleanField(default=True)
-    sms_notifications = models.BooleanField(default=False)
-    push_notifications = models.BooleanField(default=True)
-    reminder_hours = models.PositiveIntegerField(default=24)
-
-    # PRO feature: auto-remind clients to rebook
     rebooking_reminder_days = models.PositiveIntegerField(
         default=0,
         help_text="Через сколько дней напомнить клиенту о повторной записи (0 = выключено)"
     )
-
-    # Tax system for financial calculations
-    TAX_SYSTEM_CHOICES = [
-        ('none', 'Не указано'),
-        ('self_employed', 'Самозанятый (НПД)'),
-        ('ip_usn6', 'ИП УСН 6%'),
-        ('ip_usn15', 'ИП УСН 15%'),
-    ]
     tax_system = models.CharField(
         max_length=20,
-        choices=TAX_SYSTEM_CHOICES,
-        default='none',
+        choices=TaxSystem.choices,
+        default=TaxSystem.NONE,
     )
+
+    # --- Deprecated fields (kept for backward compat, will be removed next release) ---
+    # Location → MasterLocation
+    address = models.CharField(max_length=255, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    # Social → MasterSocialLinks
+    telegram = models.CharField(max_length=100, blank=True)
+    instagram = models.CharField(max_length=100, blank=True)
+    vk = models.CharField(max_length=200, blank=True)
+    whatsapp = models.CharField(max_length=20, blank=True)
+    # Notifications → MasterNotificationSettings
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    push_notifications = models.BooleanField(default=True)
+    reminder_hours = models.PositiveIntegerField(default=24)
 
     class Meta:
         verbose_name = "Профиль мастера"
@@ -197,6 +224,71 @@ class MasterProfile(TimeStampedModel):
 
     def __str__(self):
         return f"Профиль мастера: {self.user.full_name}"
+
+
+class MasterLocation(TimeStampedModel):
+    """Master's address and coordinates."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    master = models.OneToOneField(
+        MasterProfile,
+        on_delete=models.CASCADE,
+        related_name="location"
+    )
+    address = models.CharField(max_length=255, blank=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Локация мастера"
+        verbose_name_plural = "Локации мастеров"
+
+    def __str__(self):
+        return f"Локация: {self.master.user.full_name}"
+
+
+class MasterSocialLinks(TimeStampedModel):
+    """Master's social media links."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    master = models.OneToOneField(
+        MasterProfile,
+        on_delete=models.CASCADE,
+        related_name="social_links"
+    )
+    telegram = models.CharField(max_length=100, blank=True)
+    instagram = models.CharField(max_length=100, blank=True)
+    vk = models.CharField(max_length=200, blank=True)
+    whatsapp = models.CharField(max_length=20, blank=True)
+
+    class Meta:
+        verbose_name = "Соцсети мастера"
+        verbose_name_plural = "Соцсети мастеров"
+
+    def __str__(self):
+        return f"Соцсети: {self.master.user.full_name}"
+
+
+class MasterNotificationSettings(TimeStampedModel):
+    """Master's notification preferences."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    master = models.OneToOneField(
+        MasterProfile,
+        on_delete=models.CASCADE,
+        related_name="notification_settings"
+    )
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=False)
+    push_notifications = models.BooleanField(default=True)
+    reminder_hours = models.PositiveIntegerField(default=24)
+
+    class Meta:
+        verbose_name = "Настройки уведомлений мастера"
+        verbose_name_plural = "Настройки уведомлений мастеров"
+
+    def __str__(self):
+        return f"Уведомления: {self.master.user.full_name}"
 
 
 class FavoriteMaster(TimeStampedModel):
@@ -217,8 +309,10 @@ class FavoriteMaster(TimeStampedModel):
     class Meta:
         verbose_name = "Избранный мастер"
         verbose_name_plural = "Избранные мастера"
-        unique_together = ["user", "master"]
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "master"], name="unique_favorite_user_master"),
+        ]
 
     def __str__(self):
         return f"{self.user.email} -> {self.master.user.full_name}"
@@ -243,8 +337,11 @@ class BlockedUser(TimeStampedModel):
     class Meta:
         verbose_name = "Заблокированный пользователь"
         verbose_name_plural = "Заблокированные пользователи"
-        unique_together = ["blocker", "blocked"]
         ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["blocker", "blocked"], name="unique_blocker_blocked"),
+            models.CheckConstraint(check=~models.Q(blocker=models.F("blocked")), name="no_self_block"),
+        ]
 
     def __str__(self):
         return f"{self.blocker.email} blocked {self.blocked.email}"

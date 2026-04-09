@@ -124,6 +124,15 @@ class UserSerializer(serializers.ModelSerializer):
     def get_social_links(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
             mp = obj.master_profile
+            # Prefer new MasterSocialLinks model, fallback to deprecated fields
+            sl = getattr(mp, 'social_links', None)
+            if sl:
+                return {
+                    "telegram": sl.telegram or "",
+                    "instagram": sl.instagram or "",
+                    "vk": sl.vk or "",
+                    "whatsapp": sl.whatsapp or ""
+                }
             return {
                 "telegram": mp.telegram or "",
                 "instagram": mp.instagram or "",
@@ -135,6 +144,15 @@ class UserSerializer(serializers.ModelSerializer):
     def get_notification_settings(self, obj):
         if obj.role == 'master' and hasattr(obj, 'master_profile'):
             mp = obj.master_profile
+            # Prefer new MasterNotificationSettings model, fallback to deprecated fields
+            ns = getattr(mp, 'notification_settings', None)
+            if ns:
+                return {
+                    "emailNotifications": ns.email_notifications,
+                    "smsNotifications": ns.sms_notifications,
+                    "pushNotifications": ns.push_notifications,
+                    "reminderHours": ns.reminder_hours
+                }
             return {
                 "emailNotifications": mp.email_notifications,
                 "smsNotifications": mp.sms_notifications,
@@ -188,33 +206,58 @@ class UserSerializer(serializers.ModelSerializer):
                 master_profile.specialization = specialization
             if bio is not None:
                 master_profile.bio = bio
-            if address is not None:
-                master_profile.address = address
-                if not address:
-                    master_profile.latitude = None
-                    master_profile.longitude = None
-            if latitude is not None:
-                master_profile.latitude = Decimal(str(latitude))
-            if longitude is not None:
-                master_profile.longitude = Decimal(str(longitude))
-            # Social links
-            if telegram is not None:
-                master_profile.telegram = telegram
-            if instagram is not None:
-                master_profile.instagram = instagram
-            if vk is not None:
-                master_profile.vk = vk
-            if whatsapp is not None:
-                master_profile.whatsapp = whatsapp
-            # Notification settings
-            if email_notifications is not None:
-                master_profile.email_notifications = email_notifications
-            if sms_notifications is not None:
-                master_profile.sms_notifications = sms_notifications
-            if push_notifications is not None:
-                master_profile.push_notifications = push_notifications
-            if reminder_hours is not None:
-                master_profile.reminder_hours = reminder_hours
+            if any(v is not None for v in [address, latitude, longitude]):
+                from .models import MasterLocation
+                loc, _ = MasterLocation.objects.get_or_create(master=master_profile)
+                if address is not None:
+                    master_profile.address = address
+                    loc.address = address
+                    if not address:
+                        master_profile.latitude = None
+                        master_profile.longitude = None
+                        loc.latitude = None
+                        loc.longitude = None
+                if latitude is not None:
+                    master_profile.latitude = Decimal(str(latitude))
+                    loc.latitude = Decimal(str(latitude))
+                if longitude is not None:
+                    master_profile.longitude = Decimal(str(longitude))
+                    loc.longitude = Decimal(str(longitude))
+                loc.save()
+            # Social links — write to both old fields and new model
+            if any(v is not None for v in [telegram, instagram, vk, whatsapp]):
+                from .models import MasterSocialLinks
+                sl, _ = MasterSocialLinks.objects.get_or_create(master=master_profile)
+                if telegram is not None:
+                    master_profile.telegram = telegram
+                    sl.telegram = telegram
+                if instagram is not None:
+                    master_profile.instagram = instagram
+                    sl.instagram = instagram
+                if vk is not None:
+                    master_profile.vk = vk
+                    sl.vk = vk
+                if whatsapp is not None:
+                    master_profile.whatsapp = whatsapp
+                    sl.whatsapp = whatsapp
+                sl.save()
+            # Notification settings — write to both old fields and new model
+            if any(v is not None for v in [email_notifications, sms_notifications, push_notifications, reminder_hours]):
+                from .models import MasterNotificationSettings
+                ns, _ = MasterNotificationSettings.objects.get_or_create(master=master_profile)
+                if email_notifications is not None:
+                    master_profile.email_notifications = email_notifications
+                    ns.email_notifications = email_notifications
+                if sms_notifications is not None:
+                    master_profile.sms_notifications = sms_notifications
+                    ns.sms_notifications = sms_notifications
+                if push_notifications is not None:
+                    master_profile.push_notifications = push_notifications
+                    ns.push_notifications = push_notifications
+                if reminder_hours is not None:
+                    master_profile.reminder_hours = reminder_hours
+                    ns.reminder_hours = reminder_hours
+                ns.save()
             if experience_years is not None:
                 master_profile.experience_years = experience_years
             if is_available is not None:

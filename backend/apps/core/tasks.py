@@ -19,9 +19,10 @@ def cleanup_unverified_accounts():
     from apps.users.models import User
 
     cutoff = timezone.now() - timedelta(minutes=15)
-    unverified = User.objects.filter(
+    unverified = User.all_objects.filter(
         is_verified=False,
         is_staff=False,
+        is_deleted=False,
         created_at__lt=cutoff,
     )
     count = unverified.count()
@@ -244,6 +245,9 @@ def send_rebooking_reminders():
         ).select_related("client", "master_service", "service")
 
         for appt in appointments:
+            if not appt.client:
+                continue
+
             has_upcoming = Appointment.objects.filter(
                 client=appt.client,
                 master=master,
@@ -254,10 +258,7 @@ def send_rebooking_reminders():
             if has_upcoming:
                 continue
 
-            service_name = (
-                appt.master_service.name if appt.master_service
-                else (appt.service.name if appt.service else "услугу")
-            )
+            service_name = appt.service_name
             master_name = master.user.full_name or master.user.email
 
             NotificationService.create_notification(
