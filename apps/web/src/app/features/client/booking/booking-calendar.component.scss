@@ -120,7 +120,7 @@
 }
 
 :host-context(.dark) .service-option.selected {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 .service-name {
@@ -204,7 +204,7 @@
 }
 
 :host-context(.dark) .calendar-day.today:not(.selected) {
-  background: rgba(236, 72, 153, 0.15);
+  background: rgba(124, 58, 237, 0.15);
   color: var(--color-brand-400);
 }
 
@@ -264,7 +264,7 @@
 }
 
 :host-context(.dark) .time-slot.selected {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 /* Confirm */
@@ -342,7 +342,7 @@
 
 /* Payment Step */
 .payment-amount-card {
-  background: linear-gradient(135deg, var(--color-brand-50) 0%, rgba(236, 72, 153, 0.05) 100%);
+  background: linear-gradient(135deg, var(--color-brand-50) 0%, rgba(124, 58, 237, 0.05) 100%);
   border: 1px solid var(--color-brand-100);
   border-radius: var(--radius-xl);
   padding: 1.25rem;
@@ -373,8 +373,8 @@
 }
 
 :host-context(.dark) .payment-amount-card {
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%);
-  border-color: rgba(236, 72, 153, 0.2);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%);
+  border-color: rgba(124, 58, 237, 0.2);
 
   .payment-value {
     color: var(--color-brand-400);
@@ -430,7 +430,7 @@
 }
 
 :host-context(.dark) .method-tab.active {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(124, 58, 237, 0.1);
   color: var(--color-brand-400);
 }
 
@@ -467,7 +467,7 @@
 }
 
 :host-context(.dark) .saved-card.selected {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(124, 58, 237, 0.1);
 }
 
 .card-brand {
@@ -524,7 +524,7 @@
 }
 
 :host-context(.dark) .card-default {
-  background: rgba(236, 72, 153, 0.15);
+  background: rgba(124, 58, 237, 0.15);
   color: var(--color-brand-400);
 }
 

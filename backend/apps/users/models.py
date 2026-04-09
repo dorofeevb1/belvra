@@ -98,6 +98,10 @@ class User(AbstractBaseUser, PermissionsMixin, TimeStampedModel):
         verbose_name="Ранний пользователь (бесплатный Pro)"
     )
 
+    # Online status
+    is_online = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(null=True, blank=True)
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"
@@ -174,6 +178,19 @@ class MasterProfile(TimeStampedModel):
         help_text="Через сколько дней напомнить клиенту о повторной записи (0 = выключено)"
     )
 
+    # Tax system for financial calculations
+    TAX_SYSTEM_CHOICES = [
+        ('none', 'Не указано'),
+        ('self_employed', 'Самозанятый (НПД)'),
+        ('ip_usn6', 'ИП УСН 6%'),
+        ('ip_usn15', 'ИП УСН 15%'),
+    ]
+    tax_system = models.CharField(
+        max_length=20,
+        choices=TAX_SYSTEM_CHOICES,
+        default='none',
+    )
+
     class Meta:
         verbose_name = "Профиль мастера"
         verbose_name_plural = "Профили мастеров"
@@ -205,3 +222,29 @@ class FavoriteMaster(TimeStampedModel):
 
     def __str__(self):
         return f"{self.user.email} -> {self.master.user.full_name}"
+
+
+class BlockedUser(TimeStampedModel):
+    """Model to track blocked users."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    blocker = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="blocked_users"
+    )
+    blocked = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="blocked_by"
+    )
+    reason = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        verbose_name = "Заблокированный пользователь"
+        verbose_name_plural = "Заблокированные пользователи"
+        unique_together = ["blocker", "blocked"]
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.blocker.email} blocked {self.blocked.email}"

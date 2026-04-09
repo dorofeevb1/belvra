@@ -20,13 +20,8 @@ export class ThemeService {
   }
 
   private getInitialTheme(): Theme {
-    const stored = localStorage.getItem('belvra_theme') as Theme | null;
-    if (stored) return stored;
-
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark';
-    }
-    return 'light';
+    // Dark theme is the default — matches landing page design
+    return 'dark';
   }
 
   private applyTheme(theme: Theme): void {

@@ -293,7 +293,7 @@ import { PortfolioItem, BeautyService } from '../../../core/models';
     .input:focus {
       outline: none;
       border-color: var(--color-brand-500);
-      box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
 
     .textarea {
@@ -328,7 +328,7 @@ import { PortfolioItem, BeautyService } from '../../../core/models';
     }
 
     :host-context(.dark) .hashtag {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
       color: var(--color-brand-400);
     }
 

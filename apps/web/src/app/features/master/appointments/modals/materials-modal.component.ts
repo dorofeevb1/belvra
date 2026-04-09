@@ -66,6 +66,7 @@ interface MaterialInput {
                         <input
                           type="number"
                           [(ngModel)]="material.quantity"
+                          (ngModelChange)="recalcTotal()"
                           min="0.1"
                           step="0.1"
                           class="input input-sm"
@@ -77,6 +78,7 @@ interface MaterialInput {
                         <input
                           type="number"
                           [(ngModel)]="material.pricePerUnit"
+                          (ngModelChange)="recalcTotal()"
                           min="0"
                           class="input input-sm"
                           (focus)="$any($event.target).select()"
@@ -85,7 +87,7 @@ interface MaterialInput {
                       <div class="field-group">
                         <label class="field-label">Сумма</label>
                         <span class="material-total">
-                          {{ (material.quantity * material.pricePerUnit) | currencyRub }}
+                          {{ ((material.quantity || 0) * (material.pricePerUnit || 0)) | currencyRub }}
                         </span>
                       </div>
                       <button
@@ -159,7 +161,7 @@ interface MaterialInput {
     }
 
     :host-context(.dark) .info-icon {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
     }
 
     .info-icon svg {
@@ -218,7 +220,7 @@ interface MaterialInput {
     }
 
     :host-context(.dark) .add-btn:hover {
-      background: rgba(236, 72, 153, 0.1);
+      background: rgba(124, 58, 237, 0.1);
     }
 
     .add-btn svg {
@@ -334,7 +336,7 @@ interface MaterialInput {
     }
 
     :host-context(.dark) .total-card {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
     }
 
     .total-label {
@@ -380,7 +382,7 @@ interface MaterialInput {
     .input:focus {
       outline: none;
       border-color: var(--color-brand-500);
-      box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+      box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
     }
 
     @media (max-width: 767px) {
@@ -482,19 +484,23 @@ export class MaterialsModalComponent implements OnChanges {
   materials = signal<MaterialInput[]>([]);
 
   totalCost = computed(() =>
-    this.materials().reduce((sum, m) => sum + (m.quantity * m.pricePerUnit), 0)
+    this.materials().reduce((sum, m) => sum + ((Number(m.quantity) || 0) * (Number(m.pricePerUnit) || 0)), 0)
   );
 
   ngOnChanges(): void {
     if (this.isOpen()) {
       const apt = this.appointment();
       if (apt?.usedMaterials?.length) {
-        this.materials.set(apt.usedMaterials.map(m => ({
-          id: m.materialId,
-          name: m.name,
-          quantity: m.quantity,
-          pricePerUnit: m.totalCost / m.quantity
-        })));
+        this.materials.set(apt.usedMaterials.map((m: any) => {
+          const qty = Number(m.quantity) || 1;
+          const total = Number(m.totalCost ?? m.cost ?? 0);
+          return {
+            id: m.materialId || m.id || `mat-${Date.now()}-${Math.random()}`,
+            name: m.name || '',
+            quantity: qty,
+            pricePerUnit: qty > 0 ? Math.round(total / qty) : 0
+          };
+        }));
       } else {
         this.materials.set([]);
       }
@@ -515,6 +521,11 @@ export class MaterialsModalComponent implements OnChanges {
 
   removeMaterial(index: number): void {
     this.materials.update(list => list.filter((_, i) => i !== index));
+  }
+
+  recalcTotal(): void {
+    // Trigger signal re-evaluation by creating a new array reference
+    this.materials.update(list => [...list]);
   }
 
   onSave(): void {

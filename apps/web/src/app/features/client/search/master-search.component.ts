@@ -224,7 +224,7 @@ export class MasterSearchComponent implements OnInit, OnDestroy {
                 <div style="margin-top: 4px; color: #888;">${master.address}</div>
               </div>
             `,
-            balloonContentFooter: `<a href="/client/master/${master.id}" style="color: #ec4899;">Открыть профиль</a>`,
+            balloonContentFooter: `<a href="/client/master/${master.id}" style="color: #7C3AED;">Открыть профиль</a>`,
             hintContent: master.name
           },
           {

@@ -39,6 +39,9 @@
               } @else {
                 <span>{{ (chat.masterName || '?').charAt(0).toUpperCase() }}</span>
               }
+              @if (chat.masterIsOnline) {
+                <span class="online-dot"></span>
+              }
             </div>
             <div class="chat-info">
               <div class="chat-row">
@@ -94,8 +97,12 @@
             @if (isTypingOther()) {
               <span class="typing-dots"><span></span><span></span><span></span></span>
               <span>печатает...</span>
+            } @else if (selectedChat()!.masterIsOnline) {
+              <span class="status-dot online"></span>
+              <span class="status-online">Онлайн</span>
+            } @else if (selectedChat()!.masterLastSeen) {
+              <span>{{ formatLastSeen(selectedChat()!.masterLastSeen) }}</span>
             } @else {
-              <span class="status-dot"></span>
               <span>Мастер</span>
             }
           </p>
@@ -106,6 +113,33 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </button>
+          <!-- Action menu -->
+          <div class="action-menu-wrap">
+            <button type="button" class="hdr-btn" (click)="showActionMenu.set(!showActionMenu())" title="Действия">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </button>
+            @if (showActionMenu()) {
+              <div class="action-dropdown">
+                <button type="button" class="action-item" (click)="hideChat()">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  Удалить чат
+                </button>
+                @if (!selectedChat()!.isBlocked) {
+                  <button type="button" class="action-item action-danger" (click)="blockUser()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    Заблокировать
+                  </button>
+                } @else {
+                  <button type="button" class="action-item action-success" (click)="unblockUser()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Разблокировать
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
 
@@ -168,30 +202,44 @@
                 }
               </div>
             }
-            <div class="message-bubble-wrap" [class.outgoing]="message.senderRole === 'client'">
+            <div class="message-bubble-wrap" [class.outgoing]="message.senderRole === 'client'"
+              (contextmenu)="openContextMenu($event, message)"
+              (touchstart)="onTouchStart($event, message)"
+              (touchend)="onTouchEnd()"
+              (touchmove)="onTouchEnd()">
+              @if (message.forwardedFromName) {
+                <div class="forwarded-label">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="12" height="12"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                  Переслано от {{ message.forwardedFromName }}
+                </div>
+              }
               @if (message.replyTo) {
                 <div class="reply-preview reply-preview--inline" [class.outgoing]="message.senderRole === 'client'">
                   <span class="reply-bar"></span>
                   <span class="reply-text">{{ replyLabel(message.replyTo) }}</span>
                 </div>
               }
-              <div class="message-bubble" [class.outgoing]="message.senderRole === 'client'">
-                @if (message.content) {
-                  <p class="message-text">{{ message.content }}</p>
-                }
-                @if (message.messageType === 'image' && message.fileUrl) {
-                  <img [src]="message.fileUrl" class="message-image" (click)="openLightbox(message.fileUrl)" alt="Изображение" />
-                }
-                @if (message.messageType === 'file' && message.fileUrl) {
-                  <a [href]="message.fileUrl" target="_blank" class="message-file">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
-                    <span>Скачать файл</span>
-                  </a>
-                }
-                @if (message.messageType === 'audio' && message.fileUrl) {
-                  <audio controls [src]="message.fileUrl" class="message-audio"></audio>
+              <div class="message-bubble" [class.outgoing]="message.senderRole === 'client'" [class.deleted]="message.isDeleted">
+                @if (message.isDeleted) {
+                  <p class="message-text deleted-text">🚫 Сообщение удалено</p>
+                } @else {
+                  @if (message.content) {
+                    <p class="message-text">{{ message.content }}</p>
+                  }
+                  @if (message.messageType === 'image' && message.fileUrl) {
+                    <img [src]="message.fileUrl" class="message-image" (click)="openLightbox(message.fileUrl)" alt="Изображение" />
+                  }
+                  @if (message.messageType === 'file' && message.fileUrl) {
+                    <a [href]="message.fileUrl" target="_blank" class="message-file">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                      </svg>
+                      <span>Скачать файл</span>
+                    </a>
+                  }
+                  @if (message.messageType === 'audio' && message.fileUrl) {
+                    <audio controls [src]="message.fileUrl" class="message-audio"></audio>
+                  }
                 }
                 <div class="message-meta">
                   <span class="message-time">{{ message.timestamp | dateFormat:'time' }}</span>
@@ -202,11 +250,39 @@
                   }
                 </div>
               </div>
-              <button type="button" class="reply-action-btn" (click)="setReply(message)" title="Ответить">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/>
-                </svg>
-              </button>
+              @if (!message.isDeleted) {
+                <!-- Context menu trigger on right-click or long-press -->
+                @if (contextMenuMsg()?.id === message.id) {
+                  <div class="ctx-backdrop" (click)="closeContextMenu()"></div>
+                  <div class="context-menu" [style.top.px]="contextMenuPos().y" [style.left.px]="contextMenuPos().x">
+                    <button type="button" class="ctx-item" (click)="setReply(message); closeContextMenu()">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+                      Ответить
+                    </button>
+                    <button type="button" class="ctx-item" (click)="forwardMessage(message); closeContextMenu()">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 5l7 7-7 7M5 5l7 7-7 7"/></svg>
+                      Переслать
+                    </button>
+                    @if (message.content) {
+                      <button type="button" class="ctx-item" (click)="copyMessage(message); closeContextMenu()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/></svg>
+                        Копировать
+                      </button>
+                    }
+                    <div class="ctx-divider"></div>
+                    <button type="button" class="ctx-item" (click)="deleteMessageForSelf(message); closeContextMenu()">
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      Удалить для себя
+                    </button>
+                    @if (message.senderRole === 'client') {
+                      <button type="button" class="ctx-item ctx-danger" (click)="deleteMessageForAll(message); closeContextMenu()">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Удалить для всех
+                      </button>
+                    }
+                  </div>
+                }
+              }
             </div>
           </div>
         } @empty {
@@ -473,6 +549,51 @@
             </div>
           }
         }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Forward message modal -->
+@if (showForwardModal()) {
+  <div class="modal-overlay" (click)="showForwardModal.set(false)">
+    <div class="forward-modal" (click)="$event.stopPropagation()">
+      <div class="forward-header">
+        <h3>Переслать сообщение</h3>
+        <button type="button" class="modal-close-btn" (click)="showForwardModal.set(false)">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <div class="forward-list">
+        @for (chat of chats(); track chat.id) {
+          @if (chat.id !== selectedChat()?.id) {
+            <button type="button" class="forward-item" (click)="selectForwardChat(chat)">
+              <div class="forward-avatar">
+                @if (chat.masterAvatar) {
+                  <img [src]="chat.masterAvatar" [alt]="chat.masterName" />
+                } @else {
+                  <span>{{ (chat.masterName || '?').charAt(0) }}</span>
+                }
+              </div>
+              <span class="forward-name">{{ chat.masterName }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Confirm dialog -->
+@if (showConfirmDialog()) {
+  <div class="confirm-overlay" (click)="onConfirmCancel()">
+    <div class="confirm-dialog" (click)="$event.stopPropagation()">
+      <p class="confirm-text">{{ confirmDialogText() }}</p>
+      <div class="confirm-actions">
+        <button type="button" class="confirm-btn confirm-cancel" (click)="onConfirmCancel()">Отмена</button>
+        <button type="button" class="confirm-btn confirm-ok" (click)="onConfirmOk()">Да</button>
       </div>
     </div>
   </div>

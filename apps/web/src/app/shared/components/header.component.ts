@@ -27,11 +27,6 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
 
           <!-- Logo -->
           <div class="logo">
-            <div class="logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-              </svg>
-            </div>
             <span class="logo-text">Belvra</span>
           </div>
         </div>
@@ -129,9 +124,17 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       position: sticky;
       top: 0;
       z-index: 40;
-      background: var(--color-surface-primary);
-      border-bottom: 1px solid var(--color-border-secondary);
+      background: rgba(15, 10, 30, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
       padding-top: env(safe-area-inset-top, 0px);
+      animation: fadeInDown 0.3s ease-out;
+    }
+
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .header-content {
@@ -194,50 +197,21 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     .logo {
       display: flex;
       align-items: center;
-      gap: 8px;
-    }
-
-    .logo-icon {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
-      border-radius: 8px;
-    }
-
-    @media (min-width: 768px) {
-      .logo-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-      }
-    }
-
-    .logo-icon svg {
-      width: 18px;
-      height: 18px;
-      color: white;
-    }
-
-    @media (min-width: 768px) {
-      .logo-icon svg {
-        width: 20px;
-        height: 20px;
-      }
     }
 
     .logo-text {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--color-text-primary);
-      letter-spacing: -0.025em;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, #A855F7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     @media (min-width: 768px) {
       .logo-text {
-        font-size: 18px;
+        font-size: 22px;
       }
     }
 
@@ -339,17 +313,15 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
       top: calc(100% + 8px);
       right: 0;
       width: 260px;
-      background: var(--color-surface-primary);
-      border: 1px solid var(--color-border-secondary);
+      background: rgba(20, 14, 40, 0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(124, 58, 237, 0.12);
       border-radius: 16px;
-      box-shadow: 0 10px 40px -4px rgba(0, 0, 0, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+      box-shadow: 0 10px 40px -4px rgba(0, 0, 0, 0.5), 0 4px 12px -2px rgba(0, 0, 0, 0.3), 0 0 30px rgba(124, 58, 237, 0.06);
       padding: 6px;
       z-index: 50;
       animation: dropdownIn 0.15s ease;
-    }
-
-    :host-context(.dark) .dropdown-menu {
-      box-shadow: 0 10px 40px -4px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.2);
     }
 
     @keyframes dropdownIn {
@@ -442,17 +414,12 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     }
 
     .dropdown-item-switch {
-      color: var(--color-brand-600);
+      color: #A855F7;
     }
 
     .dropdown-item-switch:hover {
-      background: rgba(var(--color-brand-rgb, 139, 92, 246), 0.08);
-      color: var(--color-brand-700);
-    }
-
-    :host-context(.dark) .dropdown-item-switch:hover {
-      background: rgba(var(--color-brand-rgb, 139, 92, 246), 0.15);
-      color: var(--color-brand-400);
+      background: rgba(124, 58, 237, 0.12);
+      color: #c084fc;
     }
 
     .dropdown-item-danger {
@@ -460,8 +427,8 @@ import { NotificationBellComponent } from './notification-bell/notification-bell
     }
 
     .dropdown-item-danger:hover {
-      background: rgba(239, 68, 68, 0.08);
-      color: #dc2626;
+      background: rgba(239, 68, 68, 0.1);
+      color: #f87171;
     }
 
     :host-context(.dark) .dropdown-item-danger:hover {

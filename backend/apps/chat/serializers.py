@@ -17,6 +17,8 @@ class ChatMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
     file_url = serializers.SerializerMethodField()
     reply_to = ReplyMessageSerializer(read_only=True)
+    is_deleted = serializers.SerializerMethodField()
+    forwarded_from_name = serializers.CharField(read_only=True)
 
     class Meta:
         model = ChatMessage
@@ -31,17 +33,33 @@ class ChatMessageSerializer(serializers.ModelSerializer):
             "file_url",
             "is_read",
             "reply_to",
+            "is_deleted",
+            "forwarded_from_name",
             "created_at",
         ]
         read_only_fields = ["id", "sender", "sender_name", "is_read", "created_at"]
 
+    def get_is_deleted(self, obj):
+        return obj.is_deleted_for_all
+
     def get_file_url(self, obj):
+        if obj.is_deleted_for_all:
+            return None
         if not obj.file:
             return None
         request = self.context.get("request")
         if request:
             return request.build_absolute_uri(obj.file.url)
         return obj.file.url
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        # If deleted for all, mask content
+        if instance.is_deleted_for_all:
+            data["content"] = ""
+            data["file_url"] = None
+            data["message_type"] = "text"
+        return data
 
 
 class ChatMessageCreateSerializer(serializers.Serializer):
@@ -65,9 +83,14 @@ class ChatSerializer(serializers.ModelSerializer):
     master_id = serializers.UUIDField(source="master.id", read_only=True)
     master_name = serializers.CharField(source="master.user.full_name", read_only=True)
     master_avatar = serializers.ImageField(source="master.user.avatar", read_only=True)
+    master_is_online = serializers.BooleanField(source="master.user.is_online", read_only=True)
+    master_last_seen = serializers.DateTimeField(source="master.user.last_seen", read_only=True)
     client_id = serializers.UUIDField(source="client.id", read_only=True)
     client_name = serializers.CharField(source="client.full_name", read_only=True)
     client_avatar = serializers.ImageField(source="client.avatar", read_only=True)
+    client_is_online = serializers.BooleanField(source="client.is_online", read_only=True)
+    client_last_seen = serializers.DateTimeField(source="client.last_seen", read_only=True)
+    is_blocked = serializers.SerializerMethodField()
     last_message = serializers.SerializerMethodField()
     last_message_time = serializers.SerializerMethodField()
     unread_count = serializers.SerializerMethodField()
@@ -79,9 +102,14 @@ class ChatSerializer(serializers.ModelSerializer):
             "master_id",
             "master_name",
             "master_avatar",
+            "master_is_online",
+            "master_last_seen",
             "client_id",
             "client_name",
             "client_avatar",
+            "client_is_online",
+            "client_last_seen",
+            "is_blocked",
             "last_message",
             "last_message_time",
             "unread_count",
@@ -89,6 +117,18 @@ class ChatSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def get_is_blocked(self, obj):
+        from apps.users.models import BlockedUser
+        request = self.context.get("request")
+        if not request or not request.user.is_authenticated:
+            return False
+        user = request.user
+        if hasattr(user, "master_profile") and obj.master == user.master_profile:
+            other = obj.client
+        else:
+            other = obj.master.user
+        return BlockedUser.objects.filter(blocker=user, blocked=other).exists()
 
     def get_last_message(self, obj):
         last_msg = obj.last_message

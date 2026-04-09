@@ -1,8 +1,106 @@
-<div class="finances-page animate-fadeInUp">
+<div class="finances-page" [class.animate-ready]="animateReady()">
+
+  <!-- Underwater Background -->
+  <div class="ocean-bg">
+    <div class="bubble b1"></div>
+    <div class="bubble b2"></div>
+    <div class="bubble b3"></div>
+    <div class="bubble b4"></div>
+    <div class="bubble b5"></div>
+    <div class="bubble b6"></div>
+    <div class="bubble b7"></div>
+    <div class="bubble b8"></div>
+    <div class="bubble b9"></div>
+    <div class="bubble b10"></div>
+    <div class="bubble b11"></div>
+    <div class="bubble b12"></div>
+    <div class="light-ray ray-1"></div>
+    <div class="light-ray ray-2"></div>
+    <div class="light-ray ray-3"></div>
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+    <div class="particle p4"></div>
+    <div class="particle p5"></div>
+    <div class="fish fish-1">🐠</div>
+    <div class="fish fish-2">🐟</div>
+    <div class="fish fish-3">🐡</div>
+    <div class="fish fish-4">🐠</div>
+    <div class="fish fish-5">🐟</div>
+    <!-- Sea floor -->
+    <div class="sea-floor">
+      <div class="sand"></div>
+      <div class="sand-ripple r1"></div>
+      <div class="sand-ripple r2"></div>
+      <div class="sand-ripple r3"></div>
+      <!-- Rocks -->
+      <div class="rock rock-1"></div>
+      <div class="rock rock-2"></div>
+      <div class="rock rock-3"></div>
+      <div class="rock rock-4"></div>
+      <div class="rock rock-5"></div>
+      <!-- Corals -->
+      <div class="coral-group cg-1">
+        <div class="coral-branch cb-1"></div>
+        <div class="coral-branch cb-2"></div>
+        <div class="coral-branch cb-3"></div>
+      </div>
+      <div class="coral-group cg-2">
+        <div class="coral-branch cb-4"></div>
+        <div class="coral-branch cb-5"></div>
+      </div>
+      <div class="coral-group cg-3">
+        <div class="coral-branch cb-6"></div>
+        <div class="coral-branch cb-7"></div>
+        <div class="coral-branch cb-8"></div>
+      </div>
+      <!-- Anemones -->
+      <div class="anemone an-1">
+        <div class="tentacle t1"></div>
+        <div class="tentacle t2"></div>
+        <div class="tentacle t3"></div>
+        <div class="tentacle t4"></div>
+        <div class="tentacle t5"></div>
+      </div>
+      <div class="anemone an-2">
+        <div class="tentacle t1"></div>
+        <div class="tentacle t2"></div>
+        <div class="tentacle t3"></div>
+        <div class="tentacle t4"></div>
+      </div>
+      <!-- Seaweed -->
+      <div class="kelp kelp-1"></div>
+      <div class="kelp kelp-2"></div>
+      <div class="kelp kelp-3"></div>
+      <div class="kelp kelp-4"></div>
+      <div class="kelp kelp-5"></div>
+      <!-- Shells & starfish -->
+      <div class="shell shell-1">🐚</div>
+      <div class="shell shell-2">⭐</div>
+      <div class="shell shell-3">🐚</div>
+    </div>
+  </div>
+
+  <!-- Header -->
   <header class="page-header">
-    <div>
-      <h1 class="page-title">Финансы</h1>
-      <p class="page-subtitle">Финансовый учет и транзакции</p>
+    <div class="header-left">
+      <h1 class="page-title">{{ headerTitle() }}</h1>
+      <p class="page-subtitle">Аналитика и финансовый учет</p>
+    </div>
+    <div class="header-actions">
+      <div class="period-tabs">
+        <button class="period-tab" [class.active]="activePeriod() === 'week'" (click)="switchPeriod('week')">Неделя</button>
+        <button class="period-tab" [class.active]="activePeriod() === 'month'" (click)="switchPeriod('month')">Месяц</button>
+        <button class="period-tab" [class.active]="activePeriod() === 'year'" (click)="switchPeriod('year')">Год</button>
+      </div>
+      <button class="btn-export" (click)="exportData()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Экспорт
+      </button>
     </div>
   </header>
 
@@ -10,77 +108,221 @@
     <div class="loading-container">
       <div class="spinner spinner-lg"></div>
     </div>
-  } @else {
-    <!-- Summary Cards -->
+  } @else if (analytics(); as a) {
+
+    <!-- 4 Stat Cards -->
     <div class="stats-grid">
-      <!-- Total Profit -->
-      <div class="stat-card">
-        <div class="stat-icon stat-icon-success">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+      <div class="stat-card stat-card-0">
+        <div class="stat-icon stat-icon-income">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Общая прибыль</span>
-          <span class="stat-value">{{ summary().totalProfit | currencyRub }}</span>
+          <span class="stat-label">Доход</span>
+          <span class="stat-value count-up">{{ a.total_income | currencyRub }}</span>
+          @if (a.comparison.change_percent !== 0) {
+            <span class="stat-change" [class.positive]="a.comparison.change_percent > 0" [class.negative]="a.comparison.change_percent < 0">
+              {{ a.comparison.change_percent > 0 ? '+' : '' }}{{ a.comparison.change_percent | number:'1.1-1' }}%
+            </span>
+          }
         </div>
       </div>
 
-      <!-- Pending -->
-      <div class="stat-card">
-        <div class="stat-icon stat-icon-warning">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      <div class="stat-card stat-card-1">
+        <div class="stat-icon stat-icon-expense">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 17l5-5-5-5M6 17l5-5-5-5"/>
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">В ожидании</span>
-          <span class="stat-value">{{ summary().pendingAmount | currencyRub }}</span>
+          <span class="stat-label">Расходы</span>
+          <span class="stat-value count-up">{{ a.total_expenses | currencyRub }}</span>
+          <span class="stat-detail">Материалы: {{ a.materials_cost | currencyRub }}</span>
         </div>
       </div>
 
-      <!-- Last Payout -->
-      <div class="stat-card">
-        <div class="stat-icon stat-icon-info">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+      <div class="stat-card stat-card-2">
+        <div class="stat-icon stat-icon-profit">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
           </svg>
         </div>
         <div class="stat-content">
-          <span class="stat-label">Последняя выплата</span>
-          <span class="stat-value">{{ summary().lastPayout | currencyRub }}</span>
+          <span class="stat-label">Чистая прибыль</span>
+          <span class="stat-value count-up text-success">{{ a.net_profit | currencyRub }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card stat-card-3">
+        <div class="stat-icon stat-icon-check">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+            <line x1="1" y1="10" x2="23" y2="10"/>
+          </svg>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Средний чек</span>
+          <span class="stat-value count-up">{{ a.avg_check | currencyRub }}</span>
+          <span class="stat-detail">{{ a.appointments_count }} записей</span>
         </div>
       </div>
     </div>
 
-    <!-- Info Banner -->
-    <div class="info-banner">
-      <svg class="w-5 h-5 info-icon" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-      </svg>
-      <div>
-        <p class="info-title">Как рассчитывается прибыль?</p>
-        <p class="info-text">
-          Чистая прибыль = Цена услуги - Стоимость материалов
-        </p>
+    <!-- Goal Progress -->
+    @if (a.goal) {
+      <div class="glass-card goal-card">
+        <div class="goal-header">
+          <h3 class="section-title">Цель на месяц</h3>
+          <span class="goal-percent">{{ a.goal.progress_percent }}%</span>
+        </div>
+        <div class="goal-bar-container">
+          <div class="goal-bar-track">
+            <div class="goal-bar-fill" [style.--target-width]="a.goal.progress_percent + '%'"></div>
+          </div>
+        </div>
+        <div class="goal-details">
+          <span class="goal-current">{{ a.goal.current | currencyRub }} из {{ a.goal.target | currencyRub }}</span>
+          <span class="goal-forecast">
+            Прогноз: {{ a.goal.forecast | currencyRub }} · Нужно {{ a.goal.daily_needed | currencyRub }}/день
+          </span>
+          <span class="goal-days">Осталось {{ a.goal.days_left }} дней</span>
+        </div>
+      </div>
+    }
+
+    <!-- Charts Row -->
+    <div class="two-col-grid">
+      <!-- Bar Chart: Income by Day -->
+      <div class="glass-card chart-card">
+        <h3 class="section-title">Доход по дням</h3>
+        @if (a.chart_data.length > 0) {
+          <div class="bar-chart">
+            <div class="bar-chart-area">
+              @for (point of a.chart_data; track point.date; let i = $index) {
+                <div class="bar-column" [style.--bar-delay]="(i * 30) + 'ms'">
+                  <div class="bar-tooltip">{{ point.income | currencyRub }}</div>
+                  <div class="bar" [style.--bar-height]="getBarHeight(point.income) + '%'"></div>
+                  <span class="bar-label">{{ point.label || getShortDate(point.date) }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="chart-empty">Нет данных за период</div>
+        }
+      </div>
+
+      <!-- Donut Chart: Top Services -->
+      <div class="glass-card chart-card">
+        <h3 class="section-title">Топ услуги</h3>
+        @if (donutSegments().length > 0) {
+          <div class="donut-layout">
+            <svg class="donut-svg" viewBox="0 0 160 160">
+              @if (donutSegments().length === 1) {
+                <circle cx="80" cy="80" r="60" [attr.fill]="donutSegments()[0].color" opacity="0.85"/>
+              } @else {
+                @for (seg of donutSegments(); track seg.name) {
+                  <path [attr.d]="getDonutPath(seg.startAngle, seg.endAngle)" [attr.fill]="seg.color" opacity="0.85"/>
+                }
+              }
+              <circle cx="80" cy="80" r="35" fill="#0f0a1e"/>
+              <text x="80" y="76" text-anchor="middle" fill="#f0edf6" font-size="14" font-weight="700">
+                {{ a.total_income | currencyRub:false }}
+              </text>
+              <text x="80" y="92" text-anchor="middle" fill="#a09bb0" font-size="9">
+                всего
+              </text>
+            </svg>
+            <div class="donut-legend">
+              @for (seg of donutSegments(); track seg.name) {
+                <div class="legend-item">
+                  <span class="legend-dot" [style.background]="seg.color"></span>
+                  <span class="legend-name">{{ seg.name }}</span>
+                  <span class="legend-value">{{ seg.income | currencyRub }} ({{ seg.percent }}%)</span>
+                </div>
+              }
+            </div>
+          </div>
+        } @else {
+          <div class="chart-empty">Нет данных за период</div>
+        }
       </div>
     </div>
+
+    <!-- Expenses + Top Clients Row -->
+    <div class="two-col-grid">
+      <!-- Expenses by Category -->
+      <div class="glass-card">
+        <div class="section-header">
+          <h3 class="section-title">Расходы по категориям</h3>
+          <button class="btn-add-expense" (click)="openExpenseModal()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Добавить расход
+          </button>
+        </div>
+        @if (a.expense_breakdown.length > 0) {
+          <div class="expense-list">
+            @for (exp of a.expense_breakdown; track exp.category; let i = $index) {
+              <div class="expense-item" [style.--item-delay]="(i * 40) + 'ms'">
+                <span class="expense-icon">{{ categoryIcons[exp.category] || '📦' }}</span>
+                <div class="expense-info">
+                  <span class="expense-name">{{ categoryLabels[exp.category] || exp.category }}</span>
+                  <span class="expense-amount">{{ exp.total | currencyRub }}</span>
+                </div>
+                <div class="expense-bar-track">
+                  <div class="expense-bar-fill" [style.width]="(a.total_expenses > 0 ? exp.total / a.total_expenses * 100 : 0) + '%'"></div>
+                </div>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="no-data-text">Расходы не найдены</p>
+        }
+      </div>
+
+      <!-- Top Clients -->
+      <div class="glass-card">
+        <h3 class="section-title">Топ клиенты</h3>
+        @if (a.top_clients.length > 0) {
+          <div class="clients-list">
+            @for (client of a.top_clients; track client.name; let i = $index) {
+              <div class="client-item" [style.--client-delay]="(i * 80) + 'ms'">
+                <div class="client-avatar">{{ client.name.charAt(0) }}</div>
+                <div class="client-info">
+                  <span class="client-name">{{ client.name }}</span>
+                  <span class="client-visits">{{ client.visits }} визитов</span>
+                </div>
+                <span class="client-spent">{{ client.total_spent | currencyRub }}</span>
+              </div>
+            }
+          </div>
+        } @else {
+          <p class="no-data-text">Нет данных о клиентах</p>
+        }
+      </div>
+    </div>
+
+    <!-- Tax Card -->
+    @if (a.tax) {
+      <div class="glass-card tax-card">
+        <div class="tax-icon">🧾</div>
+        <div class="tax-content">
+          <h3 class="section-title">Налоги</h3>
+          <p class="tax-system">{{ taxLabels[a.tax.system] || a.tax.label }} · Ставка {{ a.tax.rate * 100 }}%</p>
+          <p class="tax-amount">Отложить: <strong>{{ a.tax.amount | currencyRub }}</strong></p>
+        </div>
+      </div>
+    }
 
     <!-- Transactions Table -->
-    @if (transactions().length === 0) {
-      <div class="empty-state">
-        <div class="empty-state-icon">
-          <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-          </svg>
-        </div>
-        <h3 class="empty-state-title">Нет транзакций</h3>
-        <p class="empty-state-desc">Транзакции появятся после завершения записей</p>
-      </div>
-    } @else {
-      <div class="card table-card">
+    @if (transactions().length > 0) {
+      <div class="glass-card table-card">
         <div class="card-header">
-          <h3 class="card-title">История транзакций</h3>
+          <h3 class="section-title">Последние транзакции</h3>
         </div>
         <div class="table-scroll">
           <table class="table">
@@ -125,5 +367,65 @@
         </div>
       </div>
     }
+
   }
 </div>
+
+<!-- Expense Modal -->
+@if (showExpenseModal()) {
+  <div class="modal-overlay" (click)="closeExpenseModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="modal-title">Добавить расход</h3>
+        <button class="modal-close" (click)="closeExpenseModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Сумма (₽)</label>
+          <input type="number" class="form-input" [(ngModel)]="newExpense.amount" placeholder="0" min="1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Категория</label>
+          <select class="form-input" [(ngModel)]="newExpense.category">
+            @for (cat of categories; track cat) {
+              <option [value]="cat">{{ categoryIcons[cat] }} {{ categoryLabels[cat] }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Описание</label>
+          <input type="text" class="form-input" [(ngModel)]="newExpense.description" placeholder="Описание расхода">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Дата</label>
+          <input type="date" class="form-input" [(ngModel)]="newExpense.date">
+        </div>
+        <div class="form-group form-checkbox-group">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="newExpense.is_recurring">
+            <span class="check-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </span>
+            <span>Повторяющийся расход</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" (click)="closeExpenseModal()">Отмена</button>
+        <button class="btn-save" (click)="saveExpense()" [disabled]="expenseSaving() || !newExpense.amount">
+          @if (expenseSaving()) {
+            <span class="spinner spinner-sm"></span>
+          }
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+}

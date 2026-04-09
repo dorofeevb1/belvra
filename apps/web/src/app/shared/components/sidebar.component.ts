@@ -26,11 +26,6 @@ export interface NavItem {
       <!-- Logo Section (Desktop) -->
       <div class="sidebar-logo">
         <div class="logo">
-          <div class="logo-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-            </svg>
-          </div>
           <span class="logo-text">Belvra</span>
         </div>
         <button class="close-btn" (click)="close.emit()" type="button" aria-label="Закрыть меню">
@@ -266,30 +261,16 @@ export interface NavItem {
     .logo {
       display: flex;
       align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 36px;
-      height: 36px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
-      border-radius: 10px;
-    }
-
-    .logo-icon svg {
-      width: 20px;
-      height: 20px;
-      color: white;
     }
 
     .logo-text {
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--color-text-primary);
-      letter-spacing: -0.025em;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, #A855F7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
 
     .sidebar-nav {
@@ -323,22 +304,35 @@ export interface NavItem {
       color: var(--color-text-secondary);
       border-radius: 10px;
       text-decoration: none;
-      transition: all 0.15s ease;
+      transition: all 0.2s ease;
+      border-left: 3px solid transparent;
+      animation: fadeInUp 0.3s ease-out both;
     }
 
+    .nav-item:nth-child(2) { animation-delay: 40ms; }
+    .nav-item:nth-child(3) { animation-delay: 80ms; }
+    .nav-item:nth-child(4) { animation-delay: 120ms; }
+    .nav-item:nth-child(5) { animation-delay: 160ms; }
+    .nav-item:nth-child(6) { animation-delay: 200ms; }
+    .nav-item:nth-child(7) { animation-delay: 240ms; }
+    .nav-item:nth-child(8) { animation-delay: 280ms; }
+    .nav-item:nth-child(9) { animation-delay: 320ms; }
+
     .nav-item:hover {
-      background: var(--color-surface-hover);
+      background: rgba(255, 255, 255, 0.06);
       color: var(--color-text-primary);
+      transform: translateX(4px);
     }
 
     .nav-item.active {
-      background: var(--color-brand-50);
-      color: var(--color-brand-600);
+      background: rgba(124, 58, 237, 0.1);
+      color: #A855F7;
+      border-left-color: #7C3AED;
     }
 
-    :host-context(.dark) .nav-item.active {
-      background: rgba(236, 72, 153, 0.15);
-      color: var(--color-brand-400);
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .nav-item-icon {
@@ -398,7 +392,7 @@ export interface NavItem {
     }
 
     :host-context(.dark) .upgrade-icon {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
     }
 
     .upgrade-icon svg {
@@ -434,7 +428,7 @@ export interface NavItem {
 
     .upgrade-btn:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(236, 72, 153, 0.35);
+      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.35);
     }
 
     /* PRO Status Card */
@@ -588,7 +582,7 @@ export interface NavItem {
     }
 
     :host-context(.dark) .pro-status {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
       color: var(--color-brand-400);
     }
 
@@ -648,7 +642,7 @@ export interface NavItem {
 
     .pro-subscribe-btn:not(:disabled):hover {
       transform: translateY(-2px);
-      box-shadow: 0 8px 20px rgba(236, 72, 153, 0.4);
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.4);
     }
 
     .pro-subscribe-btn:disabled {

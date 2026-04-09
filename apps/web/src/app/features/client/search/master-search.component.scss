@@ -68,7 +68,7 @@
 }
 
 :host-context(.dark) .search-input:focus {
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
 .search-btn {
@@ -236,7 +236,7 @@
 }
 
 :host-context(.dark) .master-avatar-placeholder {
-  background: rgba(236, 72, 153, 0.2);
+  background: rgba(124, 58, 237, 0.2);
 
   span {
     color: var(--color-brand-400);
@@ -466,7 +466,7 @@
 
 .pro-badge {
   display: inline-block;
-  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  background: linear-gradient(135deg, #7c3aed, #7C3AED);
   color: white;
   font-size: 0.625rem;
   font-weight: 700;

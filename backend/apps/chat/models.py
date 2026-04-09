@@ -21,6 +21,12 @@ class Chat(BaseModel):
         verbose_name="Клиент"
     )
     is_active = models.BooleanField(default=True, verbose_name="Активен")
+    hidden_for = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="hidden_chats",
+        verbose_name="Скрыт для"
+    )
 
     class Meta:
         verbose_name = "Чат"
@@ -106,6 +112,25 @@ class ChatMessage(BaseModel):
         related_name='replies',
         verbose_name="Ответ на сообщение"
     )
+
+    # Soft delete
+    is_deleted_for_all = models.BooleanField(default=False)
+    hidden_for = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name="hidden_messages"
+    )
+
+    # Forward
+    forwarded_from = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='forwards',
+        verbose_name="Переслано из"
+    )
+    forwarded_from_name = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
         verbose_name = "Сообщение"

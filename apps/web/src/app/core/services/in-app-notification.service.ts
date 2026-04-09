@@ -158,7 +158,7 @@ export class InAppNotificationService {
       'review_new': '#eab308',
       'payment_received': '#22c55e',
       'payment_refunded': '#6366f1',
-      'chat_message': '#ec4899',
+      'chat_message': '#7C3AED',
       'system': '#6b7280'
     };
     return colors[type] || '#6b7280';

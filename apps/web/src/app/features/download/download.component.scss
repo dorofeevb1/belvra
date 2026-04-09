@@ -12,7 +12,7 @@ $transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
 :host {
   display: block;
-  font-family: $font-body;
+  font-family: inherit;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -86,7 +86,7 @@ $transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: $radius-lg;
   cursor: pointer;
   transition: all $transition;
-  font-family: $font-body;
+  font-family: inherit;
 
   &:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -124,7 +124,7 @@ $transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   background: none;
   border: none;
   color: $color-text-muted;
-  font-family: $font-body;
+  font-family: inherit;
   font-size: 15px;
   cursor: pointer;
   padding: 8px 0;
@@ -223,7 +223,7 @@ $transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 18px 48px;
   background: linear-gradient(135deg, #3DDC84, #2BA562);
   color: #fff;
-  font-family: $font-body;
+  font-family: inherit;
   font-size: 18px;
   font-weight: 700;
   border: none;

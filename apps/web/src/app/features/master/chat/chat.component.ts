@@ -6,7 +6,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { PickerComponent } from '@ctrl/ngx-emoji-mart';
 import { Subject, debounceTime, takeUntil } from 'rxjs';
-import { AuthService, DataService, AIService } from '../../../core/services';
+import { AuthService, DataService, AIService, ApiService } from '../../../core/services';
 import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, AISuggestion, ReplyPreview } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
@@ -39,6 +39,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private aiService = inject(AIService);
+  private api = inject(ApiService);
   private inAppNotifications = inject(InAppNotificationService);
 
   // ── Core state
@@ -58,6 +59,7 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   showEmojiPanel = signal(false);
   showTemplates = signal(false);
   showSearch = signal(false);
+  showActionMenu = signal(false);
 
   // ── Search
   searchQuery = '';
@@ -529,4 +531,62 @@ export class ChatComponent implements OnInit, OnDestroy, AfterViewChecked {
   }
 
   openImageFullscreen(url: string): void { this.openLightbox(url); }
+
+  // ── Chat actions
+  hideChat(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    if (!confirm('Чат будет скрыт. Если собеседник напишет — чат появится снова.')) return;
+    this.showActionMenu.set(false);
+    this.api.post(`/chats/${chat.id}/hide/`, {}).subscribe(() => {
+      this.selectedChat.set(null);
+      this.chats.update(chats => chats.filter(c => c.id !== chat.id));
+    });
+  }
+
+  blockUser(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    if (!confirm('Пользователь не сможет отправлять вам сообщения и записываться.')) return;
+    this.showActionMenu.set(false);
+    this.api.post(`/chats/${chat.id}/block/`, {}).subscribe(() => {
+      this.selectedChat.update(c => c ? { ...c, isBlocked: true } : null);
+    });
+  }
+
+  unblockUser(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.showActionMenu.set(false);
+    this.api.post(`/chats/${chat.id}/unblock/`, {}).subscribe(() => {
+      this.selectedChat.update(c => c ? { ...c, isBlocked: false } : null);
+    });
+  }
+
+  formatLastSeen(date: string | null | undefined): string {
+    if (!date) return '';
+    const now = new Date();
+    const seen = new Date(date);
+    const diff = now.getTime() - seen.getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+
+    if (mins < 1) return 'был(а) только что';
+    if (mins < 60) return `был(а) ${mins} мин назад`;
+    if (hours < 24) {
+      const h = seen.getHours().toString().padStart(2, '0');
+      const m = seen.getMinutes().toString().padStart(2, '0');
+      return `сегодня в ${h}:${m}`;
+    }
+    if (hours < 48) {
+      const h = seen.getHours().toString().padStart(2, '0');
+      const m = seen.getMinutes().toString().padStart(2, '0');
+      return `вчера в ${h}:${m}`;
+    }
+    const d = seen.getDate().toString().padStart(2, '0');
+    const mo = (seen.getMonth() + 1).toString().padStart(2, '0');
+    const h = seen.getHours().toString().padStart(2, '0');
+    const mi = seen.getMinutes().toString().padStart(2, '0');
+    return `${d}.${mo} в ${h}:${mi}`;
+  }
 }

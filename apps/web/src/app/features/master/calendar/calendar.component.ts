@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, OnDestroy, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AuthService, DataService, DateService } from '../../../core/services';
+import { AuthService, DataService, DateService, ApiService } from '../../../core/services';
 import { Appointment, TodoItem, APPOINTMENT_STATUS_COLORS, APPOINTMENT_STATUS_LABELS } from '../../../core/models';
 import { KanbanBoardComponent } from './kanban-board.component';
 import { ModalComponent } from '../../../shared/components/modal.component';
@@ -18,6 +18,7 @@ export class CalendarComponent implements OnInit, OnDestroy {
   private authService = inject(AuthService);
   private dataService = inject(DataService);
   private dateService = inject(DateService);
+  private apiService = inject(ApiService);
   private timeInterval: ReturnType<typeof setInterval> | null = null;
 
   viewMode = signal<'calendar' | 'kanban'>('calendar');
@@ -58,8 +59,11 @@ export class CalendarComponent implements OnInit, OnDestroy {
   isReschedulingReminder = signal(false);
   isRescheduling = signal(false);
 
-  timeSlots = Array.from({ length: 12 }, (_, i) => i + 9);
-  availableTimeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30', '18:00', '18:30', '19:00', '19:30', '20:00'];
+  // Dynamic time slots based on schedule (default 8-23, updated from API)
+  private _startHour = 8;
+  private _endHour = 23;
+  timeSlots = Array.from({ length: 15 }, (_, i) => i + 8);
+  availableTimeSlots = this.generateTimeSlots(8, 23);
 
   weekDays = computed(() => {
     const start = this.currentWeekStart();
@@ -108,9 +112,9 @@ export class CalendarComponent implements OnInit, OnDestroy {
     const hour = now.hour();
     const minute = now.minute();
 
-    if (hour < 9 || hour >= 21) return null;
+    if (hour < this._startHour || hour >= this._endHour) return null;
 
-    const rowIndex = hour - 9;
+    const rowIndex = hour - this._startHour;
     const pixelOffset = (minute / 60) * 64;
     return rowIndex * 64 + pixelOffset;
   });
@@ -143,6 +147,16 @@ export class CalendarComponent implements OnInit, OnDestroy {
     }, 60000);
   }
 
+  private generateTimeSlots(startHour: number, endHour: number): string[] {
+    const slots: string[] = [];
+    for (let h = startHour; h < endHour; h++) {
+      slots.push(`${h.toString().padStart(2, '0')}:00`);
+      slots.push(`${h.toString().padStart(2, '0')}:30`);
+    }
+    slots.push(`${endHour.toString().padStart(2, '0')}:00`);
+    return slots;
+  }
+
   private loadData(): void {
     const masterId = this.authService.masterApiId();
     if (!masterId) return;
@@ -157,6 +171,21 @@ export class CalendarComponent implements OnInit, OnDestroy {
 
     this.dataService.getTodos(masterId).subscribe(data => {
       this.allTodos.set(data);
+    });
+
+    // Load schedules to determine time range
+    this.apiService.get<any[]>('/appointments/schedules/').subscribe((schedules: any[]) => {
+      if (schedules && schedules.length > 0) {
+        const working = schedules.filter((s: any) => s.is_working);
+        if (working.length > 0) {
+          const minHour = Math.min(...working.map((s: any) => parseInt(s.start_time?.split(':')[0] || '9', 10)));
+          const maxHour = Math.max(...working.map((s: any) => parseInt(s.end_time?.split(':')[0] || '20', 10)));
+          this._startHour = minHour;
+          this._endHour = maxHour;
+          this.timeSlots = Array.from({ length: maxHour - minHour }, (_, i) => i + minHour);
+          this.availableTimeSlots = this.generateTimeSlots(minHour, maxHour);
+        }
+      }
     });
   }
 

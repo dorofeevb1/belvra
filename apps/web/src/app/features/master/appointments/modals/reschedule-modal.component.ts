@@ -138,7 +138,7 @@ import { Appointment } from '../../../../core/models';
     }
 
     :host-context(.dark) .info-icon {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
     }
 
     .info-icon svg {
@@ -226,7 +226,7 @@ import { Appointment } from '../../../../core/models';
     }
 
     :host-context(.dark) .calendar-day.today:not(.selected) {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
       color: var(--color-brand-400);
     }
 
@@ -320,7 +320,7 @@ import { Appointment } from '../../../../core/models';
     }
 
     :host-context(.dark) .time-slot.selected {
-      background: rgba(236, 72, 153, 0.15);
+      background: rgba(124, 58, 237, 0.15);
       color: var(--color-brand-400);
     }
 

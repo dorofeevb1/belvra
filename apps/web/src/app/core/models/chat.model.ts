@@ -16,6 +16,8 @@ export interface ChatMessage {
   fileUrl?: string;
   messageType?: 'text' | 'image' | 'file' | 'audio';
   replyTo?: ReplyPreview;
+  isDeleted?: boolean;
+  forwardedFromName?: string;
 }
 
 export interface Chat {
@@ -24,8 +26,13 @@ export interface Chat {
   clientId: string;
   clientName: string;
   clientAvatar?: string;
+  clientIsOnline?: boolean;
+  clientLastSeen?: string;
   masterName?: string;
   masterAvatar?: string;
+  masterIsOnline?: boolean;
+  masterLastSeen?: string;
+  isBlocked?: boolean;
   lastMessage?: string;
   lastMessageTime?: Date;
   unreadCount: number;

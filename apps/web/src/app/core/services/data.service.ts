@@ -627,8 +627,13 @@ export class DataService {
       clientId: chat.client_id,
       clientName: chat.client_name || 'Клиент',
       clientAvatar: chat.client_avatar,
+      clientIsOnline: chat.client_is_online || false,
+      clientLastSeen: chat.client_last_seen || null,
       masterName: chat.master_name || 'Мастер',
       masterAvatar: chat.master_avatar ? this.getFullMediaUrl(chat.master_avatar) : undefined,
+      masterIsOnline: chat.master_is_online || false,
+      masterLastSeen: chat.master_last_seen || null,
+      isBlocked: chat.is_blocked || false,
       lastMessage: chat.last_message,
       lastMessageTime: chat.last_message_time ? new Date(chat.last_message_time) : undefined,
       unreadCount: chat.unread_count || 0
@@ -652,6 +657,8 @@ export class DataService {
         senderRole: msg.reply_to.sender_role,
         messageType: msg.reply_to.message_type,
       } : undefined,
+      isDeleted: msg.is_deleted || false,
+      forwardedFromName: msg.forwarded_from_name || '',
     };
   }
 

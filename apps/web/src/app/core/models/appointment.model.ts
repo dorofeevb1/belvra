@@ -40,7 +40,7 @@ export const APPOINTMENT_STATUS_LABELS: Record<AppointmentStatus, string> = {
   completed: 'Завершена',
   cancelled: 'Отменена',
   rescheduled: 'Перенесена',
-  no_show: 'Клиент не пришёл'
+  no_show: 'Неявка'
 };
 
 export const APPOINTMENT_STATUS_COLORS: Record<AppointmentStatus, string> = {

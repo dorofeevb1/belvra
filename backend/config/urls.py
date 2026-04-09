@@ -25,6 +25,7 @@ urlpatterns = [
         path("chats/", include("apps.chat.urls")),
         path("todos/", include("apps.todo.urls")),
         path("ai/", include("apps.ai.urls")),
+        path("finances/", include("apps.finances.urls")),
     ])),
 
     # Health check

@@ -16,10 +16,20 @@ export class LandingPageComponent {
   @HostListener('window:scroll')
   onScroll(): void {
     this.headerSolid = window.scrollY > 50;
+    // Close menu on scroll
+    if (this.mobileMenuOpen) {
+      this.toggleMenu(false);
+    }
+  }
+
+  toggleMenu(state?: boolean): void {
+    this.mobileMenuOpen = state ?? !this.mobileMenuOpen;
+    // Block body scroll when menu is open
+    document.body.style.overflow = this.mobileMenuOpen ? 'hidden' : '';
   }
 
   scrollTo(id: string): void {
+    this.toggleMenu(false);
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    this.mobileMenuOpen = false;
   }
 }

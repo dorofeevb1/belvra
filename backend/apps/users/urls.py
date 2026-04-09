@@ -4,6 +4,8 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from .views import (
     BecomeMasterView,
+    BlockedListView,
+    BlockUserView,
     ChangePasswordView,
     ConsentStatusView,
     DeleteAccountView,
@@ -22,6 +24,7 @@ from .views import (
     SwitchRoleView,
     UploadAvatarView,
     UserProfileView,
+    UserStatusView,
     VerifyEmailView,
     WithdrawConsentView,
 )
@@ -51,5 +54,8 @@ urlpatterns = [
     path("legal/", LegalDocumentsView.as_view(), name="legal-documents"),
     path("consent/status/", ConsentStatusView.as_view(), name="consent-status"),
     path("consent/withdraw/", WithdrawConsentView.as_view(), name="consent-withdraw"),
+    path("blocked/", BlockedListView.as_view(), name="blocked-list"),
+    path("users/<uuid:user_id>/block/", BlockUserView.as_view(), name="block-user"),
+    path("users/<uuid:user_id>/status/", UserStatusView.as_view(), name="user-status"),
     path("", include(router.urls)),
 ]

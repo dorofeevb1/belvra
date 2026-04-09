@@ -43,7 +43,7 @@ export class PlatformService {
     try {
       // Setup status bar
       await StatusBar.setStyle({ style: Style.Light });
-      await StatusBar.setBackgroundColor({ color: '#ec4899' });
+      await StatusBar.setBackgroundColor({ color: '#7C3AED' });
 
       // Hide splash screen after app is ready
       await SplashScreen.hide();

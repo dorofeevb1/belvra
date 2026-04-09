@@ -136,7 +136,7 @@ import { TodoItem, TodoStatus, TODO_STATUS_LABELS, TODO_PRIORITY_COLORS } from '
 
       &.drag-over {
         border-color: var(--color-brand-400);
-        box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.15);
+        box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
       }
     }
 

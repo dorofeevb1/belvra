@@ -7,7 +7,7 @@ import { FormsModule } from '@angular/forms';
 import { PickerComponent } from '@ctrl/ngx-emoji-mart';
 import { ActivatedRoute } from '@angular/router';
 import { Subject, debounceTime, takeUntil } from 'rxjs';
-import { AuthService, DataService } from '../../../core/services';
+import { AuthService, DataService, ApiService } from '../../../core/services';
 import { InAppNotificationService } from '../../../core/services/in-app-notification.service';
 import { Chat, ChatMessage, Master, ReplyPreview } from '../../../core/models';
 import { DateFormatPipe } from '../../../shared/pipes/date-format.pipe';
@@ -20,7 +20,7 @@ const CLIENT_TEMPLATES = [
   { label: 'Подтверждение', text: 'Подтверждаю запись! Буду вовремя 🙏' },
   { label: 'Перенос', text: 'Могу я перенести запись на другое время?' },
   { label: 'Отмена', text: 'К сожалению, не смогу прийти. Извините!' },
-  { label: 'Спасибо', text: 'Спасибо большое! Очень довольна результатом 💖' },
+  { label: 'Спасибо', text: 'Спасибо большое! Очень доволен(а) результатом 💖' },
 ];
 
 @Component({
@@ -37,6 +37,7 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
 
   private authService = inject(AuthService);
   private dataService = inject(DataService);
+  private api = inject(ApiService);
   private route = inject(ActivatedRoute);
   private inAppNotifications = inject(InAppNotificationService);
 
@@ -90,6 +91,18 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
   private mediaRecorder: MediaRecorder | null = null;
   private audioChunks: Blob[] = [];
   private recordingTimer: ReturnType<typeof setInterval> | null = null;
+
+  // ── Action menu
+  showActionMenu = signal(false);
+
+  // ── Confirm dialog
+  showConfirmDialog = signal(false);
+  confirmDialogText = signal('');
+  confirmDialogAction = signal<(() => void) | null>(null);
+
+  // ── Context menu
+  contextMenuMsg = signal<ChatMessage | null>(null);
+  contextMenuPos = signal({ x: 0, y: 0 });
 
   // ── New chat modal
   showNewChatModal = signal(false);
@@ -488,5 +501,194 @@ export class ClientChatComponent implements OnInit, OnDestroy, AfterViewChecked 
     if (reply.messageType === 'audio') return '🎵 Голосовое';
     if (reply.messageType === 'file') return '📄 Файл';
     return reply.content;
+  }
+
+  // ── Long press for mobile
+  private longPressTimer: ReturnType<typeof setTimeout> | null = null;
+
+  onTouchStart(event: TouchEvent, message: ChatMessage): void {
+    this.longPressTimer = setTimeout(() => {
+      const touch = event.touches[0];
+      let x = touch.clientX;
+      let y = touch.clientY;
+      if (x + 200 > window.innerWidth) x = window.innerWidth - 210;
+      if (y + 250 > window.innerHeight) y = window.innerHeight - 260;
+      if (x < 10) x = 10;
+      if (y < 10) y = 10;
+      this.contextMenuMsg.set(message);
+      this.contextMenuPos.set({ x, y });
+      // Haptic feedback if available
+      if (navigator.vibrate) navigator.vibrate(30);
+    }, 500);
+  }
+
+  onTouchEnd(): void {
+    if (this.longPressTimer) {
+      clearTimeout(this.longPressTimer);
+      this.longPressTimer = null;
+    }
+  }
+
+  // ── Custom confirm dialog
+  private showConfirm(text: string, action: () => void): void {
+    this.confirmDialogText.set(text);
+    this.confirmDialogAction.set(action);
+    this.showConfirmDialog.set(true);
+  }
+
+  onConfirmOk(): void {
+    const action = this.confirmDialogAction();
+    this.showConfirmDialog.set(false);
+    if (action) action();
+  }
+
+  onConfirmCancel(): void {
+    this.showConfirmDialog.set(false);
+  }
+
+  // ── Context menu
+  openContextMenu(event: MouseEvent, message: ChatMessage): void {
+    event.preventDefault();
+    if (message.isDeleted) return;
+    // Position in viewport, clamped to not overflow
+    let x = event.clientX;
+    let y = event.clientY;
+    // Clamp right edge (menu ~200px wide)
+    if (x + 200 > window.innerWidth) x = window.innerWidth - 210;
+    // Clamp bottom edge (menu ~250px tall)
+    if (y + 250 > window.innerHeight) y = window.innerHeight - 260;
+    if (x < 10) x = 10;
+    if (y < 10) y = 10;
+    this.contextMenuMsg.set(message);
+    this.contextMenuPos.set({ x, y });
+  }
+
+  closeContextMenu(): void {
+    this.contextMenuMsg.set(null);
+  }
+
+  @HostListener('document:click')
+  onDocumentClick(): void {
+    if (this.contextMenuMsg()) this.closeContextMenu();
+    if (this.showActionMenu()) this.showActionMenu.set(false);
+  }
+
+  copyMessage(message: ChatMessage): void {
+    navigator.clipboard.writeText(message.content).catch(() => {});
+  }
+
+  // ── Message actions
+  deleteMessageForSelf(message: ChatMessage): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.api.post(`/chats/${chat.id}/delete-message/${message.id}/`, { mode: 'self' }).subscribe(() => {
+      this.messages.update(msgs => msgs.filter(m => m.id !== message.id));
+    });
+  }
+
+  deleteMessageForAll(message: ChatMessage): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.showConfirm('Сообщение будет удалено у всех участников чата.', () => {
+      this.api.post(`/chats/${chat.id}/delete-message/${message.id}/`, { mode: 'all' }).subscribe(() => {
+        this.messages.update(msgs => msgs.map(m =>
+          m.id === message.id ? { ...m, isDeleted: true, content: '', fileUrl: undefined } : m
+        ));
+      });
+    });
+  }
+
+  // Forward
+  showForwardModal = signal(false);
+  forwardingMessage = signal<ChatMessage | null>(null);
+
+  forwardMessage(message: ChatMessage): void {
+    const chats = this.chats().filter(c => c.id !== this.selectedChat()?.id);
+    if (chats.length === 0) {
+      // No other chats to forward to
+      return;
+    }
+    if (chats.length === 1) {
+      this.doForward(message, chats[0]);
+      return;
+    }
+    this.forwardingMessage.set(message);
+    this.showForwardModal.set(true);
+  }
+
+  selectForwardChat(chat: Chat): void {
+    const msg = this.forwardingMessage();
+    if (!msg) return;
+    this.doForward(msg, chat);
+    this.showForwardModal.set(false);
+    this.forwardingMessage.set(null);
+  }
+
+  private doForward(message: ChatMessage, targetChat: Chat): void {
+    const currentChat = this.selectedChat();
+    if (!currentChat) return;
+    this.api.post(`/chats/${currentChat.id}/forward-message/${message.id}/`, {
+      target_chat_id: targetChat.id
+    }).subscribe();
+  }
+
+  // ── Chat actions
+  hideChat(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.showActionMenu.set(false);
+    this.showConfirm('Чат будет скрыт. Если собеседник напишет — чат появится снова.', () => {
+      this.api.post(`/chats/${chat.id}/hide/`, {}).subscribe(() => {
+        this.selectedChat.set(null);
+        this.chats.update(chats => chats.filter(c => c.id !== chat.id));
+      });
+    });
+  }
+
+  blockUser(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.showActionMenu.set(false);
+    this.showConfirm('Пользователь не сможет отправлять вам сообщения и записываться.', () => {
+      this.api.post(`/chats/${chat.id}/block/`, {}).subscribe(() => {
+        this.selectedChat.update(c => c ? { ...c, isBlocked: true } : null);
+      });
+    });
+  }
+
+  unblockUser(): void {
+    const chat = this.selectedChat();
+    if (!chat) return;
+    this.showActionMenu.set(false);
+    this.api.post(`/chats/${chat.id}/unblock/`, {}).subscribe(() => {
+      this.selectedChat.update(c => c ? { ...c, isBlocked: false } : null);
+    });
+  }
+
+  formatLastSeen(date: string | null | undefined): string {
+    if (!date) return '';
+    const now = new Date();
+    const seen = new Date(date);
+    const diff = now.getTime() - seen.getTime();
+    const mins = Math.floor(diff / 60000);
+    const hours = Math.floor(diff / 3600000);
+
+    if (mins < 1) return 'был(а) только что';
+    if (mins < 60) return `был(а) ${mins} мин назад`;
+    if (hours < 24) {
+      const h = seen.getHours().toString().padStart(2, '0');
+      const m = seen.getMinutes().toString().padStart(2, '0');
+      return `был(а) сегодня в ${h}:${m}`;
+    }
+    if (hours < 48) {
+      const h = seen.getHours().toString().padStart(2, '0');
+      const m = seen.getMinutes().toString().padStart(2, '0');
+      return `был(а) вчера в ${h}:${m}`;
+    }
+    const d = seen.getDate().toString().padStart(2, '0');
+    const mo = (seen.getMonth() + 1).toString().padStart(2, '0');
+    const h = seen.getHours().toString().padStart(2, '0');
+    const mi = seen.getMinutes().toString().padStart(2, '0');
+    return `был(а) ${d}.${mo} в ${h}:${mi}`;
   }
 }

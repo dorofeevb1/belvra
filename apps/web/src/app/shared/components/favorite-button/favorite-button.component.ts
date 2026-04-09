@@ -45,30 +45,32 @@ import { NotificationService } from '../../../core/services/notification.service
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 8px 12px;
-      border: 1px solid #e5e7eb;
-      background: white;
-      border-radius: 8px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
       cursor: pointer;
-      color: #6b7280;
-      transition: all 0.2s;
+      color: #a09bb0;
+      transition: all 0.2s ease;
       font-size: 0.875rem;
+      font-weight: 500;
     }
 
     .favorite-btn:hover:not(:disabled) {
-      border-color: #ef4444;
-      color: #ef4444;
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #f87171;
+      background: rgba(239, 68, 68, 0.06);
     }
 
     .favorite-btn.is-favorite {
-      color: #ef4444;
-      border-color: #ef4444;
-      background: #fef2f2;
+      color: #f87171;
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.08);
     }
 
     .favorite-btn:disabled {
       cursor: not-allowed;
-      opacity: 0.6;
+      opacity: 0.5;
     }
 
     .favorite-btn svg {
@@ -98,8 +100,8 @@ import { NotificationService } from '../../../core/services/notification.service
     .spinner {
       width: 16px;
       height: 16px;
-      border: 2px solid #e5e7eb;
-      border-top-color: #ef4444;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: #f87171;
       border-radius: 50%;
       animation: spin 1s linear infinite;
     }

@@ -32,6 +32,9 @@
               } @else {
                 <span>{{ chat.clientName.charAt(0).toUpperCase() }}</span>
               }
+              @if (chat.clientIsOnline) {
+                <span class="online-dot"></span>
+              }
             </div>
             <div class="chat-info">
               <div class="chat-row">
@@ -86,8 +89,12 @@
             @if (isTypingOther()) {
               <span class="typing-dots"><span></span><span></span><span></span></span>
               <span>печатает...</span>
+            } @else if (selectedChat()!.clientIsOnline) {
+              <span class="status-dot online"></span>
+              <span class="status-online">Онлайн</span>
+            } @else if (selectedChat()!.clientLastSeen) {
+              <span>{{ formatLastSeen(selectedChat()!.clientLastSeen) }}</span>
             } @else {
-              <span class="status-dot"></span>
               <span>Клиент</span>
             }
           </p>
@@ -106,6 +113,33 @@
             </svg>
             <span>Записать</span>
           </button>
+          <!-- Action menu -->
+          <div class="action-menu-wrap">
+            <button type="button" class="hdr-btn" (click)="showActionMenu.set(!showActionMenu())" title="Действия">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
+              </svg>
+            </button>
+            @if (showActionMenu()) {
+              <div class="action-dropdown">
+                <button type="button" class="action-item" (click)="hideChat()">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                  Удалить чат
+                </button>
+                @if (!selectedChat()!.isBlocked) {
+                  <button type="button" class="action-item action-danger" (click)="blockUser()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                    Заблокировать
+                  </button>
+                } @else {
+                  <button type="button" class="action-item action-success" (click)="unblockUser()">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Разблокировать
+                  </button>
+                }
+              </div>
+            }
+          </div>
         </div>
       </div>
 

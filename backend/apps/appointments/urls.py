@@ -6,6 +6,8 @@ from .views import (
     AvailableSlotsView,
     ClientNoteViewSet,
     ClientStatsView,
+    ManualCreateView,
+    MyClientsView,
     ReviewViewSet,
     WorkScheduleViewSet,
 )
@@ -21,5 +23,7 @@ urlpatterns = [
     # available-slots must come before router to avoid conflict with "" path
     path("available-slots/", AvailableSlotsView.as_view(), name="available-slots"),
     path("client-stats/", ClientStatsView.as_view(), name="client-stats"),
+    path("manual-create/", ManualCreateView.as_view(), name="manual-create"),
+    path("my-clients/", MyClientsView.as_view(), name="my-clients"),
     path("", include(router.urls)),
 ]

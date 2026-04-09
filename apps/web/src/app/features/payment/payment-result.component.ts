@@ -529,7 +529,7 @@ export class PaymentResultComponent implements OnInit {
     id: i,
     x: `${Math.random() * 100}`,
     delay: `${Math.random() * 1.5 + 0.5}`,
-    color: ['#7c3aed', '#a855f7', '#22c55e', '#f59e0b', '#ec4899', '#06b6d4', '#fff'][Math.floor(Math.random() * 7)],
+    color: ['#7c3aed', '#a855f7', '#22c55e', '#f59e0b', '#7C3AED', '#06b6d4', '#fff'][Math.floor(Math.random() * 7)],
     rotation: `${Math.random() * 360}`,
     duration: `${Math.random() * 2 + 2.5}`
   }));

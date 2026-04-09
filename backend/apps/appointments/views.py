@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models import F, Q
 from django.utils import timezone
 from django_filters.rest_framework import DjangoFilterBackend
@@ -883,3 +883,132 @@ class ClientNoteViewSet(viewsets.ModelViewSet):
         if not sub or not sub.is_active or not sub.plan.client_notes_enabled:
             raise ValidationError("Заметки о клиентах доступны только на тарифе PRO")
         serializer.save()
+
+
+# ── Manual appointment creation by master ──────────────────────────────
+
+from apps.services.models import MasterService
+
+
+class ManualCreateView(APIView):
+    """Master creates appointment manually."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from .serializers import ManualCreateSerializer
+        serializer = ManualCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = request.user
+        if not hasattr(user, "master_profile"):
+            return Response({"detail": "Только для мастеров"}, status=status.HTTP_403_FORBIDDEN)
+
+        master = user.master_profile
+
+        # Get service
+        try:
+            master_service = MasterService.objects.get(id=data["master_service_id"], master=master)
+        except MasterService.DoesNotExist:
+            return Response({"detail": "Услуга не найдена"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Get client (optional)
+        client = None
+        if data.get("client_id"):
+            from apps.users.models import User
+            try:
+                client = User.objects.get(id=data["client_id"])
+            except User.DoesNotExist:
+                return Response({"detail": "Клиент не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Calculate end_time
+        from datetime import datetime, timedelta
+        duration = master_service.actual_duration
+        start_dt = datetime.combine(data["date"], data["start_time"])
+        end_dt = start_dt + timedelta(minutes=duration)
+        end_time = end_dt.time()
+
+        # Check slot availability
+        conflicts = Appointment.objects.filter(
+            master=master,
+            date=data["date"],
+            status__in=["pending", "confirmed"],
+        ).exclude(
+            end_time__lte=data["start_time"]
+        ).exclude(
+            start_time__gte=end_time
+        )
+        if conflicts.exists():
+            return Response({"detail": "Выбранное время занято"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Price
+        price = data.get("price") or master_service.actual_price
+
+        # Create appointment
+        appointment = Appointment.objects.create(
+            client=client,
+            client_name=data.get("client_name", client.first_name if client else ""),
+            client_surname=data.get("client_surname", client.last_name if client else ""),
+            master=master,
+            master_service=master_service,
+            service=master_service.service,
+            date=data["date"],
+            start_time=data["start_time"],
+            end_time=end_time,
+            price=price,
+            notes=data.get("notes", ""),
+            status=Appointment.Status.CONFIRMED,
+            created_by=Appointment.CreatedBy.MASTER,
+        )
+
+        from .serializers import AppointmentSerializer
+        return Response(
+            AppointmentSerializer(appointment).data,
+            status=status.HTTP_201_CREATED
+        )
+
+
+class MyClientsView(APIView):
+    """Search clients who have booked with this master before."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        if not hasattr(user, "master_profile"):
+            return Response([], status=status.HTTP_200_OK)
+
+        search = request.query_params.get("search", "").strip()
+        if len(search) < 2:
+            return Response([])
+
+        from apps.users.models import User
+        from django.db.models import Count
+
+        # Get unique client IDs who booked with this master
+        client_ids = Appointment.objects.filter(
+            master=user.master_profile,
+            client__isnull=False,
+        ).values_list("client_id", flat=True).distinct()
+
+        clients = User.objects.filter(
+            id__in=client_ids
+        ).filter(
+            models.Q(first_name__icontains=search) |
+            models.Q(last_name__icontains=search) |
+            models.Q(email__icontains=search)
+        ).annotate(
+            visits=Count("client_appointments")
+        )[:10]
+
+        data = [
+            {
+                "id": str(c.id),
+                "name": c.full_name,
+                "first_name": c.first_name,
+                "last_name": c.last_name,
+                "email": c.email,
+                "visits": c.visits,
+            }
+            for c in clients
+        ]
+        return Response(data)

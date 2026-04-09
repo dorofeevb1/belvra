@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 1.5rem;
-  background-color: var(--color-bg-secondary);
+  background: linear-gradient(170deg, #0f0a1e 0%, #2d1654 50%, #0f0a1e 100%);
 }
 
 .theme-toggle {
@@ -35,7 +35,7 @@
   justify-content: center;
   background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-600));
   border-radius: 1rem;
-  box-shadow: 0 8px 24px -4px rgba(236, 72, 153, 0.35);
+  box-shadow: 0 8px 24px -4px rgba(124, 58, 237, 0.35);
 }
 
 .logo-text {

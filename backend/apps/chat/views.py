@@ -20,6 +20,7 @@ from .serializers import (
     ChatMessageSerializer,
     ChatSerializer,
 )
+from apps.users.models import BlockedUser
 
 TYPING_TTL = 6  # seconds
 
@@ -53,20 +54,26 @@ class ChatViewSet(viewsets.ModelViewSet):
         role = self.request.query_params.get("role")
 
         if role == "client":
-            return Chat.objects.filter(client=user).select_related(
+            return Chat.objects.filter(client=user).exclude(
+                hidden_for=user
+            ).select_related(
                 "master__user", "client"
             ).prefetch_related("messages")
 
         if role == "master" and hasattr(user, "master_profile"):
             return Chat.objects.filter(
                 master=user.master_profile
-            ).select_related("master__user", "client").prefetch_related("messages")
+            ).exclude(hidden_for=user).select_related(
+                "master__user", "client"
+            ).prefetch_related("messages")
 
         if hasattr(user, "master_profile"):
             return Chat.objects.filter(
                 Q(master=user.master_profile) | Q(client=user)
-            ).select_related("master__user", "client").prefetch_related("messages")
-        return Chat.objects.filter(client=user).select_related(
+            ).exclude(hidden_for=user).select_related(
+                "master__user", "client"
+            ).prefetch_related("messages")
+        return Chat.objects.filter(client=user).exclude(hidden_for=user).select_related(
             "master__user", "client"
         ).prefetch_related("messages")
 
@@ -194,7 +201,11 @@ class ChatViewSet(viewsets.ModelViewSet):
     def messages(self, request, pk=None):
         """Get messages with pagination and optional search."""
         chat = self.get_object()
-        qs = chat.messages.select_related("sender", "reply_to", "reply_to__sender").order_by("-created_at")
+        qs = chat.messages.select_related(
+            "sender", "reply_to", "reply_to__sender"
+        ).exclude(
+            hidden_for=request.user
+        ).order_by("-created_at")
 
         search = request.query_params.get("search", "").strip()
         if search:
@@ -303,3 +314,130 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         serializer = ChatDetailSerializer(chat, context={"request": request})
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @extend_schema(tags=["Чат"], summary="Удалить сообщение")
+    @action(detail=True, methods=["post"], url_path="delete-message/(?P<message_id>[^/.]+)")
+    def delete_message(self, request, pk=None, message_id=None):
+        """Delete a message (for self or for all)."""
+        chat = self.get_object()
+        try:
+            message = ChatMessage.objects.get(id=message_id, chat=chat)
+        except ChatMessage.DoesNotExist:
+            return Response({"detail": "Сообщение не найдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        mode = request.data.get("mode", "self")  # "self" or "all"
+
+        if mode == "all":
+            # Only sender can delete for all
+            if message.sender != request.user:
+                return Response({"detail": "Можно удалить для всех только свои сообщения"}, status=status.HTTP_403_FORBIDDEN)
+            message.is_deleted_for_all = True
+            message.content = ""
+            message.file = None
+            message.save(update_fields=["is_deleted_for_all", "content", "file", "updated_at"])
+        else:
+            # Hide for current user only
+            message.hidden_for.add(request.user)
+
+        return Response({"detail": "Сообщение удалено"})
+
+    @extend_schema(tags=["Чат"], summary="Переслать сообщение")
+    @action(detail=True, methods=["post"], url_path="forward-message/(?P<message_id>[^/.]+)")
+    def forward_message(self, request, pk=None, message_id=None):
+        """Forward a message to another chat."""
+        source_chat = self.get_object()
+        try:
+            original = ChatMessage.objects.get(id=message_id, chat=source_chat)
+        except ChatMessage.DoesNotExist:
+            return Response({"detail": "Сообщение не найдено"}, status=status.HTTP_404_NOT_FOUND)
+
+        target_chat_id = request.data.get("target_chat_id")
+        if not target_chat_id:
+            return Response({"detail": "Укажите target_chat_id"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            target_chat = Chat.objects.get(id=target_chat_id)
+        except Chat.DoesNotExist:
+            return Response({"detail": "Чат не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Check user is participant
+        user = request.user
+        is_participant = (
+            target_chat.client == user or
+            (hasattr(user, "master_profile") and target_chat.master == user.master_profile)
+        )
+        if not is_participant:
+            return Response({"detail": "Нет доступа к чату"}, status=status.HTTP_403_FORBIDDEN)
+
+        # Determine sender role in target chat
+        if hasattr(user, "master_profile") and target_chat.master == user.master_profile:
+            sender_role = ChatMessage.SenderRole.MASTER
+        else:
+            sender_role = ChatMessage.SenderRole.CLIENT
+
+        # Create forwarded message
+        new_msg = ChatMessage.objects.create(
+            chat=target_chat,
+            sender=user,
+            sender_role=sender_role,
+            content=original.content,
+            message_type=original.message_type,
+            file=original.file,
+            forwarded_from=original,
+            forwarded_from_name=original.sender.full_name,
+        )
+        target_chat.save(update_fields=["updated_at"])
+
+        serializer = ChatMessageSerializer(new_msg, context={"request": request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(tags=["Чат"], summary="Скрыть чат")
+    @action(detail=True, methods=["post"], url_path="hide")
+    def hide(self, request, pk=None):
+        """Hide chat for current user (soft delete)."""
+        chat = self.get_object()
+        chat.hidden_for.add(request.user)
+        return Response({"detail": "Чат скрыт"}, status=status.HTTP_200_OK)
+
+    @extend_schema(tags=["Чат"], summary="Показать чат")
+    @action(detail=True, methods=["post"], url_path="unhide")
+    def unhide(self, request, pk=None):
+        """Unhide chat for current user."""
+        chat = self.get_object()
+        chat.hidden_for.remove(request.user)
+        return Response({"detail": "Чат восстановлен"}, status=status.HTTP_200_OK)
+
+    @extend_schema(tags=["Чат"], summary="Заблокировать собеседника")
+    @action(detail=True, methods=["post"], url_path="block")
+    def block_user(self, request, pk=None):
+        """Block the other participant in this chat."""
+        chat = self.get_object()
+        user = request.user
+
+        # Determine who to block
+        if hasattr(user, "master_profile") and chat.master == user.master_profile:
+            blocked = chat.client
+        else:
+            blocked = chat.master.user
+
+        reason = request.data.get("reason", "")
+        BlockedUser.objects.get_or_create(
+            blocker=user, blocked=blocked,
+            defaults={"reason": reason}
+        )
+        return Response({"detail": "Пользователь заблокирован"}, status=status.HTTP_200_OK)
+
+    @extend_schema(tags=["Чат"], summary="Разблокировать собеседника")
+    @action(detail=True, methods=["post"], url_path="unblock")
+    def unblock_user(self, request, pk=None):
+        """Unblock the other participant in this chat."""
+        chat = self.get_object()
+        user = request.user
+
+        if hasattr(user, "master_profile") and chat.master == user.master_profile:
+            blocked = chat.client
+        else:
+            blocked = chat.master.user
+
+        BlockedUser.objects.filter(blocker=user, blocked=blocked).delete()
+        return Response({"detail": "Пользователь разблокирован"}, status=status.HTTP_200_OK)

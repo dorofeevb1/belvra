@@ -25,7 +25,7 @@ from apps.core.tasks import (
     send_welcome_email_task,
 )
 
-from .models import FavoriteMaster, MasterProfile, User
+from .models import BlockedUser, FavoriteMaster, MasterProfile, User
 from .serializers import (
     ChangePasswordSerializer,
     EmailVerificationSerializer,
@@ -1412,3 +1412,64 @@ class FavoriteMasterViewSet(viewsets.ModelViewSet):
                 "is_favorite": True,
                 "detail": "Мастер добавлен в избранное"
             }, status=status.HTTP_201_CREATED)
+
+
+class BlockedListView(APIView):
+    """List blocked users."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        blocked = BlockedUser.objects.filter(blocker=request.user).select_related("blocked")
+        data = [
+            {
+                "id": str(b.id),
+                "user_id": str(b.blocked.id),
+                "name": b.blocked.full_name,
+                "email": b.blocked.email,
+                "reason": b.reason,
+                "created_at": b.created_at.isoformat(),
+            }
+            for b in blocked
+        ]
+        return Response(data)
+
+
+class BlockUserView(APIView):
+    """Block/unblock a user."""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, user_id):
+        try:
+            target = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        if target == request.user:
+            return Response({"detail": "Нельзя заблокировать себя"}, status=status.HTTP_400_BAD_REQUEST)
+
+        reason = request.data.get("reason", "")
+        BlockedUser.objects.get_or_create(
+            blocker=request.user, blocked=target,
+            defaults={"reason": reason}
+        )
+        return Response({"detail": "Пользователь заблокирован"})
+
+    def delete(self, request, user_id):
+        BlockedUser.objects.filter(blocker=request.user, blocked_id=user_id).delete()
+        return Response({"detail": "Пользователь разблокирован"})
+
+
+class UserStatusView(APIView):
+    """Get user online status."""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"detail": "Пользователь не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        return Response({
+            "is_online": user.is_online,
+            "last_seen": user.last_seen.isoformat() if user.last_seen else None,
+        })

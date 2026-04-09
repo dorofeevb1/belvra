@@ -61,12 +61,26 @@ class Appointment(BaseModel):
         CONFIRMED = "confirmed", "Подтверждено"
         CANCELLED = "cancelled", "Отменено"
         COMPLETED = "completed", "Завершено"
-        NO_SHOW = "no_show", "Клиент не пришёл"
+        NO_SHOW = "no_show", "Неявка"
+
+    class CreatedBy(models.TextChoices):
+        CLIENT = "client", "Клиент"
+        MASTER = "master", "Мастер"
 
     client = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name="client_appointments"
+        related_name="client_appointments",
+        null=True,
+        blank=True,
+    )
+    # For manual appointments without registered client
+    client_name = models.CharField(max_length=150, blank=True, default="")
+    client_surname = models.CharField(max_length=150, blank=True, default="")
+    created_by = models.CharField(
+        max_length=10,
+        choices=CreatedBy.choices,
+        default=CreatedBy.CLIENT,
     )
     master = models.ForeignKey(
         MasterProfile,
@@ -120,8 +134,18 @@ class Appointment(BaseModel):
             models.Index(fields=["master", "date", "status"]),
         ]
 
+    @property
+    def display_client_name(self):
+        """Client name for display — works with both registered and manual clients."""
+        if self.client:
+            return self.client.full_name
+        name = self.client_name
+        if self.client_surname:
+            name += f" {self.client_surname}"
+        return name or "Без имени"
+
     def __str__(self):
-        return f"{self.client.full_name} -> {self.master.user.full_name} ({self.date})"
+        return f"{self.display_client_name} -> {self.master.user.full_name} ({self.date})"
 
     def transition_to(self, new_status):
         allowed = self.VALID_TRANSITIONS.get(self.status, [])

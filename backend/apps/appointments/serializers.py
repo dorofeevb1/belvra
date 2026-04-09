@@ -29,13 +29,16 @@ class AppointmentSerializer(serializers.ModelSerializer):
     can_cancel = serializers.BooleanField(read_only=True)
     service_name = serializers.SerializerMethodField()
 
+    display_client_name = serializers.CharField(read_only=True)
+
     class Meta:
         model = Appointment
         fields = [
             "id", "client", "master", "service", "service_name", "date", "start_time",
             "end_time", "status", "status_display", "price",
             "notes", "used_materials", "materials_cost",
-            "can_cancel", "created_at"
+            "can_cancel", "created_at",
+            "client_name", "client_surname", "created_by", "display_client_name",
         ]
 
     def get_service_name(self, obj):
@@ -252,3 +255,25 @@ class AvailableSlotsSerializer(serializers.Serializer):
     master_id = serializers.UUIDField()
     service_id = serializers.UUIDField()
     date = serializers.DateField()
+
+
+class ManualCreateSerializer(serializers.Serializer):
+    """Serializer for master creating appointment manually."""
+
+    client_id = serializers.UUIDField(required=False, allow_null=True)
+    client_name = serializers.CharField(required=False, allow_blank=True, default="")
+    client_surname = serializers.CharField(required=False, allow_blank=True, default="")
+    master_service_id = serializers.UUIDField()
+    date = serializers.DateField()
+    start_time = serializers.TimeField()
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
+    notes = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, data):
+        client_id = data.get("client_id")
+        client_name = data.get("client_name", "").strip()
+        if not client_id and not client_name:
+            raise serializers.ValidationError(
+                "Укажите client_id или client_name"
+            )
+        return data

@@ -321,11 +321,11 @@
   }
 
   :host-context(.dark) & {
-    background: rgba(236, 72, 153, 0.15);
+    background: rgba(124, 58, 237, 0.15);
     color: var(--color-brand-400);
 
     &:hover {
-      background: rgba(236, 72, 153, 0.25);
+      background: rgba(124, 58, 237, 0.25);
     }
   }
 }
@@ -522,7 +522,7 @@
 }
 
 .toggle-input:focus + .toggle-track {
-  box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.2);
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
 }
 
 // Schedule
@@ -662,7 +662,7 @@
   border-radius: var(--radius-full);
 
   :host-context(.dark) & {
-    background: rgba(236, 72, 153, 0.15);
+    background: rgba(124, 58, 237, 0.15);
     color: var(--color-brand-400);
   }
 }
@@ -987,11 +987,11 @@
   }
 
   :host-context(.dark) & {
-    background: linear-gradient(135deg, rgba(236, 72, 153, 0.1), var(--color-surface-secondary));
-    border-color: rgba(236, 72, 153, 0.2);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), var(--color-surface-secondary));
+    border-color: rgba(124, 58, 237, 0.2);
 
     &:hover {
-      border-color: rgba(236, 72, 153, 0.3);
+      border-color: rgba(124, 58, 237, 0.3);
     }
   }
 }
@@ -1326,10 +1326,10 @@
 }
 
 :host-context(.dark) .subscription-status-card .manage-btn {
-  background: rgba(236, 72, 153, 0.1);
+  background: rgba(124, 58, 237, 0.1);
 
   &:hover {
-    background: rgba(236, 72, 153, 0.2);
+    background: rgba(124, 58, 237, 0.2);
   }
 }
 

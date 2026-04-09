@@ -55,15 +55,18 @@ import { Component } from '@angular/core';
 
     @media (max-width: 1023px) {
       .support-fab {
-        bottom: calc(60px + env(safe-area-inset-bottom, 0px) + 16px);
+        bottom: calc(70px + env(safe-area-inset-bottom, 0px) + 16px);
       }
     }
 
     @media (max-width: 767px) {
       .support-fab {
-        padding: 14px;
+        padding: 12px;
         border-radius: 50%;
         right: 16px;
+        width: 48px;
+        height: 48px;
+        justify-content: center;
       }
 
       .support-label {

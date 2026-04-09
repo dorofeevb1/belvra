@@ -56,15 +56,12 @@ export interface BottomNavItem {
       display: flex;
       align-items: stretch;
       justify-content: space-around;
-      border-top: 1px solid var(--color-border-secondary);
+      height: 60px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
       padding-bottom: var(--ion-safe-area-bottom, env(safe-area-inset-bottom, 0px));
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      background: rgba(253, 252, 251, 0.92);
-    }
-
-    .dark .belvra-bottom-nav {
-      background: rgba(24, 24, 27, 0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(15, 10, 30, 0.95);
     }
 
     .belvra-bottom-nav__tab {
@@ -73,14 +70,14 @@ export interface BottomNavItem {
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 2px;
+      gap: 3px;
       padding: 6px 4px 8px;
       min-height: 50px;
       text-decoration: none;
       border: none;
       background: none;
-      color: var(--color-text-tertiary);
-      transition: color 0.15s ease;
+      color: #71717a;
+      transition: color 0.2s ease;
       position: relative;
       cursor: pointer;
       -webkit-tap-highlight-color: transparent;
@@ -91,16 +88,24 @@ export interface BottomNavItem {
     }
 
     .belvra-bottom-nav__tab.active {
-      color: var(--color-brand-500);
+      color: #7C3AED;
     }
 
-    .dark .belvra-bottom-nav__tab.active {
-      color: var(--color-brand-400);
+    .belvra-bottom-nav__tab.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 2px;
+      background: #7C3AED;
+      border-radius: 0 0 2px 2px;
     }
 
     .belvra-bottom-nav__icon {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -108,8 +113,8 @@ export interface BottomNavItem {
     }
 
     .belvra-bottom-nav__icon svg {
-      width: 24px;
-      height: 24px;
+      width: 22px;
+      height: 22px;
     }
 
     .belvra-bottom-nav__badge {
@@ -134,6 +139,7 @@ export interface BottomNavItem {
     .belvra-bottom-nav__label {
       font-size: 10px;
       font-weight: 500;
+      letter-spacing: 0.2px;
       line-height: 1.2;
       white-space: nowrap;
       overflow: hidden;
