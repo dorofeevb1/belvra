@@ -108,7 +108,9 @@ class SubscriptionPlan(BaseModel):
         verbose_name = "План подписки"
         verbose_name_plural = "Планы подписок"
         ordering = ["user_type", "tier", "period"]
-        unique_together = ["tier", "user_type", "period"]
+        constraints = [
+            models.UniqueConstraint(fields=["tier", "user_type", "period"], name="unique_plan_tier_type_period"),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.get_user_type_display()} - {self.get_period_display()})"
@@ -155,8 +157,12 @@ class Subscription(BaseModel):
     auto_renew = models.BooleanField(default=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
-    # T-Bank RebillId for recurring payments
-    tbank_rebill_id = models.CharField(max_length=255, blank=True)
+    # T-Bank RebillId for recurring payments (encrypted at rest)
+    tbank_rebill_id = models.TextField(blank=True, default="")
+    tbank_rebill_id_hash = models.CharField(
+        max_length=64, blank=True, default="", db_index=True,
+        help_text="SHA-256 hash for lookups"
+    )
 
     # Usage tracking
     appointments_this_month = models.PositiveIntegerField(default=0)
@@ -169,6 +175,29 @@ class Subscription(BaseModel):
 
     def __str__(self):
         return f"{self.user.email} - {self.plan.name}"
+
+    def set_rebill_id(self, value):
+        """Set rebill ID — encrypts and computes hash."""
+        from apps.core.fields import EncryptedCharField, compute_hash
+        if value:
+            from apps.core.fields import _get_fernet
+            f = _get_fernet()
+            self.tbank_rebill_id = f.encrypt(value.encode()).decode()
+            self.tbank_rebill_id_hash = compute_hash(value)
+        else:
+            self.tbank_rebill_id = ""
+            self.tbank_rebill_id_hash = ""
+
+    def get_rebill_id(self):
+        """Get decrypted rebill ID."""
+        if not self.tbank_rebill_id:
+            return ""
+        try:
+            from apps.core.fields import _get_fernet
+            f = _get_fernet()
+            return f.decrypt(self.tbank_rebill_id.encode()).decode()
+        except Exception:
+            return self.tbank_rebill_id  # fallback during migration
 
     @property
     def is_active(self):
@@ -248,9 +277,10 @@ class Referral(BaseModel):
     class Meta:
         verbose_name = "Реферал"
         verbose_name_plural = "Рефералы"
-        unique_together = ["referrer", "referred_user"]
         ordering = ["-created_at"]
-        constraints = []
+        constraints = [
+            models.UniqueConstraint(fields=["referrer", "referred_user"], name="unique_referral_pair"),
+        ]
 
     def __str__(self):
         return f"{self.referrer.email} -> {self.referred_user.email}"

@@ -56,7 +56,7 @@ class ChatMessageAdmin(ModelAdmin):
 
     @display(description="Отправитель")
     def sender_name(self, obj):
-        return obj.sender.full_name
+        return obj.sender.full_name if obj.sender else "Удалённый пользователь"
 
     @display(description="Прочитано", boolean=True)
     def is_read_badge(self, obj):

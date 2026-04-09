@@ -329,7 +329,7 @@ class ChatViewSet(viewsets.ModelViewSet):
 
         if mode == "all":
             # Only sender can delete for all
-            if message.sender != request.user:
+            if not message.sender or message.sender != request.user:
                 return Response({"detail": "Можно удалить для всех только свои сообщения"}, status=status.HTTP_403_FORBIDDEN)
             message.is_deleted_for_all = True
             message.content = ""
@@ -384,7 +384,7 @@ class ChatViewSet(viewsets.ModelViewSet):
             message_type=original.message_type,
             file=original.file,
             forwarded_from=original,
-            forwarded_from_name=original.sender.full_name,
+            forwarded_from_name=original.sender.full_name if original.sender else "Удалённый пользователь",
         )
         target_chat.save(update_fields=["updated_at"])
 

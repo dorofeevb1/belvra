@@ -14,7 +14,7 @@ class ExpenseSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def create(self, validated_data):
-        validated_data['master'] = self.context['request'].user
+        validated_data['master'] = self.context['request'].user.master_profile
         return super().create(validated_data)
 
 
@@ -25,10 +25,11 @@ class FinancialGoalSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at']
 
     def create(self, validated_data):
-        validated_data['master'] = self.context['request'].user
+        master_profile = self.context['request'].user.master_profile
+        validated_data['master'] = master_profile
         # Deactivate previous goals
         FinancialGoal.objects.filter(
-            master=self.context['request'].user, is_active=True
+            master=master_profile, is_active=True
         ).update(is_active=False)
         validated_data['is_active'] = True
         return super().create(validated_data)

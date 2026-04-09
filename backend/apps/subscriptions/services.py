@@ -273,9 +273,9 @@ class SubscriptionService:
         subscription.current_period_end = period_end
         subscription.auto_renew = True
 
-        # Save RebillId for recurring payments via T-Bank Charge
+        # Save RebillId for recurring payments via T-Bank Charge (encrypted)
         if rebill_id:
-            subscription.tbank_rebill_id = rebill_id  # Reuse field for T-Bank RebillId
+            subscription.set_rebill_id(rebill_id)
 
         subscription.save()
 
@@ -389,7 +389,7 @@ class SubscriptionService:
         """
         Renew subscription using saved RebillId via T-Bank Charge.
         """
-        rebill_id = subscription.tbank_rebill_id  # Stores T-Bank RebillId
+        rebill_id = subscription.get_rebill_id()  # Decrypted T-Bank RebillId
         if not rebill_id:
             logger.warning(f"No saved RebillId for subscription {subscription.id}")
             return None

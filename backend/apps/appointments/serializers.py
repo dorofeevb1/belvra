@@ -43,11 +43,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
 
     def get_service_name(self, obj):
         """Get service name from master_service or service."""
-        if obj.master_service:
-            return obj.master_service.name
-        if obj.service:
-            return obj.service.name
-        return None
+        return obj.service_name
 
 
 class AppointmentCreateSerializer(serializers.ModelSerializer):
@@ -216,7 +212,12 @@ class AppointmentRescheduleSerializer(serializers.Serializer):
 class ReviewSerializer(serializers.ModelSerializer):
     """Serializer for Review."""
 
-    client_name = serializers.CharField(source="appointment.client.full_name", read_only=True)
+    client_name = serializers.SerializerMethodField()
+
+    def get_client_name(self, obj):
+        if obj.appointment.client:
+            return obj.appointment.client.full_name
+        return obj.appointment.display_client_name
 
     class Meta:
         model = Review

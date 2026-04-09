@@ -66,9 +66,9 @@ def renew_subscriptions():
         current_period_end__lte=now,
         auto_renew=True,
         cancel_at_period_end=False,
-        tbank_rebill_id__isnull=False
+        tbank_rebill_id_hash__isnull=False
     ).exclude(
-        tbank_rebill_id=""
+        tbank_rebill_id_hash=""
     ).select_related("user", "plan")
 
     service = SubscriptionService()

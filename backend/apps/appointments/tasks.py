@@ -25,13 +25,10 @@ def send_appointment_reminders():
     sent_count = 0
     for appointment in appointments:
         try:
-            # Get service name (custom service or catalog service)
-            if appointment.master_service:
-                service_name = appointment.master_service.name
-            elif appointment.service:
-                service_name = appointment.service.name
-            else:
-                service_name = "Услуга"
+            service_name = appointment.service_name
+
+            if not appointment.client:
+                continue
 
             # Send email reminder
             send_appointment_reminder_task.delay(
@@ -144,15 +141,9 @@ def send_completion_reminder():
     sent_count = 0
     for appointment in appointments:
         try:
-            # Get service name
-            if appointment.master_service:
-                service_name = appointment.master_service.name
-            elif appointment.service:
-                service_name = appointment.service.name
-            else:
-                service_name = "Услуга"
+            service_name = appointment.service_name
 
-            client_name = appointment.client.full_name or appointment.client.email
+            client_name = (appointment.client.full_name or appointment.client.email) if appointment.client else appointment.display_client_name
 
             # Create in-app notification for master
             NotificationService.create_notification(

@@ -14,7 +14,12 @@ class ReplyMessageSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     """Serializer for chat messages."""
 
-    sender_name = serializers.CharField(source="sender.full_name", read_only=True)
+    sender_name = serializers.SerializerMethodField()
+
+    def get_sender_name(self, obj):
+        if obj.sender:
+            return obj.sender.full_name
+        return "Удалённый пользователь"
     file_url = serializers.SerializerMethodField()
     reply_to = ReplyMessageSerializer(read_only=True)
     is_deleted = serializers.SerializerMethodField()

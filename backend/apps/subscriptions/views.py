@@ -574,7 +574,7 @@ class ExportDataView(APIView):
             if export_type == "appointments":
                 writer.writerow(["Дата", "Время", "Мастер", "Услуга", "Цена", "Статус"])
                 for a in appointments:
-                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    svc = a.service_name
                     writer.writerow([
                         a.date.strftime("%d.%m.%Y"), a.start_time.strftime("%H:%M"),
                         a.master.user.full_name, svc, a.price,
@@ -583,7 +583,7 @@ class ExportDataView(APIView):
             else:  # finances
                 writer.writerow(["Дата", "Услуга", "Мастер", "Цена"])
                 for a in appointments.filter(status=Appointment.Status.COMPLETED):
-                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    svc = a.service_name
                     writer.writerow([
                         a.date.strftime("%d.%m.%Y"), svc, a.master.user.full_name,
                         a.price,
@@ -598,19 +598,19 @@ class ExportDataView(APIView):
             if export_type == "appointments":
                 writer.writerow(["Дата", "Время", "Клиент", "Услуга", "Цена", "Статус"])
                 for a in appointments:
-                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    svc = a.service_name
                     writer.writerow([
                         a.date.strftime("%d.%m.%Y"), a.start_time.strftime("%H:%M"),
-                        a.client.full_name, svc, a.price, a.get_status_display(),
+                        a.display_client_name, svc, a.price, a.get_status_display(),
                     ])
             else:  # finances
                 writer.writerow([
                     "Дата", "Клиент", "Услуга", "Доход", "Материалы", "Чистый доход",
                 ])
                 for a in appointments.filter(status=Appointment.Status.COMPLETED):
-                    svc = a.master_service.name if a.master_service else (a.service.name if a.service else "")
+                    svc = a.service_name
                     writer.writerow([
-                        a.date.strftime("%d.%m.%Y"), a.client.full_name, svc,
+                        a.date.strftime("%d.%m.%Y"), a.display_client_name, svc,
                         a.price, a.materials_cost, a.price - a.materials_cost,
                     ])
 

@@ -856,8 +856,8 @@ class DeleteAccountView(APIView):
         except Exception:
             pass
 
-        # Delete user — CASCADE will remove all related data
-        user.delete()
+        # Soft delete — anonymize PII, keep related data for other users
+        user.soft_delete()
 
         return Response(
             {"detail": "Аккаунт и все персональные данные удалены"},
